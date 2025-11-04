@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'; 
 import { useParams, Link } from 'react-router-dom';
 import apiService from '../services/apiService'; 
+import useDebounce from '../hooks/useDebounce';
 
 // CSS cho item
 const itemStyle = {
@@ -46,12 +47,15 @@ function ListDetailPage() {
     const [newItemPriority, setNewItemPriority] = useState(1);
     // State cho DueDate (mặc định là rỗng)
     const [newItemDueDate, setNewItemDueDate] = useState('');
-    const [editingItemId, setEditingItemId] = useState(null); // ID của item đang sửa
-    const [editFormData, setEditFormData] = useState({ // Data của form sửa
-        title: '',
-        priority: 1,
-        dueDate: ''
-    });
+
+    // (State của form edit)
+    const [editingItemId, setEditingItemId] = useState(null); 
+    const [editFormData, setEditFormData] = useState({ title: '', priority: 1, dueDate: '' });
+
+    // --- 2. SỬ DỤNG DEBOUNCE ---
+    // "Theo dõi" state 'newItemTitle'
+    // Chỉ cập nhật 'debouncedTitle' sau khi người dùng ngừng gõ 700ms
+    const debouncedTitle = useDebounce(newItemTitle, 700);
     // -----------------------------
 
     // useEffect (tải dữ liệu) giữ nguyên
@@ -70,6 +74,37 @@ function ListDetailPage() {
         };
         fetchListDetails();
     }, [id]); 
+
+    // --- 3. useEffect MỚI ĐỂ GỌI AI ---
+    // "Theo dõi" giá trị ĐÃ DEBOUNCE
+    useEffect(() => {
+        // Chỉ chạy nếu:
+        // 1. Tên công việc có nội dung (dài hơn 3 ký tự)
+        // 2. Chúng ta *không* đang ở chế độ Sửa (Edit)
+        if (debouncedTitle.length > 3 && !editingItemId) {
+            
+            // Định nghĩa hàm gọi AI
+            const fetchSuggestion = async () => {
+                console.log(`AI: Đang dự đoán cho: "${debouncedTitle}"`);
+                try {
+                    const response = await apiService.suggestPriority(debouncedTitle);
+                    
+                    // Lấy kết quả (ví dụ: 2)
+                    const suggestedPriority = response.data.priority;
+                    console.log(`AI: Gợi ý: ${suggestedPriority}`);
+
+                    // Tự động cập nhật ô <select>
+                    setNewItemPriority(suggestedPriority);
+                    
+                } catch (err) {
+                    console.error("Lỗi gọi AI:", err);
+                }
+            };
+            
+            // Chạy hàm
+            fetchSuggestion();
+        }
+    }, [debouncedTitle, editingItemId]); // Chạy lại khi 2 giá trị này thay đổi
 
     // --- 2. CẬP NHẬT HÀM `handleCreateItem` ---
     const handleCreateItem = async (e) => {

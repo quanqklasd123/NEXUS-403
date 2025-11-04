@@ -76,6 +76,12 @@ const apiService = {
         return apiClient.delete(`/todoitems/${id}`);
     },
 
+    // --- AI ---
+    suggestPriority: (title) => {
+        // BE của chúng ta cần { "title": "..." }
+        return apiClient.post('/ai/suggest-priority', { title });
+    }
+
 };
 
 // Xuất "apiService" để các component khác có thể dùng
