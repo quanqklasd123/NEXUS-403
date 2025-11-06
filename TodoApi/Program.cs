@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using System.Text; // Thêm
 using TodoApi.Data;
 using TodoApi.Models;
+using TodoApi.AI;
 
 // --- ĐẶT TÊN POLICY Ở ĐÂY ĐỂ DÙNG LẠI ---
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
@@ -41,6 +42,9 @@ builder.Services.AddDbContext<TodoContext>(opt =>
 // 3. Cấu hình AutoMapper (Giữ nguyên)
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+// Đăng ký AiModelService để có thể "tiêm" nó vào Controller
+builder.Services.AddSingleton<AiModelService>();
+
 // --- BẮT ĐẦU CẤU HÌNH IDENTITY & JWT ---
 
 // 4. Thêm Identity
@@ -68,6 +72,8 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Secret"]))
     };
 });
+
+builder.Services.AddSingleton<AiPredictionService>();
 
 // --- KẾT THÚC CẤU HÌNH ---
 
