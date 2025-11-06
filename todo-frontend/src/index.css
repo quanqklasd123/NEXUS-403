@@ -1,161 +1,22 @@
 /* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&display=swap');
+@import "tailwindcss";
 
-/* --- 1. MÀU SẮC VÀ PHÔNG CHỮ TOÀN CỤC --- */
-
-:root {
-    /* Nền (Giống gỗ sồi nhạt) */
-    --bg-color: #f3e5d3; /* Màu be nâu nhạt */
-    
-    /* Nền "Giấy" (Nơi chứa nội dung) */
-    --paper-color: #fdfdf8; /* Màu trắng ngà, giấy cổ */
-    
-    /* Màu chữ chính (Nâu đậm) */
-    --text-color: #5D4037; /* Giống màu vỏ cây óc chó */
-    
-    /* Màu Nâu (cho nút, viền) */
-    --primary-color: #8D6E63; /* Nâu trung tính */
-    
-    /* Màu Vàng (cho hover, accent) */
-    --accent-color: #FFB300; /* Vàng hổ phách */
+/* Định nghĩa custom theme cho Tailwind v4 */
+@theme {
+  --color-wood: #f3e5d3;
+  --color-paper: #fdfdf8;
+  --color-text-main: #5D4037;
+  --color-primary: #8D6E63;
+  --color-accent: #FFB300;
+  
+  --font-family-serif: "Noto Serif", Georgia, serif;
+  --font-family-sans: Inter, system-ui, sans-serif;
 }
 
-/* Áp dụng lên toàn bộ trang */
+/* Áp dụng theme cho body */
 body {
-    font-family: 'Georgia', serif; /* <-- Phông chữ "cổ điển" quan trọng nhất! */
-    margin: 0;
-    padding: 20px;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    
-    /* --- Nâng cao: Thêm một họa tiết gỗ mờ --- */
-    /* Xóa dòng background-color ở trên nếu bạn dùng dòng này */
-    /* background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'); */
-}
-
-/* --- 2. KIỂU DÁNG CHUNG --- */
-
-/* Tiêu đề */
-h1, h2, h3 {
-    font-family: 'Georgia', serif;
-    color: var(--text-color);
-    border-bottom: 2px solid rgba(141, 110, 99, 0.2); /* Nét gạch chân mờ */
-    padding-bottom: 5px;
-}
-
-/* Nút bấm (Button) */
-button {
-    font-family: 'Georgia', serif;
-    font-size: 1em;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 5px;
-    background-color: var(--primary-color);
-    color: var(--paper-color);
-    cursor: pointer;
-    transition: background-color 0.2s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-button:hover {
-    background-color: var(--accent-color);
-    color: var(--text-color);
-}
-
-/* Ô input và select */
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="date"],
-select {
-    font-family: 'Georgia', serif;
-    font-size: 1em;
-    padding: 8px;
-    border: 1px solid var(--primary-color);
-    border-radius: 5px;
-    background-color: #fff; /* Nền trắng cho dễ đọc */
-}
-
-/* --- 3. CÁC LỚP (CLASSES) CHO COMPONENT --- */
-
-/* "Tờ giấy" chính chứa nội dung */
-.app-container {
-    max-width: 900px;
-    margin: 20px auto;
-    padding: 30px;
-    background-color: var(--paper-color);
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(141, 110, 99, 0.3);
-}
-
-/* Form để thêm (List hoặc Item) */
-.form-container {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-    align-items: center;
-    flex-wrap: wrap; /* Cho phép xuống hàng nếu không đủ chỗ */
-    padding: 15px;
-    background-color: rgba(243, 229, 211, 0.4); /* Nền mờ */
-    border-radius: 5px;
-}
-
-/* Danh sách (UL) */
-.item-list {
-    list-style-type: none;
-    padding-left: 0;
-}
-
-/* Mỗi Item trong danh sách */
-.list-item {
-    display: flex;
-    align-items: center;
-    gap: 10px; 
-    padding: 12px 8px;
-    border-bottom: 1px dashed rgba(141, 110, 99, 0.2);
-    transition: background-color 0.2s;
-}
-
-.list-item:hover {
-    background-color: rgba(255, 179, 0, 0.05); /* Hover vàng nhạt */
-}
-
-/* Dùng cho link trong TodoList.jsx (tên list) */
-.list-item-link {
-    font-size: 1.2em;
-    color: var(--text-color);
-    text-decoration: none;
-    font-weight: bold;
-}
-.list-item-link:hover {
-    color: var(--accent-color);
-    text-decoration: underline;
-}
-
-/* Dùng cho item trong ListDetailPage.jsx (tên công việc) */
-.item-title {
-    min-width: 200px;
-}
-.item-title-done {
-    text-decoration: line-through;
-    color: #999;
-    min-width: 200px;
-}
-
-.item-details {
-    min-width: 100px;
-    font-size: 0.9em;
-    color: #777;
-}
-
-.delete-button {
-    margin-left: auto; /* Đẩy nút Xóa về cuối */
-    background-color: transparent;
-    color: #D32F2F; /* Màu đỏ (cảnh báo) */
-    font-weight: bold;
-    box-shadow: none;
-}
-.delete-button:hover {
-    background-color: #D32F2F;
-    color: white;
+  background-color: var(--color-wood);
+  color: var(--color-text-main);
+  font-family: var(--font-family-serif);
 }

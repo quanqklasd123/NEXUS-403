@@ -1,7 +1,8 @@
 // src/TodoList.jsx
 import React, { useState, useEffect } from 'react';
 import apiService from '../services/apiService'; // Dùng lại dịch vụ API
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import PageHeader from '../components/PageHeader';  
 
 function TodoList() {
     const [lists, setLists] = useState([]); // State để lưu danh sách
@@ -74,32 +75,46 @@ function TodoList() {
 
     // Cập nhật phần JSX (HTML)
     return (
-        <div>
-            <h2>Danh sách công việc của bạn</h2>
-            <button onClick={handleLogout}>Đăng xuất</button>
+        // 1. "Tờ giấy" (Card) chính, giống hệt LoginPage
+        <div className="bg-paper p-6 md:p-8 rounded-lg shadow-lg border border-primary/20">
+            <PageHeader /> {/* <-- DÙNG COMPONENT MỚI */}
 
-            {/* Sử dụng "form-container" */}
-            <form onSubmit={handleCreateList} className="form-container">
+            <form 
+                onSubmit={handleCreateList} 
+                className="flex gap-4 p-4 bg-wood/40 rounded-lg mb-6"
+            >
                 <input
                     type="text"
-                    placeholder="Tên danh sách mới"
+                    placeholder="Tên danh sách mới..."
                     value={newListName}
                     onChange={(e) => setNewListName(e.target.value)}
+                    // Thêm class Tailwind cho input
+                    className="flex-1 p-2 border border-primary/50 rounded-md bg-white font-serif"
                 />
-                <button type="submit">Thêm List mới</button>
+                <button 
+                    type="submit"
+                    className="p-2 bg-primary text-paper rounded-lg font-serif
+                               hover:bg-accent hover:text-text-main transition-colors"
+                >
+                    Thêm List
+                </button>
             </form>
 
-            {/* Sử dụng "item-list" */}
-            <ul className="item-list">
+            {/* 4. Danh sách các List (đã được style) */}
+            <div className="flex flex-col gap-3">
                 {lists.map(list => (
-                    // Sử dụng "list-item"
-                    <li key={list.id} className="list-item">
-                        <Link to={`/list/${list.id}`} className="list-item-link">
-                            {list.name}
-                        </Link>
-                    </li>
+                    // Mỗi link là một "item" có style
+                    <Link 
+                        key={list.id} 
+                        to={`/list/${list.id}`}
+                        className="block p-4 bg-white rounded-md shadow-sm border border-primary/10
+                                   font-serif text-lg text-text-main 
+                                   hover:shadow-md hover:border-accent transition-all"
+                    >
+                        {list.name}
+                    </Link>
                 ))}
-            </ul>
+            </div>
         </div>
     );
 }

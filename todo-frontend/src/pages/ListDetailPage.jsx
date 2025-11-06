@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiService from '../services/apiService'; 
 import useDebounce from '../hooks/useDebounce';
-
+import PageHeader from '../components/PageHeader';
+import Stats from '../components/Stats';
 // CSS cho item
 const itemStyle = {
     display: 'flex',
@@ -255,125 +256,137 @@ function ListDetailPage() {
 
     // Cập nhật phần JSX (HTML)
     return (
-        <div>
-            <h2>{list.name}</h2> 
-            <hr />
+        // 1. "Tờ giấy" (Card) chính
+        <div className="bg-paper p-6 md:p-8 rounded-lg shadow-lg border border-primary/20">
 
-            {/* Form tạo item (giữ nguyên) */}
-            <form onSubmit={handleCreateItem} style={formStyle}>
-                {/* ... (code form này giữ nguyên) ... */}
-                <label>Tên:</label>
+            {/* 2. Tiêu đề (Tên của List, ví dụ "học tập") */}
+            <PageHeader title={list.name} />
+
+            <Stats items={list.items} />
+
+            {/* (Chúng ta sẽ thêm "Stats" và "Filters" của Figma vào đây sau) */}
+
+            {/* 3. Form tạo Item mới (Style giống Figma) */}
+            <form 
+                onSubmit={handleCreateItem} 
+                className="flex flex-wrap items-center gap-4 p-4 bg-wood/40 rounded-lg mb-6"
+            >
                 <input
                     type="text"
-                    placeholder="Tên công việc mới"
+                    placeholder="Thêm công việc mới..."
                     value={newItemTitle}
                     onChange={(e) => setNewItemTitle(e.target.value)}
+                    className="flex-1 min-w-[200px] p-2 border border-primary/50 rounded-md bg-white font-serif"
                 />
-                <label>Ưu tiên:</label>
                 <select 
                     value={newItemPriority}
                     onChange={(e) => setNewItemPriority(parseInt(e.target.value))}
+                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
                 >
                     <option value="0">Thấp</option>
                     <option value="1">Trung bình</option>
                     <option value="2">Cao</option>
                 </select>
-                <label>Ngày hết hạn:</label>
                 <input
                     type="date"
                     value={newItemDueDate}
                     onChange={(e) => setNewItemDueDate(e.target.value)}
+                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
                 />
-                <button type="submit">Thêm công việc</button>
+                <button 
+                    type="submit"
+                    className="p-2 bg-primary text-paper rounded-lg font-serif
+                               hover:bg-accent hover:text-text-main transition-colors"
+                >
+                    Thêm
+                </button>
             </form>
 
-            <h3>Các công việc:</h3>
-            {/* Sử dụng "item-list" */}
-            <ul className="item-list">
+            {/* 4. Danh sách các Items */}
+            <div className="flex flex-col gap-3">
                 {list.items.length > 0 ? (
                     list.items.map(item => (
-                        // --- ĐÂY LÀ SỰ THAY ĐỔI LỚN NHẤT ---
-                        // Bọc toàn bộ <li> bằng logic (nếu đang sửa thì...)
-                        
+                        // Logic "Edit mode" hay "View mode"
                         editingItemId === item.id ? (
                             
-                            // --- Chế độ SỬA (Render Form) ---
-                            <li key={item.id} className="list-item" style={{ backgroundColor: '#fffbe5' }}>
-                                <form onSubmit={(e) => handleSaveEdit(e, item)} style={formStyle}>
-                                    <input
-                                        type="text"
-                                        name="title"
-                                        value={editFormData.title}
-                                        onChange={handleEditFormChange}
-                                        style={{ flex: 1 }} /* Cho ô input dài ra */
-                                    />
-                                    <select
-                                        name="priority"
-                                        value={editFormData.priority}
-                                        onChange={handleEditFormChange}
-                                    >
-                                        <option value="0">Thấp</option>
-                                        <option value="1">Trung bình</option>
-                                        <option value="2">Cao</option>
-                                    </select>
-                                    <input
-                                        type="date"
-                                        name="dueDate"
-                                        value={editFormData.dueDate}
-                                        onChange={handleEditFormChange}
-                                    />
-                                    <button type="submit" style={{ color: 'green' }}>Lưu</button>
-                                    <button type="button" onClick={handleCancelEdit}>Hủy</button>
-                                </form>
-                            </li>
+                            // --- Chế độ SỬA (Form Edit) ---
+                            <form 
+                                key={item.id} 
+                                onSubmit={(e) => handleSaveEdit(e, item)} 
+                                className="flex flex-wrap items-center gap-2 p-3 bg-accent/20 rounded-lg"
+                            >
+                                <input
+                                    type="text" name="title"
+                                    value={editFormData.title} onChange={handleEditFormChange}
+                                    className="flex-1 min-w-[150px] p-2 border border-primary/50 rounded-md bg-white font-serif"
+                                />
+                                <select
+                                    name="priority" value={editFormData.priority} onChange={handleEditFormChange}
+                                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                                >
+                                    <option value="0">Thấp</option>
+                                    <option value="1">Trung bình</option>
+                                    <option value="2">Cao</option>
+                                </select>
+                                <input
+                                    type="date" name="dueDate"
+                                    value={editFormData.dueDate} onChange={handleEditFormChange}
+                                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                                />
+                                <button type="submit" className="p-2 bg-green-600 text-white rounded font-serif">Lưu</button>
+                                <button type="button" onClick={handleCancelEdit} className="p-2 bg-gray-500 text-white rounded font-serif">Hủy</button>
+                            </form>
 
                         ) : (
                             
-                            // --- Chế độ XEM (Render bình thường) ---
-                            <li key={item.id} className="list-item">
+                            // --- Chế độ XEM (Card Item bình thường) ---
+                            <div 
+                                key={item.id} 
+                                className="flex flex-wrap items-center gap-4 p-3 bg-white rounded-lg shadow-sm border border-primary/10"
+                            >
                                 <input
                                     type="checkbox"
                                     checked={item.isDone}
                                     onChange={() => handleToggleDone(item)}
+                                    className="w-5 h-5"
                                 />
-                                
-                                <span className={item.isDone ? "item-title-done" : "item-title"}>
+                                <span className={`font-serif ${item.isDone ? 'line-through text-gray-400' : 'text-text-main'}`}>
                                     {item.title} 
                                 </span>
-
-                                <span className="item-details">
+                                <span className="text-sm text-primary font-serif bg-wood/50 px-2 py-1 rounded">
                                     {priorityMap[item.priority] || 'Trung bình'}
                                 </span>
-
-                                <span className="item-details">
+                                <span className="text-sm text-gray-500 font-serif">
                                     {formatDate(item.dueDate)}
                                 </span>
                                 
-                                {/* Nút "Sửa" mới */}
-                                <button 
-                                    onClick={() => handleEditClick(item)}
-                                    style={{ marginLeft: 'auto', cursor: 'pointer' }}
-                                >
-                                    Sửa
-                                </button>
-                                
-                                <button 
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    className="delete-button"
-                                >
-                                    Xóa
-                                </button>
-                            </li>
+                                {/* Nút điều khiển ở cuối */}
+                                <div className="ml-auto flex gap-2">
+                                    <button 
+                                        onClick={() => handleEditClick(item)}
+                                        className="p-1 text-sm text-primary hover:text-accent font-serif"
+                                    >
+                                        Sửa
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        className="p-1 text-sm text-red-600 hover:text-red-800 font-serif"
+                                    >
+                                        Xóa
+                                    </button>
+                                </div>
+                            </div>
                         )
-                        // --- KẾT THÚC THAY ĐỔI ---
                     ))
                 ) : (
-                    <p>Danh sách này chưa có công việc nào.</p>
+                    <p className="text-center text-primary/70 italic">Danh sách này chưa có công việc nào.</p>
                 )}
-            </ul>
+            </div>
 
             <br />
-            <Link to="/">Quay về Danh sách</Link>
+            <Link to="/" className="text-primary hover:text-accent font-serif mt-6">
+                &larr; Quay về Danh sách
+            </Link>
         </div>
     );
 }

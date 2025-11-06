@@ -3,91 +3,95 @@ import React, { useState } from 'react';
 import apiService from '../services/apiService'; 
 import { Link } from 'react-router-dom'; 
 
-// --- Thêm style (giống hệt trang Register) ---
-const authFormStyle = {
-    display: 'flex',
-    flexDirection: 'column', // Xếp các mục theo chiều dọc
-    gap: '15px',             // Khoảng cách giữa các mục
-    maxWidth: '300px',       // Giới hạn chiều rộng
-    margin: '20px auto'      // Căn giữa
-};
-
-const inputGroupStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px'
-};
-// ------------------------------------
-
 function LoginPage({ onLoginSuccess }) {
-    const [email, setEmail] = useState(''); // State này vẫn tên là 'email'
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
 
+    // --- ĐÂY LÀ HÀM LOGIC BỊ THIẾU ---
     const handleLogin = async (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Ngăn trang load lại
         setMessage('Đang đăng nhập...');
 
         try {
-            // Gửi dữ liệu đi. BE sẽ tự hiểu đây là email hay username
+            // 1. Gọi API (dùng email và password trong state)
             const response = await apiService.login(email, password);
 
             console.log('Đăng nhập thành công:', response.data);
             const { token } = response.data;
             
+            // 2. Lưu token
             localStorage.setItem('authToken', token);
             setMessage('Đăng nhập thành công!');
             
+            // 3. Báo cho App.jsx biết
             onLoginSuccess(); 
 
         } catch (error) {
+            // 4. Xử lý lỗi (sai mật khẩu, BE sập...)
             console.error('Lỗi đăng nhập:', error);
-            setMessage(`Lỗi: Sai email hoặc mật khẩu`);
+            if (error.response) {
+                setMessage(`Lỗi: Sai email hoặc mật khẩu`);
+            } else if (error.request) {
+                // Lỗi này xảy ra khi Backend CỦA BẠN CHƯA CHẠY!
+                setMessage('Lỗi kết nối: Không thể gọi API. Bạn đã chạy server Backend chưa?');
+            } else {
+                setMessage('Có lỗi xảy ra.');
+            }
         }
     };
+    // --- KẾT THÚC HÀM LOGIC ---
 
     return (
-        <div>
-            <h2>Đăng nhập</h2>
+        // (Phần JSX (HTML) của bạn đã CHUẨN, giữ nguyên)
+        <div className="max-w-md mx-auto bg-paper p-8 rounded-lg shadow-lg border border-primary/20">
             
-            {/* --- CẬP NHẬT FORM --- */}
-            {/* 1. Thêm style VÀ autoComplete="on" */}
-            <form onSubmit={handleLogin} style={authFormStyle} autoComplete="on">
+            <h2 className="text-3xl font-serif text-text-main border-b border-primary/10 pb-4 mb-6">
+                Đăng nhập
+            </h2>
+            
+            <form onSubmit={handleLogin} className="flex flex-col gap-4" autoComplete="on">
                 
-                <div style={inputGroupStyle}>
-                    {/* 2. ĐỔI NHÃN (LABEL) */}
-                    <label>Email hoặc Username:</label>
+                <div className="flex flex-col gap-1">
+                    <label className="font-serif">Email hoặc Username:</label>
                     <input
-                        type="email" // Giữ type="email" để trình duyệt gợi ý email
+                        type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        // 3. Thêm "username" để báo trình duyệt đây là ô định danh
                         autoComplete="username" 
+                        className="p-2 border border-primary/50 rounded-md bg-white font-serif"
                     />
                 </div>
                 
-                <div style={inputGroupStyle}>
-                    <label>Password:</label>
+                <div className="flex flex-col gap-1">
+                    <label className="font-serif">Password:</label>
                     <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        // 4. Quan trọng: "current-password"
-                        // Báo trình duyệt dùng mật khẩu ĐÃ LƯU
                         autoComplete="current-password" 
+                        className="p-2 border border-primary/50 rounded-md bg-white font-serif"
                     />
                 </div>
 
-                <button type="submit">Đăng nhập</button>
+                <button 
+                    type="submit"
+                    className="p-2 bg-primary text-paper rounded-lg font-serif text-lg
+                               hover:bg-accent hover:text-text-main transition-colors"
+                >
+                    Đăng nhập
+                </button>
             </form>
-            {/* --------------------- */}
 
-            {message && <p>{message}</p>}
+            {message && <p className="text-red-600 mt-4">{message}</p>}
 
-            <p>
-                Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
+            <p className="mt-6 text-center">
+                Chưa có tài khoản? 
+                <Link to="/register" className="text-primary hover:text-accent font-bold ml-2">
+                    Đăng ký ngay
+                </Link>
             </p>
         </div>
     );
