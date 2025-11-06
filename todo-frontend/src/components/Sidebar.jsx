@@ -36,11 +36,6 @@ function Sidebar() {
                     <span>All Tasks</span>
                 </NavLink>
             </nav>
-
-            {/* (Phần text ở dưới cùng Figma) */}
-            <div className="mt-auto pt-4 text-sm text-primary">
-                <p>Focus on what matters most</p>
-            </div>
         </aside>
     );
 }
