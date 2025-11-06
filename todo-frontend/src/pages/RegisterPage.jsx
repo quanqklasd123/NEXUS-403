@@ -48,56 +48,68 @@ function RegisterPage() {
     };
 
     return (
-        <div>
-            <h2>Đăng Ký Tài Khoản Mới</h2>
-            
-            {/* --- CẬP NHẬT FORM --- */}
-            {/* 1. Thêm style VÀ autoComplete="off" vào thẻ form */}
-            <form onSubmit={handleRegister} style={authFormStyle} autoComplete="off">
+        // 1. "Tờ giấy" (Card) chính, giống hệt LoginPage
+        <div className="max-w-md mx-auto bg-paper p-8 rounded-lg shadow-lg border border-primary/20">
+
+            <h2 className="text-3xl font-serif text-text-main border-b border-primary/10 pb-4 mb-6">
+                Đăng Ký Tài Khoản Mới
+            </h2>
+
+            {/* 2. Style Form (giống hệt LoginPage) */}
+            <form onSubmit={handleRegister} className="flex flex-col gap-4" autoComplete="off">
                 
-                <div style={inputGroupStyle}>
-                    <label>Username:</label>
+                <div className="flex flex-col gap-1">
+                    <label className="font-serif">Username:</label>
                     <input
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
-                        autoComplete="username" // 2. Gợi ý đây là ô username
+                        autoComplete="username" 
+                        className="p-2 border border-primary/50 rounded-md bg-white font-serif"
                     />
                 </div>
                 
-                <div style={inputGroupStyle}>
-                    <label>Email:</label>
+                <div className="flex flex-col gap-1">
+                    <label className="font-serif">Email:</label>
                     <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        autoComplete="email" // 3. Gợi ý đây là ô email
+                        autoComplete="email" 
+                        className="p-2 border border-primary/50 rounded-md bg-white font-serif"
                     />
                 </div>
 
-                <div style={inputGroupStyle}>
-                    <label>Password:</label>
+                <div className="flex flex-col gap-1">
+                    <label className="font-serif">Password:</label>
                     <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        // 4. Quan trọng nhất: "new-password"
-                        // Báo cho trình duyệt đây là form TẠO MẬT KHẨU MỚI
                         autoComplete="new-password" 
+                        className="p-2 border border-primary/50 rounded-md bg-white font-serif"
                     />
                 </div>
 
-                <button type="submit">Đăng Ký</button>
+                <button 
+                    type="submit"
+                    className="p-2 bg-primary text-paper rounded-lg font-serif text-lg
+                               hover:bg-accent hover:text-text-main transition-colors"
+                >
+                    Đăng Ký
+                </button>
             </form>
-            {/* --------------------- */}
 
-            {message && <p>{message}</p>}
+            {message && <p className="text-red-600 mt-4">{message}</p>}
 
-            <p>
-                Đã có tài khoản? <Link to="/login">Đăng nhập tại đây</Link>
+            <p className="mt-6 text-center">
+                Đã có tài khoản? 
+                <Link to="/login" className="text-primary hover:text-accent font-bold ml-2">
+                    Đăng nhập tại đây
+                </Link>
             </p>
         </div>
     );

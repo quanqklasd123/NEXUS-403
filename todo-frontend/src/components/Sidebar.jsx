@@ -1,0 +1,61 @@
+// src/components/Sidebar.jsx
+import React from 'react';
+// 1. Import "NavLink" thay vì "Link"
+import { NavLink } from 'react-router-dom';
+
+// Hàm style (chúng ta sẽ dùng nó để làm nổi bật link "active")
+const getLinkClass = ({ isActive }) => {
+    return `
+        flex items-center p-3 rounded-lg text-lg font-serif
+        transition-colors duration-200
+        ${
+          isActive
+            ? 'bg-primary text-paper' // Style khi "Active" (màu nâu, chữ trắng)
+            : 'text-text-main hover:bg-wood' // Style mặc định
+        }
+    `;
+};
+
+function Sidebar() {
+    return (
+        // 2. Cột Sidebar (rộng 64 = 256px), nền "giấy"
+        <aside className="w-64 bg-paper p-6 shadow-lg">
+
+            {/* Logo (Bạn có thể thay bằng logo) */}
+            <h1 className="text-3xl font-bold font-serif text-text-main mb-8">
+                NEXUS
+            </h1>
+
+            {/* 3. Khu vực điều hướng */}
+            <nav className="flex flex-col gap-4">
+                {/* "NavLink" sẽ tự động thêm class "active"
+                  khi URL khớp với "to"
+                */}
+                <NavLink to="/" className={getLinkClass}>
+                    {/* (Bạn có thể thêm icon ở đây sau) */}
+                    <span>All Tasks</span>
+                </NavLink>
+
+                {/* Đây là các link "giả" (placeholder)
+                    Chúng ta sẽ làm nó hoạt động sau
+                */}
+                <NavLink to="/personal" className={getLinkClass}>
+                    <span>Personal</span>
+                </NavLink>
+                <NavLink to="/work" className={getLinkClass}>
+                    <span>Work</span>
+                </NavLink>
+                <NavLink to="/urgent" className={getLinkClass}>
+                    <span>Urgent</span>
+                </NavLink>
+            </nav>
+
+            {/* (Phần text ở dưới cùng Figma) */}
+            <div className="mt-auto pt-4 text-sm text-primary">
+                <p>Focus on what matters most</p>
+            </div>
+        </aside>
+    );
+}
+
+export default Sidebar;
