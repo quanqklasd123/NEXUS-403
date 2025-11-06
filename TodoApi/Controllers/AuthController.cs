@@ -7,6 +7,8 @@ using System.Security.Claims;
 using System.Text;
 using TodoApi.Dtos;
 using TodoApi.Models;
+using System.Threading.Tasks;
+using Google.Apis.Auth;
 
 namespace TodoApi.Controllers
 {
@@ -96,6 +98,80 @@ namespace TodoApi.Controllers
             return Ok(new { message = "Admin account created successfully!" });
         }
 
+        // --- API MỚI CHO ĐĂNG NHẬP BẰNG GOOGLE ---
+        // POST: api/auth/google-login
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDTO request)
+        {
+            // 1. Lấy Client ID của bạn từ file appsettings.json
+            var googleClientId = _configuration["GoogleAuth:ClientId"];
+            if (string.IsNullOrEmpty(googleClientId))
+            {
+                return StatusCode(500, "Google ClientId chưa được cấu hình.");
+            }
+
+            // 2. Cấu hình để "đọc" token
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new[] { googleClientId }
+            };
+
+            GoogleJsonWebSignature.Payload payload;
+            try
+            {
+                // 3. (QUAN TRỌNG) Xác thực token với máy chủ của Google
+                // Bước này sẽ thất bại nếu token là giả mạo hoặc hết hạn
+                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized($"Xác thực Google thất bại: {ex.Message}");
+            }
+
+            // 4. (THÀNH CÔNG!) Token hợp lệ. Lấy thông tin user
+            var userEmail = payload.Email;
+            
+            // Tạo username hợp lệ từ email (chỉ lấy phần trước @, bỏ ký tự đặc biệt)
+            var userName = userEmail.Split('@')[0]; // Ví dụ: "tvquan2004@gmail.com" -> "tvquan2004"
+
+            // 5. Tìm user trong CSDL của BẠN
+            var user = await _userManager.FindByEmailAsync(userEmail);
+
+            // 6. Nếu user CHƯA TỒN TẠI -> Tự động tạo tài khoản mới
+            if (user == null)
+            {
+                user = new AppUser
+                {
+                    Email = userEmail,
+                    UserName = userName, // Dùng phần đầu email làm username (hợp lệ)
+                    EmailConfirmed = true // Google đã xác thực email này rồi
+                };
+
+                // Tạo user mới (không cần mật khẩu)
+                var result = await _userManager.CreateAsync(user);
+                if (!result.Succeeded)
+                {
+                    return StatusCode(500, $"Lỗi khi tạo user mới: {result.Errors.FirstOrDefault()?.Description}");
+                }
+
+                // Tự động gán vai trò "User"
+                await _userManager.AddToRoleAsync(user, "User");
+            }
+
+            // 7. (ĐÃ TỒN TẠI hoặc VỪA TẠO) -> Tạo JWT Token của BẠN
+            // (Đây chính là hàm 'GenerateJwtToken' mà bạn đã viết)
+            var ourJwtToken = await GenerateJwtToken(user);
+
+            // 8. Trả về Token của BẠN cho React
+            return Ok(new AuthResponseDTO
+            {
+                UserId = user.Id,
+                Email = user.Email,
+                Token = ourJwtToken
+            });
+        }
+
+
         // POST: api/auth/login
         [HttpPost]
         [Route("login")]
@@ -144,7 +220,7 @@ namespace TodoApi.Controllers
             // Bắt đầu với các claims cũ
             var authClaims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id), 
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
@@ -161,7 +237,7 @@ namespace TodoApi.Controllers
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
-                expires: DateTime.Now.AddHours(24), 
+                expires: DateTime.Now.AddHours(24),
                 claims: authClaims, // <-- Dùng danh sách claims đã cập nhật
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
                 );

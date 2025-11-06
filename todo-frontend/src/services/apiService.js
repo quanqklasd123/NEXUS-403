@@ -45,6 +45,11 @@ const apiService = {
         return apiClient.post('/auth/register', { username, email, password });
     },
 
+    googleLogin: (googleToken) => {
+        // BE của chúng ta cần { "idToken": "..." }
+        return apiClient.post('/auth/google-login', { idToken: googleToken });
+    },
+
     // --- TodoLists ---
     getTodoLists: () => {
         return apiClient.get('/todolists');
