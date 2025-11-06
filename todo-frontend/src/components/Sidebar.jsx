@@ -35,19 +35,6 @@ function Sidebar() {
                     {/* (Bạn có thể thêm icon ở đây sau) */}
                     <span>All Tasks</span>
                 </NavLink>
-
-                {/* Đây là các link "giả" (placeholder)
-                    Chúng ta sẽ làm nó hoạt động sau
-                */}
-                <NavLink to="/personal" className={getLinkClass}>
-                    <span>Personal</span>
-                </NavLink>
-                <NavLink to="/work" className={getLinkClass}>
-                    <span>Work</span>
-                </NavLink>
-                <NavLink to="/urgent" className={getLinkClass}>
-                    <span>Urgent</span>
-                </NavLink>
             </nav>
 
             {/* (Phần text ở dưới cùng Figma) */}

@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import apiService from '../services/apiService'; 
 import useDebounce from '../hooks/useDebounce';
 import PageHeader from '../components/PageHeader';
-
+import Stats from '../components/Stats';
 // CSS cho item
 const itemStyle = {
     display: 'flex',
@@ -261,6 +261,8 @@ function ListDetailPage() {
 
             {/* 2. Tiêu đề (Tên của List, ví dụ "học tập") */}
             <PageHeader title={list.name} />
+
+            <Stats items={list.items} />
 
             {/* (Chúng ta sẽ thêm "Stats" và "Filters" của Figma vào đây sau) */}
 
