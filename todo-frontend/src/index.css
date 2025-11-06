@@ -4,12 +4,14 @@
 
 /* Định nghĩa custom theme cho Tailwind v4 */
 @theme {
+  /* Colors */
   --color-wood: #f3e5d3;
   --color-paper: #fdfdf8;
   --color-text-main: #5D4037;
   --color-primary: #8D6E63;
   --color-accent: #FFB300;
   
+  /* Font families */
   --font-family-serif: "Noto Serif", Georgia, serif;
   --font-family-sans: Inter, system-ui, sans-serif;
 }
@@ -19,4 +21,47 @@ body {
   background-color: var(--color-wood);
   color: var(--color-text-main);
   font-family: var(--font-family-serif);
+}
+
+/* Tạo custom utility classes */
+@layer utilities {
+  .bg-wood {
+    background-color: var(--color-wood);
+  }
+  
+  .bg-paper {
+    background-color: var(--color-paper);
+  }
+  
+  .text-text-main {
+    color: var(--color-text-main);
+  }
+  
+  .text-primary {
+    color: var(--color-primary);
+  }
+  
+  .text-accent {
+    color: var(--color-accent);
+  }
+  
+  .border-primary {
+    border-color: var(--color-primary);
+  }
+  
+  .border-primary\/10 {
+    border-color: rgb(141 110 99 / 0.1);
+  }
+  
+  .border-primary\/20 {
+    border-color: rgb(141 110 99 / 0.2);
+  }
+  
+  .border-primary\/50 {
+    border-color: rgb(141 110 99 / 0.5);
+  }
+  
+  .font-serif {
+    font-family: var(--font-family-serif);
+  }
 }

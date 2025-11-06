@@ -25,4 +25,10 @@ namespace TodoApi.Dtos
         [Required]
         public string Password { get; set; }
     }
+
+    public class GoogleLoginRequestDTO
+    {
+        [Required]
+        public string IdToken { get; set; } // 'IdToken' là tên chuẩn cho token của Google
+    }
 }
