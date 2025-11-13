@@ -1,39 +1,62 @@
 // src/components/Sidebar.jsx
 import React from 'react';
-// 1. Import "NavLink" thay vì "Link"
 import { NavLink } from 'react-router-dom';
+import { 
+    FiHome,       
+    FiCheckSquare,
+    FiTrello,     
+    FiCalendar,   
+} from 'react-icons/fi';
 
-// Hàm style (chúng ta sẽ dùng nó để làm nổi bật link "active")
 const getLinkClass = ({ isActive }) => {
-    return `
-        flex items-center p-3 rounded-lg text-lg font-serif
-        transition-colors duration-200
-        ${
-          isActive
-            ? 'bg-primary text-paper' // Style khi "Active" (màu nâu, chữ trắng)
-            : 'text-text-main hover:bg-wood' // Style mặc định
-        }
-    `;
+  return `
+    flex items-center p-3 mx-3 my-1 rounded-lg
+    text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800
+    transition-colors duration-200
+    ${
+      isActive
+        ? 'bg-sage-100 text-sage-700 font-medium' // Style khi "Active"
+        : 'font-normal' // Style mặc định
+    }
+  `;
 };
 
 function Sidebar() {
     return (
-        // 2. Cột Sidebar (rộng 64 = 256px), nền "giấy"
-        <aside className="w-64 bg-paper p-6 shadow-lg">
+        <aside className="w-72 bg-white border-r border-neutral-200 h-screen fixed top-0 left-0 z-40 flex flex-col">
+            
+            {/* Logo */}
+            <div className="p-6">
+                <div className="flex items-center space-x-3 mb-8">
+                    <div className="w-10 h-10 rounded-xl bg-sage-400 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">N</span>
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-semibold text-neutral-800">NEXUS</h1>
+                        <p className="text-sm text-neutral-500">Productivity OS</p>
+                    </div>
+                </div>
+            </div>
 
-            {/* Logo (Bạn có thể thay bằng logo) */}
-            <h1 className="text-3xl font-bold font-serif text-text-main mb-8">
-                NEXUS
-            </h1>
-
-            {/* 3. Khu vực điều hướng */}
-            <nav className="flex flex-col gap-4">
-                {/* "NavLink" sẽ tự động thêm class "active"
-                  khi URL khớp với "to"
-                */}
+            {/* Điều hướng */}
+            <nav className="flex-1">
                 <NavLink to="/" className={getLinkClass}>
-                    {/* (Bạn có thể thêm icon ở đây sau) */}
-                    <span>All Tasks</span>
+                    <FiHome className="w-5 h-5 mr-3" />
+                    <span>Dashboard</span>
+                </NavLink>
+
+                <NavLink to="/tasks" className={getLinkClass}>
+                    <FiCheckSquare className="w-5 h-5 mr-3" />
+                    <span>My Tasks</span>
+                </NavLink>
+
+                <NavLink to="/kanban" className={getLinkClass}>
+                    <FiTrello className="w-5 h-5 mr-3" />
+                    <span>Kanban</span>
+                </NavLink>
+                <NavLink to="/calendar" className={getLinkClass}>
+                    <FiCalendar className="w-5 h-5 mr-3" />
+                    <span>Calendar</span>
                 </NavLink>
             </nav>
         </aside>
