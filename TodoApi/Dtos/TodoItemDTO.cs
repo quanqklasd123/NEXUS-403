@@ -6,9 +6,10 @@ namespace TodoApi.Dtos
     {
         public long Id { get; set; } // <-- Có Id
         public string? Title { get; set; }
-        public bool IsDone { get; set; }
+        public int Status { get; set;}
         public int Priority { get; set; }
         public DateTime? DueDate { get; set; }
         public long TodoListId { get; set; }
+        public string? TodoListName { get; set; }
     }
 }

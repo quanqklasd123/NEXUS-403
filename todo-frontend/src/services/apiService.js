@@ -95,7 +95,16 @@ const apiService = {
     // --- Dashboard ---
     getDashboardStats: () => {
         return apiClient.get('/dashboard/stats');
-    }
+    },
+
+    // --- THÊM HÀM MỚI CHO KANBAN ---
+    updateItemStatus: (id, newStatus) => {
+        return apiClient.patch(`/todoitems/${id}/status`, { status: newStatus });
+    },
+
+    getAllMyItems: () => {
+        return apiClient.get('/todoitems/my-all');
+    },
 
 };
 

@@ -10,7 +10,7 @@ namespace TodoApi.Dtos
         [StringLength(200)]
         public string? Title { get; set; }
 
-        public bool IsDone { get; set; } = false;
+        public int Status { get; set; } = 0;
 
         [Range(0, 5)]
         public int Priority { get; set; } = 1;
