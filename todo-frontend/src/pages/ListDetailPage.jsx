@@ -1,72 +1,62 @@
-// src/ListDetailPage.jsx
+// src/pages/ListDetailPage.jsx
 import React, { useState, useEffect } from 'react'; 
 import { useParams, Link } from 'react-router-dom';
 import apiService from '../services/apiService'; 
-import useDebounce from '../hooks/useDebounce';
-import PageHeader from '../components/PageHeader';
-import Stats from '../components/Stats';
-// CSS cho item
-const itemStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px', 
-    margin: '5px 0'
-};
-
-// CSS cho form
-const formStyle = {
-    display: 'flex',
-    gap: '10px',
-    margin: '20px 0',
-    alignItems: 'center'
-};
+import useDebounce from '../hooks/useDebounce'; 
+import PageHeader from '../components/PageHeader'; // Import Header (Mới)
+import Stats from '../components/Stats';       // Import Stats (Mới)
+// Import icon (chúng ta sẽ dùng cho nút Sửa/Xóa)
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 // --- HÀM HELPER (ĐỂ HIỂN THỊ) ---
-// Định nghĩa Priority (giống BE)
+// Định nghĩa Priority (lấy từ design-system.html - .badge-*)
 const priorityMap = {
-    0: 'Thấp',
-    1: 'Trung bình',
-    2: 'Cao'
+    0: { text: 'Low', class: 'bg-info/20 text-info' }, // Dùng màu Info
+    1: { text: 'Medium', class: 'bg-warning/20 text-warning' }, // Dùng màu Warning
+    2: { text: 'High', class: 'bg-error/20 text-error' }  // Dùng màu Error
 };
 // Format ngày
 const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN'); // Format kiểu VN
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
 };
 // ----------------------------------
 
+
 function ListDetailPage() {
+    // (TOÀN BỘ LOGIC STATE, USEEFFECT, HANDLERS CỦA BẠN GIỮ NGUYÊN)
+    // ...
+    // ... (useState, useDebounce, useEffect fetchListDetails, useEffect fetchSuggestion)
+    // ... (handleCreateItem, handleToggleDone, handleDeleteItem)
+    // ... (handleEditClick, handleCancelEdit, handleEditFormChange, handleSaveEdit)
+    // ... (Tất cả logic code C# của bạn ở trên)
+    // ...
     const { id } = useParams(); 
     const [list, setList] = useState(null); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    // --- 1. THÊM STATE CHO FORM ---
     const [newItemTitle, setNewItemTitle] = useState('');
-    // State cho Priority (mặc định là 1 'Trung bình')
     const [newItemPriority, setNewItemPriority] = useState(1);
-    // State cho DueDate (mặc định là rỗng)
     const [newItemDueDate, setNewItemDueDate] = useState('');
-
-    // (State của form edit)
     const [editingItemId, setEditingItemId] = useState(null); 
     const [editFormData, setEditFormData] = useState({ title: '', priority: 1, dueDate: '' });
-
-    // --- 2. SỬ DỤNG DEBOUNCE ---
-    // "Theo dõi" state 'newItemTitle'
-    // Chỉ cập nhật 'debouncedTitle' sau khi người dùng ngừng gõ 700ms
     const debouncedTitle = useDebounce(newItemTitle, 700);
-    // -----------------------------
-
-    // useEffect (tải dữ liệu) giữ nguyên
+    
+    // useEffect (tải chi tiết list)
     useEffect(() => {
         const fetchListDetails = async () => {
+            if (!id) return;
             try {
                 setLoading(true); 
                 const response = await apiService.getTodoListById(id);
                 setList(response.data); 
+                setError(''); 
             } catch (err) {
+                console.error('Lỗi khi lấy chi tiết list:', err);
                 setError('Không thể tải dữ liệu cho list này.');
                 if (err.response && err.response.status === 401) window.location.href = '/login'; 
             } finally {
@@ -76,164 +66,43 @@ function ListDetailPage() {
         fetchListDetails();
     }, [id]); 
 
-    // --- 3. useEffect MỚI ĐỂ GỌI AI ---
-    // "Theo dõi" giá trị ĐÃ DEBOUNCE
+    // useEffect (gọi AI)
     useEffect(() => {
-        // Chỉ chạy nếu:
-        // 1. Tên công việc có nội dung (dài hơn 3 ký tự)
-        // 2. Chúng ta *không* đang ở chế độ Sửa (Edit)
         if (debouncedTitle.length > 3 && !editingItemId) {
-            
-            // Định nghĩa hàm gọi AI
             const fetchSuggestion = async () => {
-                console.log(`AI: Đang dự đoán cho: "${debouncedTitle}"`);
                 try {
                     const response = await apiService.suggestPriority(debouncedTitle);
-                    
-                    // Lấy kết quả (ví dụ: 2)
-                    const suggestedPriority = response.data.priority;
-                    console.log(`AI: Gợi ý: ${suggestedPriority}`);
-
-                    // Tự động cập nhật ô <select>
-                    setNewItemPriority(suggestedPriority);
-                    
-                } catch (err) {
-                    console.error("Lỗi gọi AI:", err);
-                }
+                    setNewItemPriority(response.data.priority);
+                } catch (err) { console.error("Lỗi gọi AI:", err); }
             };
-            
-            // Chạy hàm
             fetchSuggestion();
         }
-    }, [debouncedTitle, editingItemId]); // Chạy lại khi 2 giá trị này thay đổi
+    }, [debouncedTitle, editingItemId]);
 
-    // --- 2. CẬP NHẬT HÀM `handleCreateItem` ---
+    // (Các hàm Handlers)
     const handleCreateItem = async (e) => {
         e.preventDefault(); 
-        if (!newItemTitle.trim()) {
-            alert('Tên công việc không được để trống');
-            return;
-        }
-
+        if (!newItemTitle.trim()) return;
         try {
-            // Chuẩn bị DTO để gửi đi (với 3 trường)
-            const newItemData = {
-                title: newItemTitle,
+            const newItemData = { 
+                title: newItemTitle, 
                 todoListId: parseInt(id),
-                priority: parseInt(newItemPriority), // Gửi priority (dưới dạng số)
-                // Gửi dueDate (nếu rỗng thì gửi null, ngược lại gửi giá trị)
+                priority: parseInt(newItemPriority),
                 dueDate: newItemDueDate ? newItemDueDate : null 
             };
-            
-            // BE của chúng ta (nhờ DTO) sẽ tự điền IsDone=false
-
             const response = await apiService.createTodoItem(newItemData);
-
-            // Cập nhật state (quan trọng)
-            setList(prevList => ({
-                ...prevList, 
-                items: [...prevList.items, response.data] 
-            }));
-
-            // Reset form
-            setNewItemTitle('');
-            setNewItemPriority(1);
-            setNewItemDueDate('');
-
-        } catch (error) {
-            console.error('Lỗi khi tạo item:', error.response?.data);
-            alert('Không thể tạo công việc mới. Hãy thử lại.');
-        }
+            setList(prevList => ({ ...prevList, items: [...prevList.items, response.data] }));
+            setNewItemTitle(''); setNewItemPriority(1); setNewItemDueDate('');
+        } catch (error) { alert('Không thể tạo công việc mới.'); }
     };
-
-    // 1. Khi nhấn nút "Sửa"
-    const handleEditClick = (item) => {
-        setEditingItemId(item.id); // Bật chế độ sửa cho item này
-
-        // Quan trọng: Tải dữ liệu hiện tại của item vào state của form
-        // Cần format lại Date cho đúng chuẩn <input type="date"> (yyyy-MM-dd)
-        const formattedDueDate = item.dueDate 
-            ? new Date(item.dueDate).toISOString().split('T')[0] 
-            : '';
-
-        setEditFormData({
-            title: item.title,
-            priority: item.priority,
-            dueDate: formattedDueDate
-        });
-    };
-
-    // 2. Khi nhấn nút "Hủy"
-    const handleCancelEdit = () => {
-        setEditingItemId(null); // Tắt chế độ sửa
-        setEditFormData({ title: '', priority: 1, dueDate: '' }); // Xóa form
-    };
-
-    // 3. Khi gõ vào form sửa (giống form tạo)
-    const handleEditFormChange = (e) => {
-        const { name, value } = e.target;
-        setEditFormData(prevData => ({
-            ...prevData,
-            [name]: value
-        }));
-    };
-
-    // 4. Khi nhấn nút "Lưu"
-    const handleSaveEdit = async (e, itemToSave) => {
-        e.preventDefault();
-
-        try {
-            // Chuẩn bị DTO đầy đủ để gửi lên (giống hàm toggle)
-            const updateDto = {
-                // Lấy các giá trị cũ
-                ...itemToSave,
-                // Ghi đè các giá trị mới từ form
-                title: editFormData.title,
-                priority: parseInt(editFormData.priority),
-                dueDate: editFormData.dueDate ? editFormData.dueDate : null
-            };
-
-            // Gọi API Update
-            // (BE sẽ trả về 204 NoContent)
-            await apiService.updateTodoItem(itemToSave.id, updateDto);
-
-            // Cập nhật state (giao diện)
-            setList(prevList => ({
-                ...prevList,
-                items: prevList.items.map(item =>
-                    item.id === itemToSave.id
-                        ? { ...item, ...updateDto } // Cập nhật item trong danh sách
-                        : item
-                )
-            }));
-
-            // Tắt chế độ sửa
-            handleCancelEdit(); 
-
-        } catch (error) {
-            console.error('Lỗi khi lưu cập nhật:', error);
-            alert('Không thể lưu thay đổi.');
-        }
-    };
-    // ----------------------------------------
-
-    // (Các hàm `handleToggleDone` và `handleDeleteItem` giữ nguyên y hệt)
     const handleToggleDone = async (itemToToggle) => {
         try {
-            const updateDto = {
-                title: itemToToggle.title,
-                isDone: !itemToToggle.isDone, 
-                priority: itemToToggle.priority, // Gửi lại giá trị cũ
-                dueDate: itemToToggle.dueDate,   // Gửi lại giá trị cũ
-                todoListId: parseInt(id)
-            };
+            const updateDto = { ...itemToToggle, isDone: !itemToToggle.isDone };
             await apiService.updateTodoItem(itemToToggle.id, updateDto);
             setList(prevList => ({
                 ...prevList,
                 items: prevList.items.map(item =>
-                    item.id === itemToToggle.id 
-                        ? { ...item, isDone: !item.isDone } 
-                        : item 
+                    item.id === itemToToggle.id ? { ...item, isDone: !item.isDone } : item
                 )
             }));
         } catch (error) { alert('Không thể cập nhật trạng thái.'); }
@@ -248,40 +117,74 @@ function ListDetailPage() {
             }));
         } catch (error) { alert('Không thể xóa công việc này.'); }
     };
-    // (Kết thúc các hàm)
+    const handleEditClick = (item) => {
+        setEditingItemId(item.id); 
+        const formattedDueDate = item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '';
+        setEditFormData({ title: item.title, priority: item.priority, dueDate: formattedDueDate });
+    };
+    const handleCancelEdit = () => { setEditingItemId(null); };
+    const handleEditFormChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData(prevData => ({ ...prevData, [name]: value }));
+    };
+    const handleSaveEdit = async (e, itemToSave) => {
+        e.preventDefault();
+        try {
+            const updateDto = {
+                ...itemToSave,
+                title: editFormData.title,
+                priority: parseInt(editFormData.priority),
+                dueDate: editFormData.dueDate ? editFormData.dueDate : null
+            };
+            await apiService.updateTodoItem(itemToSave.id, updateDto);
+            setList(prevList => ({
+                ...prevList,
+                items: prevList.items.map(item =>
+                    item.id === itemToSave.id ? updateDto : item
+                )
+            }));
+            handleCancelEdit(); 
+        } catch (error) { alert('Không thể lưu thay đổi.'); }
+    };
+    // (Kết thúc Logic)
+
 
     if (loading) return <p>Đang tải chi tiết...</p>;
     if (error) return <p>{error}</p>;
-    if (!list) return <p>Không tìm thấy danh sách.</p>;
+    // (Phải kiểm tra `list` trước khi dùng `list.name` hay `list.items`)
+    if (!list) return <p>Không tìm thấy danh sách.</p>; 
 
-    // Cập nhật phần JSX (HTML)
+    // --- TÁI CẤU TRÚC TOÀN BỘ JSX BẰNG THEME MỚI (SAGE) ---
     return (
-        // 1. "Tờ giấy" (Card) chính
-        <div className="bg-paper p-6 md:p-8 rounded-lg shadow-lg border border-primary/20">
+        // 1. "Tờ giấy" (Card) chính, style lấy từ .card trong Figma
+        // Tái sử dụng style của TodoList: nền trong suốt, p-0
+        <div className="bg-transparent p-0">
 
-            {/* 2. Tiêu đề (Tên của List, ví dụ "học tập") */}
-            <PageHeader title={list.name} />
+            {/* 2. Header (Tiêu đề, Tìm kiếm, Avatar) */}
+            {/* Chúng ta sẽ kích hoạt Tìm kiếm ở đây sau */}
+            <PageHeader title={list.name} /> 
 
+            {/* 3. Component "Stats" (Thống kê) */}
             <Stats items={list.items} />
 
-            {/* (Chúng ta sẽ thêm "Stats" và "Filters" của Figma vào đây sau) */}
-
-            {/* 3. Form tạo Item mới (Style giống Figma) */}
+            {/* 4. Form tạo Item mới (Style giống Figma) */}
+            {/* Đây là .task-item.editing từ today.html */}
             <form 
                 onSubmit={handleCreateItem} 
-                className="flex flex-wrap items-center gap-4 p-4 bg-wood/40 rounded-lg mb-6"
+                className="flex flex-wrap items-center gap-4 p-4 bg-white rounded-lg mb-6 shadow border border-sage-300 ring-3 ring-sage-400/10"
             >
                 <input
                     type="text"
                     placeholder="Thêm công việc mới..."
                     value={newItemTitle}
                     onChange={(e) => setNewItemTitle(e.target.value)}
-                    className="flex-1 min-w-[200px] p-2 border border-primary/50 rounded-md bg-white font-serif"
+                    // style "task-input" từ today.html
+                    className="flex-1 min-w-[200px] p-2 bg-transparent font-medium text-lg text-neutral-800 outline-none"
                 />
                 <select 
                     value={newItemPriority}
                     onChange={(e) => setNewItemPriority(parseInt(e.target.value))}
-                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                    className="p-2 border border-neutral-200 rounded-lg bg-white font-sans text-sm"
                 >
                     <option value="0">Thấp</option>
                     <option value="1">Trung bình</option>
@@ -291,18 +194,18 @@ function ListDetailPage() {
                     type="date"
                     value={newItemDueDate}
                     onChange={(e) => setNewItemDueDate(e.target.value)}
-                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                    className="p-2 border border-neutral-200 rounded-lg bg-white font-sans text-sm"
                 />
                 <button 
                     type="submit"
-                    className="p-2 bg-primary text-paper rounded-lg font-serif
-                               hover:bg-accent hover:text-text-main transition-colors"
+                    // style .btn-primary từ Figma
+                    className="px-5 py-2 bg-sage-400 text-white rounded-xl font-medium hover:bg-sage-500 transition-colors"
                 >
                     Thêm
                 </button>
             </form>
 
-            {/* 4. Danh sách các Items */}
+            {/* 5. Danh sách các Items (style .task-item từ today.html) */}
             <div className="flex flex-col gap-3">
                 {list.items.length > 0 ? (
                     list.items.map(item => (
@@ -310,19 +213,20 @@ function ListDetailPage() {
                         editingItemId === item.id ? (
                             
                             // --- Chế độ SỬA (Form Edit) ---
+                            // (Style giống form tạo)
                             <form 
                                 key={item.id} 
                                 onSubmit={(e) => handleSaveEdit(e, item)} 
-                                className="flex flex-wrap items-center gap-2 p-3 bg-accent/20 rounded-lg"
+                                className="flex flex-wrap items-center gap-2 p-3 bg-sage-50 rounded-lg border border-sage-300"
                             >
                                 <input
                                     type="text" name="title"
                                     value={editFormData.title} onChange={handleEditFormChange}
-                                    className="flex-1 min-w-[150px] p-2 border border-primary/50 rounded-md bg-white font-serif"
+                                    className="flex-1 min-w-[150px] p-2 border border-neutral-200 rounded-lg bg-white font-sans"
                                 />
                                 <select
                                     name="priority" value={editFormData.priority} onChange={handleEditFormChange}
-                                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                                    className="p-2 border border-neutral-200 rounded-lg bg-white font-sans text-sm"
                                 >
                                     <option value="0">Thấp</option>
                                     <option value="1">Trung bình</option>
@@ -331,62 +235,81 @@ function ListDetailPage() {
                                 <input
                                     type="date" name="dueDate"
                                     value={editFormData.dueDate} onChange={handleEditFormChange}
-                                    className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                                    className="p-2 border border-neutral-200 rounded-lg bg-white font-sans text-sm"
                                 />
-                                <button type="submit" className="p-2 bg-green-600 text-white rounded font-serif">Lưu</button>
-                                <button type="button" onClick={handleCancelEdit} className="p-2 bg-gray-500 text-white rounded font-serif">Hủy</button>
+                                <button type="submit" className="p-2 bg-success text-white rounded font-sans text-sm">Lưu</button>
+                                <button type="button" onClick={handleCancelEdit} className="p-2 bg-neutral-500 text-white rounded font-sans text-sm">Hủy</button>
                             </form>
 
                         ) : (
                             
                             // --- Chế độ XEM (Card Item bình thường) ---
+                            // (Style .task-item từ today.html)
                             <div 
                                 key={item.id} 
-                                className="flex flex-wrap items-center gap-4 p-3 bg-white rounded-lg shadow-sm border border-primary/10"
+                                className={`flex items-start gap-4 p-4 bg-white rounded-lg shadow-sm border border-neutral-200 
+                                            hover:border-sage-300 hover:shadow-md transition-all
+                                            ${item.isDone ? 'opacity-60' : ''}`}
                             >
                                 <input
                                     type="checkbox"
                                     checked={item.isDone}
                                     onChange={() => handleToggleDone(item)}
-                                    className="w-5 h-5"
+                                    // style .checkbox từ design-system.html
+                                    className="w-5 h-5 rounded border-2 border-neutral-300 text-sage-400 focus:ring-sage-400 mt-0.5"
                                 />
-                                <span className={`font-serif ${item.isDone ? 'line-through text-gray-400' : 'text-text-main'}`}>
-                                    {item.title} 
-                                </span>
-                                <span className="text-sm text-primary font-serif bg-wood/50 px-2 py-1 rounded">
-                                    {priorityMap[item.priority] || 'Trung bình'}
-                                </span>
-                                <span className="text-sm text-gray-500 font-serif">
-                                    {formatDate(item.dueDate)}
-                                </span>
+                                
+                                <div className="flex-1">
+                                    <span className={`font-medium ${item.isDone ? 'line-through text-neutral-400' : 'text-neutral-800'}`}>
+                                        {item.title} 
+                                    </span>
+                                    {/* (Hiển thị các "badge" (huy hiệu) giống Figma) */}
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span 
+                                            className={`text-xs font-medium px-2 py-0.5 rounded-md 
+                                                        ${priorityMap[item.priority]?.class || 'bg-neutral-200 text-neutral-600'}`}
+                                        >
+                                            {priorityMap[item.priority]?.text || '---'}
+                                        </span>
+                                        {item.dueDate && (
+                                            <span className="text-xs text-neutral-500">
+                                                Due: {formatDate(item.dueDate)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                                 
                                 {/* Nút điều khiển ở cuối */}
                                 <div className="ml-auto flex gap-2">
                                     <button 
                                         onClick={() => handleEditClick(item)}
-                                        className="p-1 text-sm text-primary hover:text-accent font-serif"
+                                        className="p-1 text-neutral-500 hover:text-sage-600"
                                     >
-                                        Sửa
+                                        <FiEdit2 className="w-4 h-4" />
                                     </button>
                                     <button 
                                         onClick={() => handleDeleteItem(item.id)}
-                                        className="p-1 text-sm text-red-600 hover:text-red-800 font-serif"
+                                        className="p-1 text-neutral-500 hover:text-error"
                                     >
-                                        Xóa
+                                        <FiTrash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
                         )
                     ))
                 ) : (
-                    <p className="text-center text-primary/70 italic">Danh sách này chưa có công việc nào.</p>
+                    <div className="text-center p-10 bg-white rounded-lg border border-neutral-200">
+                        <p className="text-neutral-500">Danh sách này chưa có công việc nào.</p>
+                    </div>
                 )}
             </div>
-
-            <br />
-            <Link to="/" className="text-primary hover:text-accent font-serif mt-6">
-                &larr; Quay về Danh sách
-            </Link>
+            
+            {/* (Nút Quay về) */}
+            <div className="mt-8">
+                <Link to="/tasks" className="text-sage-600 hover:text-sage-800 font-medium">
+                    &larr; Quay về tất cả danh sách
+                </Link>
+            </div>
         </div>
     );
 }

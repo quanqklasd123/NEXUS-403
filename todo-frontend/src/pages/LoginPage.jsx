@@ -1,40 +1,30 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import apiService from '../services/apiService';
-import { Link } from 'react-router-dom';
+import apiService from '../services/apiService'; 
+import { Link } from 'react-router-dom'; 
 import { GoogleLogin } from '@react-oauth/google';
 
 function LoginPage({ onLoginSuccess }) {
+    // (TOÀN BỘ LOGIC STATE VÀ HÀM CỦA BẠN GIỮ NGUYÊN)
+    // ...
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
 
-    // --- ĐÂY LÀ HÀM LOGIC BỊ THIẾU ---
     const handleLogin = async (e) => {
-        e.preventDefault(); // Ngăn trang load lại
+        e.preventDefault(); 
         setMessage('Đang đăng nhập...');
-
         try {
-            // 1. Gọi API (dùng email và password trong state)
             const response = await apiService.login(email, password);
-
-            console.log('Đăng nhập thành công:', response.data);
             const { token } = response.data;
-
-            // 2. Lưu token
             localStorage.setItem('authToken', token);
             setMessage('Đăng nhập thành công!');
-
-            // 3. Báo cho App.jsx biết
-            onLoginSuccess();
-
+            onLoginSuccess(); 
         } catch (error) {
-            // 4. Xử lý lỗi (sai mật khẩu, BE sập...)
             console.error('Lỗi đăng nhập:', error);
             if (error.response) {
                 setMessage(`Lỗi: Sai email hoặc mật khẩu`);
             } else if (error.request) {
-                // Lỗi này xảy ra khi Backend CỦA BẠN CHƯA CHẠY!
                 setMessage('Lỗi kết nối: Không thể gọi API. Bạn đã chạy server Backend chưa?');
             } else {
                 setMessage('Có lỗi xảy ra.');
@@ -42,29 +32,15 @@ function LoginPage({ onLoginSuccess }) {
         }
     };
 
-    // --- 2. THÊM HÀM XỬ LÝ KHI GOOGLE THÀNH CÔNG ---
     const handleGoogleSuccess = async (credentialResponse) => {
-        console.log("Google response:", credentialResponse);
         setMessage('Đang xác thực với Google...');
-
-        // "credential" là token mà Google trả về
-        const googleToken = credentialResponse.credential;
-
+        const googleToken = credentialResponse.credential; 
         try {
-            // 1. Gửi token của Google đến BE của BẠN
             const response = await apiService.googleLogin(googleToken);
-
-            // 2. BE trả về JWT Token của BẠN
             const { token } = response.data;
-            console.log("Nhận JWT Token của NEXUS:", token);
-
-            // 3. Lưu token của BẠN và đăng nhập
             localStorage.setItem('authToken', token);
             setMessage('Đăng nhập bằng Google thành công!');
-
-            // 4. Báo cho App.jsx biết
             onLoginSuccess();
-
         } catch (error) {
             console.error('Lỗi xác thực Google với BE:', error);
             setMessage('Xác thực Google thất bại. Vui lòng thử lại.');
@@ -75,70 +51,75 @@ function LoginPage({ onLoginSuccess }) {
         console.error('Đăng nhập Google thất bại');
         setMessage('Không thể đăng nhập với Google.');
     };
-    // --- KẾT THÚC HÀM LOGIC ---
+    // (Kết thúc Logic)
 
+    // --- TÁI CẤU TRÚC TOÀN BỘ JSX BẰNG THEME MỚI (SAGE/PEACH) ---
     return (
-        // (Phần JSX (HTML) của bạn đã CHUẨN, giữ nguyên)
-        <div className="max-w-md mx-auto bg-paper p-8 rounded-lg shadow-lg border border-primary/20">
+        // 1. "Card" (thẻ) chính, style lấy từ .card trong Figma
+        <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg border border-neutral-200">
 
-            <h2 className="text-3xl font-serif text-text-main border-b border-primary/10 pb-4 mb-6">
+            <h2 className="text-3xl font-medium text-neutral-800 border-b border-neutral-200 pb-4 mb-6">
                 Đăng nhập
             </h2>
-
-
+            
+            {/* 2. Form (dùng font-sans, màu sage) */}
             <form onSubmit={handleLogin} className="flex flex-col gap-4" autoComplete="on">
-
+                
                 <div className="flex flex-col gap-1">
-                    <label className="font-serif">Email hoặc Username:</label>
+                    <label className="font-sans text-sm font-medium text-neutral-700">Email hoặc Username:</label>
                     <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        autoComplete="username"
-                        className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                        autoComplete="username" 
+                        // Style input mới (từ design-system.html)
+                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 focus:border-sage-400 focus:ring-3 focus:ring-sage-400/10 outline-none transition-colors"
                     />
                 </div>
-
+                
                 <div className="flex flex-col gap-1">
-                    <label className="font-serif">Password:</label>
+                    <label className="font-sans text-sm font-medium text-neutral-700">Password:</label>
                     <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        autoComplete="current-password"
-                        className="p-2 border border-primary/50 rounded-md bg-white font-serif"
+                        autoComplete="current-password" 
+                        className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 focus:border-sage-400 focus:ring-3 focus:ring-sage-400/10 outline-none transition-colors"
                     />
                 </div>
 
-                <button
+                {/* 3. Nút bấm (style .btn-primary từ Figma) */}
+                <button 
                     type="submit"
-                    className="p-2 bg-primary text-paper rounded-lg font-serif text-lg
-                               hover:bg-accent hover:text-text-main transition-colors"
+                    className="w-full p-3 bg-sage-400 text-white rounded-xl font-medium hover:bg-sage-500 transition-colors shadow-lg shadow-sage-400/30 hover:shadow-xl hover:-translate-y-0.5"
                 >
                     Đăng nhập
                 </button>
             </form>
 
-            {message && <p className="text-red-600 mt-4">{message}</p>}
+            {message && <p className="text-error mt-4">{message}</p>}
+
+            {/* Dấu gạch "hoặc" */}
             <div className="my-6 flex items-center">
-                <div className="flex-grow border-t border-primary/20"></div>
-                <span className="mx-4 text-primary/80 font-serif">hoặc</span>
-                <div className="flex-grow border-t border-primary/20"></div>
+                <div className="flex-grow border-t border-neutral-200"></div>
+                <span className="mx-4 text-xs text-neutral-500">HOẶC</span>
+                <div className="flex-grow border-t border-neutral-200"></div>
             </div>
             
+            {/* 4. Nút Google (style cho nó nằm giữa) */}
             <div className="flex justify-center">
                 <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}
-                    useOneTap // (Tùy chọn: Tự động hiện popup nếu đã đăng nhập)
+                    useOneTap
                 />
             </div>
 
-            <p className="mt-6 text-center">
-                Chưa có tài khoản?
-                <Link to="/register" className="text-primary hover:text-accent font-bold ml-2">
+            <p className="mt-6 text-center text-sm">
+                Chưa có tài khoản? 
+                <Link to="/register" className="text-sage-700 hover:text-sage-500 font-medium ml-1">
                     Đăng ký ngay
                 </Link>
             </p>

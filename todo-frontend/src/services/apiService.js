@@ -85,6 +85,16 @@ const apiService = {
     suggestPriority: (title) => {
         // BE của chúng ta cần { "title": "..." }
         return apiClient.post('/ai/suggest-priority', { title });
+    },
+
+    // --- Dashboard ---
+    getDashboardStats: () => {
+        return apiClient.get('/dashboard/stats');
+    },
+
+    // --- Dashboard ---
+    getDashboardStats: () => {
+        return apiClient.get('/dashboard/stats');
     }
 
 };
