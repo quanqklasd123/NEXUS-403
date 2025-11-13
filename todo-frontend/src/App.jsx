@@ -1,24 +1,15 @@
 // src/App.jsx
-import KanbanPage from './pages/KanbanPage'
-
 import React, { useState, useEffect } from 'react';
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // --- 1. IMPORT CÁC TRANG VÀ COMPONENT ---
-
 import LoginPage from './pages/LoginPage';
-
-import TodoList from './pages/TodoList'; // (Đây là trang "My Tasks" cũ)
-
+import TodoList from './pages/TodoList';
 import ListDetailPage from './pages/ListDetailPage';
-
 import RegisterPage from './pages/RegisterPage';
-
-import Sidebar from './components/Sidebar'; // <-- IMPORT SIDEBAR MỚI (Xanh rêu)
-
-// (Chúng ta sẽ tạo DashboardPage, KanbanPage sau)
+import Sidebar from './components/Sidebar';
 import DashboardPage from './pages/DashboardPage';
+import KanbanPage from './pages/KanbanPage';
 
 
 
@@ -108,44 +99,31 @@ function App() {
                                 */}
 
                                 <Route path="/login" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
-
                                 <Route path="/register" element={<RegisterPage />} />
-
-                                <Route path="*" element={<Navigate to="/login" replace />} />
-
                                 <Route path="/" element={<Navigate to="/login" replace />} />
-
-                                <Route path="/kanban" element={<KanbanPage />} />
-                                {/* <Route path="/calendar" element={...} /> */}
-
+                                <Route path="*" element={<Navigate to="/login" replace />} />
                             </>
 
                         ) : (
 
-                            // --- 3. CẬP NHẬT PHẦN "BẢO VỆ" ---
+                            // --- Tuyến đường BẢO VỆ (Đã đăng nhập) ---
                             <>
-                                {/* TRANG CHỦ "/" BÂY GIỜ LÀ DASHBOARD */}
-                                <Route path="/" element={<DashboardPage />} /> 
+                                {/* Trang chủ "/" là Dashboard */}
+                                <Route path="/" element={<DashboardPage />} />
 
-                                {/* Trang "/tasks" VẪN LÀ TodoList */}
+                                {/* Trang "/tasks" là TodoList */}
                                 <Route path="/tasks" element={<TodoList />} />
                                 
-                                {/* Trang chi tiết (đổi 'list' thành 'tasks') */}
-                                <Route path="/tasks/:id" element={<ListDetailPage />} /> 
+                                {/* Trang chi tiết task */}
+                                <Route path="/tasks/:id" element={<ListDetailPage />} />
 
-                                {/* THÊM ROUTE MỚI CHO KANBAN */}
+                                {/* Trang Kanban */}
                                 <Route path="/kanban" element={<KanbanPage />} />
-                                {/* <Route path="/calendar" element={...} /> */}
 
-                                {/* (Các link "giả" từ Sidebar) */}
-                                {/* <Route path="/kanban" element={...} /> */}
-                                {/* <Route path="/calendar" element={...} /> */}
-
-                                {/* (Các link "bảo vệ" giữ nguyên) */}
+                                {/* Redirect các trang public về Dashboard */}
                                 <Route path="/login" element={<Navigate to="/" replace />} />
                                 <Route path="/register" element={<Navigate to="/" replace />} />
                                 <Route path="*" element={<Navigate to="/" replace />} />
-
                             </>
 
                         )}
