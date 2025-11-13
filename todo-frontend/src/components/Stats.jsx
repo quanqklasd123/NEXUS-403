@@ -10,7 +10,7 @@ function Stats({ items = [] }) {
     const totalTasks = items.length;
 
     // Đếm số item có "isDone === true"
-    const completedTasks = items.filter(item => item.isDone).length;
+    const completedTasks = items.filter(item => item.status === 2).length;
 
     // Tính phần trăm (xử lý trường hợp chia cho 0)
     const progressPercentage = (totalTasks > 0) 

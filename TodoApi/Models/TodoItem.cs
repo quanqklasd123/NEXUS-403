@@ -7,11 +7,8 @@ namespace TodoApi.Models
     {
         public long Id { get; set; }        // ID duy nhất
         public string? Title { get; set; }   // Tên công việc
-        public bool IsDone { get; set; }  // Trạng thái hoàn thành
-        // public string? Secret { get; set; } // Bạn có thể thêm các trường khác sau
-        // Chúng ta có thể dùng 1 con số để quy ước độ ưu tiên
-        // Ví dụ: 0 = Thấp, 1 = Trung bình, 2 = Cao
-        // Đặt giá trị mặc định là 1 (Trung bình)
+        // Mặc định (default) là 0 (tức là "To Do")
+        public int Status { get; set; } = 0;
         [Range(0, 5)] // Giới hạn giá trị Priority từ 0 đến 5
         public int Priority { get; set; } = 1; 
 

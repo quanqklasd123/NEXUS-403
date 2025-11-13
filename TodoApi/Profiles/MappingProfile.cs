@@ -16,7 +16,9 @@ namespace TodoApi.Profiles
             CreateMap<CreateTodoListDTO, TodoList>(); // POST
 
             // 2. Ánh xạ cho Item
-            CreateMap<TodoItem, TodoItemDTO>(); // GET
+            CreateMap<TodoItem, TodoItemDTO>()
+            .ForMember(dest => dest.TodoListName, 
+                       opt => opt.MapFrom(src => src.TodoList.Name)); // GET
             CreateMap<CreateTodoItemDTO, TodoItem>(); // POST
 
             // 3. Ánh xạ cho PUT (Cập nhật)

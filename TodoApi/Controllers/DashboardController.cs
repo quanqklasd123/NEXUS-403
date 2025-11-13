@@ -45,7 +45,7 @@ namespace TodoApi.Controllers
 
             // 3. Đếm số Task đã hoàn thành (tương tự)
             var completedTasks = await _context.TodoItems
-                .Where(item => item.TodoList.AppUserId == userId && item.IsDone)
+                .Where(item => item.TodoList.AppUserId == userId && item.Status == 2) // Giả sử Status == 2 là "Đã hoàn thành"
                 .CountAsync();
 
             // 4. Tạo DTO kết quả và trả về

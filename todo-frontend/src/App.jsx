@@ -1,10 +1,9 @@
 // src/App.jsx
+import KanbanPage from './pages/KanbanPage'
 
 import React, { useState, useEffect } from 'react';
 
 import { Routes, Route, Navigate } from 'react-router-dom';
-
-
 
 // --- 1. IMPORT CÁC TRANG VÀ COMPONENT ---
 
@@ -20,6 +19,7 @@ import Sidebar from './components/Sidebar'; // <-- IMPORT SIDEBAR MỚI (Xanh r�
 
 // (Chúng ta sẽ tạo DashboardPage, KanbanPage sau)
 import DashboardPage from './pages/DashboardPage';
+
 
 
 
@@ -115,6 +115,9 @@ function App() {
 
                                 <Route path="/" element={<Navigate to="/login" replace />} />
 
+                                <Route path="/kanban" element={<KanbanPage />} />
+                                {/* <Route path="/calendar" element={...} /> */}
+
                             </>
 
                         ) : (
@@ -129,6 +132,10 @@ function App() {
                                 
                                 {/* Trang chi tiết (đổi 'list' thành 'tasks') */}
                                 <Route path="/tasks/:id" element={<ListDetailPage />} /> 
+
+                                {/* THÊM ROUTE MỚI CHO KANBAN */}
+                                <Route path="/kanban" element={<KanbanPage />} />
+                                {/* <Route path="/calendar" element={...} /> */}
 
                                 {/* (Các link "giả" từ Sidebar) */}
                                 {/* <Route path="/kanban" element={...} /> */}

@@ -97,16 +97,32 @@ function ListDetailPage() {
     };
     const handleToggleDone = async (itemToToggle) => {
         try {
-            const updateDto = { ...itemToToggle, isDone: !itemToToggle.isDone };
+            // 0 = To Do, 1 = In Progress, 2 = Done
+            const newStatus = itemToToggle.status === 0 ? 2 : 0;
+
+            // Build DTO cho API
+            const updateDto = {
+                ...itemToToggle,
+                status: newStatus,
+                todoListId: parseInt(id)
+            };
+
+            // Gọi API cập nhật item
             await apiService.updateTodoItem(itemToToggle.id, updateDto);
+
+            // Cập nhật UI cục bộ
             setList(prevList => ({
                 ...prevList,
-                items: prevList.items.map(item =>
-                    item.id === itemToToggle.id ? { ...item, isDone: !item.isDone } : item
+                items: prevList.items.map(it =>
+                    it.id === itemToToggle.id ? { ...it, status: newStatus } : it
                 )
             }));
-        } catch (error) { alert('Không thể cập nhật trạng thái.'); }
+        } catch (err) {
+            console.error('Lỗi khi cập nhật trạng thái:', err);
+            alert('Không thể cập nhật trạng thái công việc.');
+        }
     };
+
     const handleDeleteItem = async (idToDelete) => {
         if (!window.confirm('Bạn có chắc muốn xóa công việc này?')) return;
         try {
@@ -115,7 +131,10 @@ function ListDetailPage() {
                 ...prevList,
                 items: prevList.items.filter(item => item.id !== idToDelete)
             }));
-        } catch (error) { alert('Không thể xóa công việc này.'); }
+        } catch (error) {
+            console.error('Lỗi khi xóa:', error);
+            alert('Không thể xóa công việc này.');
+        }
     };
     const handleEditClick = (item) => {
         setEditingItemId(item.id); 
@@ -249,18 +268,18 @@ function ListDetailPage() {
                                 key={item.id} 
                                 className={`flex items-start gap-4 p-4 bg-white rounded-lg shadow-sm border border-neutral-200 
                                             hover:border-sage-300 hover:shadow-md transition-all
-                                            ${item.isDone ? 'opacity-60' : ''}`}
+                                            ${item.status === 2 ? 'opacity-60' : ''}`}
                             >
                                 <input
                                     type="checkbox"
-                                    checked={item.isDone}
+                                    checked={item.status === 2}
                                     onChange={() => handleToggleDone(item)}
                                     // style .checkbox từ design-system.html
                                     className="w-5 h-5 rounded border-2 border-neutral-300 text-sage-400 focus:ring-sage-400 mt-0.5"
                                 />
                                 
                                 <div className="flex-1">
-                                    <span className={`font-medium ${item.isDone ? 'line-through text-neutral-400' : 'text-neutral-800'}`}>
+                                    <span className={`font-medium ${item.status === 2 ? 'line-through text-neutral-400' : 'text-neutral-800'}`}>
                                         {item.title} 
                                     </span>
                                     {/* (Hiển thị các "badge" (huy hiệu) giống Figma) */}

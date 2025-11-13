@@ -1,4 +1,5 @@
 // Controllers/TodoItemsController.cs
+//using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TodoApi.Data;
@@ -7,6 +8,7 @@ using AutoMapper;
 using TodoApi.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+
 
 namespace TodoApi.Controllers
 {
@@ -92,7 +94,7 @@ namespace TodoApi.Controllers
 
             // Ma thuật của AutoMapper: Cập nhật todoItemFromDb bằng dữ liệu từ updateDto
             _mapper.Map(updateDto, todoItemFromDb);
-            
+
             // Không cần dòng này nữa: _context.Entry(todoItemFromDb).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
@@ -113,12 +115,51 @@ namespace TodoApi.Controllers
 
             // Lệnh xóa (chưa thực thi)
             _context.TodoItems.Remove(todoItem);
-            
+
             // Thực thi lệnh xóa và lưu thay đổi vào CSDL
             await _context.SaveChangesAsync();
 
             // Trả về 204 No Content
             return NoContent();
         }
+
+        // GET: api/todoitems/my-all
+        [HttpGet("my-all")]
+        public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetAllMyItems()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var items = await _context.TodoItems
+                // 1. Chỉ lấy item CỦA TÔI
+                .Where(item => item.TodoList.AppUserId == userId)
+
+                // 2. Lấy kèm thông tin của List (để AutoMapper lấy được Tên)
+                .Include(item => item.TodoList)
+
+                .OrderByDescending(item => item.Priority) // Sắp xếp theo ưu tiên
+                .ToListAsync();
+
+            // 3. AutoMapper sẽ tự động "dịch" (map) sang DTO
+            return Ok(_mapper.Map<IEnumerable<TodoItemDTO>>(items));
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateItemStatus(long id, [FromBody] UpdateItemStatusDTO statusDto)
+        {
+            // (Chúng ta có thể kiểm tra quyền sở hữu ở đây nếu muốn)
+            var todoItem = await _context.TodoItems.FindAsync(id);
+            if (todoItem == null)
+            {
+                return NotFound();
+            }
+
+            // Cập nhật chỉ 1 trường
+            todoItem.Status = statusDto.Status;
+            await _context.SaveChangesAsync();
+
+            return NoContent(); // 204 No Content
+        }
+
+
     }
 }
