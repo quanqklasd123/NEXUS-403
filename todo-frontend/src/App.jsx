@@ -10,7 +10,8 @@ import RegisterPage from './pages/RegisterPage';
 import Sidebar from './components/Sidebar'; // <-- IMPORT SIDEBAR MỚI (Xanh rêu)
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
-
+import MarketplacePage from './pages/MarketplacePage'; // <-- Thêm
+import AppBuilderPage from './pages/AppBuilderPage';
 
 
 function App() {
@@ -115,18 +116,24 @@ function App() {
                             // --- 3. CẬP NHẬT PHẦN "BẢO VỆ" ---
                             <>
                                 {/* TRANG CHỦ "/" BÂY GIỜ LÀ DASHBOARD */}
-                                <Route path="/" element={<DashboardPage />} /> 
+                                <Route path="/" element={<DashboardPage />} />
 
                                 {/* Trang "/tasks" VẪN LÀ TodoList */}
                                 <Route path="/tasks" element={<TodoList />} />
-                                
+
                                 {/* Trang chi tiết (đổi 'list' thành 'tasks') */}
-                                <Route path="/tasks/:id" element={<ListDetailPage />} /> 
+                                <Route path="/tasks/:id" element={<ListDetailPage />} />
 
                                 {/* THÊM ROUTE MỚI CHO KANBAN */}
                                 <Route path="/kanban" element={<KanbanPage />} />
                                 {/* <Route path="/calendar" element={...} /> */}
                                 <Route path="/calendar" element={<CalendarPage />} />
+
+                                {/* Tuyến đường cho Marketplace */}
+                                <Route path="/marketplace" element={<MarketplacePage />} />
+
+                                {/* Tuyến đường cho App Builder */}
+                                <Route path="/builder" element={<AppBuilderPage />} />
 
                                 {/* (Các link "giả" từ Sidebar) */}
                                 {/* <Route path="/kanban" element={...} /> */}

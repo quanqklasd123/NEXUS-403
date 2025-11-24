@@ -1,30 +1,30 @@
 // src/components/Sidebar.jsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-    FiHome,       
+import {
+    FiHome,
     FiCheckSquare,
-    FiTrello,     
-    FiCalendar,   
+    FiTrello,
+    FiCalendar,
 } from 'react-icons/fi';
+import { FiShoppingBag, FiCpu } from 'react-icons/fi';
 
 const getLinkClass = ({ isActive }) => {
-  return `
+    return `
     flex items-center p-3 mx-3 my-1 rounded-lg
     text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800
     transition-colors duration-200
-    ${
-      isActive
-        ? 'bg-sage-100 text-sage-700 font-medium' // Style khi "Active"
-        : 'font-normal' // Style mặc định
-    }
+    ${isActive
+            ? 'bg-sage-100 text-sage-700 font-medium' // Style khi "Active"
+            : 'font-normal' // Style mặc định
+        }
   `;
 };
 
 function Sidebar() {
     return (
         <aside className="w-72 bg-white border-r border-neutral-200 h-screen fixed top-0 left-0 z-40 flex flex-col">
-            
+
             {/* Logo */}
             <div className="p-6">
                 <div className="flex items-center space-x-3 mb-8">
@@ -57,6 +57,17 @@ function Sidebar() {
                 <NavLink to="/calendar" className={getLinkClass}>
                     <FiCalendar className="w-5 h-5 mr-3" />
                     <span>Calendar</span>
+                </NavLink>
+                <NavLink to="/marketplace" className={getLinkClass}>
+                    {/* Dùng icon Marketplace/Shopping Bag */}
+                    <FiShoppingBag className="w-5 h-5 mr-3" />
+                    <span>Marketplace</span>
+                </NavLink>
+
+                <NavLink to="/builder" className={getLinkClass}>
+                    {/* Dùng icon CPU/Tool cho Builder */}
+                    <FiCpu className="w-5 h-5 mr-3" />
+                    <span>App Builder</span>
                 </NavLink>
             </nav>
         </aside>
