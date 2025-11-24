@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS - Calendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Primary Sage */
+            --sage-50: #F5F9F5;
+            --sage-100: #E6F1E6;
+            --sage-200: #CDE3CC;
+            --sage-300: #B4D5B3;
+            --sage-400: #A8C5A7;
+            --sage-500: #8DB38C;
+            --sage-600: #6F9A6E;
+            --sage-700: #568155;
+            --sage-800: #3F5E3E;
+            --sage-900: #2A3F29;
+
+            /* Secondary Peach */
+            --peach-50: #FEF9F6;
+            --peach-100: #FDF3ED;
+            --peach-200: #FBE7DB;
+            --peach-300: #F8DAC8;
+            --peach-400: #F5D5C4;
+            --peach-500: #ECC6B3;
+            --peach-600: #E3B7A2;
+            --peach-700: #C79A85;
+            --peach-800: #9D7866;
+            --peach-900: #6B5245;
+
+            /* Accent Butter */
+            --butter-50: #FFFCF5;
+            --butter-100: #FFF9EB;
+            --butter-200: #FFF4E0;
+            --butter-300: #FFEFD0;
+            --butter-400: #FFE9BF;
+            --butter-500: #FFE0A3;
+            --butter-600: #F5D089;
+            --butter-700: #D9B56F;
+            --butter-800: #A68C54;
+            --butter-900: #6E5D38;
+
+            /* Neutral Warm Gray */
+            --neutral-50: #FDFBF7;
+            --neutral-100: #F7F4EF;
+            --neutral-200: #E8E3DB;
+            --neutral-300: #D4CFC5;
+            --neutral-400: #B8B2A6;
+            --neutral-500: #9A9389;
+            --neutral-600: #6B6B6B;
+            --neutral-700: #4A4A4A;
+            --neutral-800: #2C2C2C;
+            --neutral-900: #1A1A1A;
+
+            /* Semantic Colors */
+            --success: #7FB77E;
+            --warning: #EAB676;
+            --error: #E07A7A;
+            --info: #7AB8E0;
+
+            /* Dark Mode */
+            --dark-bg: #000000;
+            --dark-surface: #0F0F0F;
+            --dark-elevated: #1A1A1A;
+            --dark-border: #2C2C2C;
+            --dark-border-strong: #404040;
+            --dark-text-primary: #F7F4EF;
+            --dark-text-secondary: #9A9389;
+            --dark-text-tertiary: #6B6B6B;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background-color: var(--neutral-50);
+            color: var(--neutral-800);
+        }
+
+        .dark body {
+            background-color: var(--dark-bg);
+            color: var(--dark-text-primary);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--neutral-100);
+        }
+
+        .dark ::-webkit-scrollbar-track {
+            background: var(--dark-surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neutral-300);
+            border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: var(--dark-border);
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            background-color: white;
+            border-right: 1px solid var(--neutral-200);
+            transition: all 300ms ease;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 40;
+        }
+
+        .dark .sidebar {
+            background-color: var(--dark-surface);
+            border-right-color: var(--dark-border);
+        }
+
+        .sidebar-collapsed {
+            width: 80px;
+        }
+
+        .sidebar-expanded {
+            width: 280px;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            transition: all 300ms ease;
+        }
+
+        .main-content-collapsed {
+            margin-left: 80px;
+        }
+
+        /* Navigation styles */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            margin: 4px 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--neutral-600);
+            transition: all 200ms ease;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background-color: var(--neutral-100);
+            color: var(--neutral-800);
+        }
+
+        .nav-item.active {
+            background-color: var(--sage-100);
+            color: var(--sage-700);
+        }
+
+        .dark .nav-item {
+            color: var(--dark-text-secondary);
+        }
+
+        .dark .nav-item:hover {
+            background-color: var(--dark-surface);
+            color: var(--dark-text-primary);
+        }
+
+        .dark .nav-item.active {
+            background-color: rgba(168, 197, 167, 0.1);
+            color: var(--sage-400);
+        }
+
+        /* Component styles */
+        .btn-primary {
+            background-color: var(--sage-400);
+            color: white;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 500;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--sage-500);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(168, 197, 167, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: var(--peach-400);
+            color: var(--peach-900);
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 500;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--peach-500);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 213, 196, 0.3);
+        }
+
+        .badge {
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .badge-primary {
+            background-color: rgba(168, 197, 167, 0.2);
+            color: var(--sage-700);
+        }
+
+        .badge-secondary {
+            background-color: rgba(245, 213, 196, 0.2);
+            color: var(--peach-800);
+        }
+
+        .badge-success {
+            background-color: rgba(127, 183, 126, 0.2);
+            color: #5a8a59;
+        }
+
+        .badge-warning {
+            background-color: rgba(234, 182, 118, 0.2);
+            color: #c4954f;
+        }
+
+        .badge-error {
+            background-color: rgba(224, 122, 122, 0.2);
+            color: #c45f5f;
+        }
+
+        /* Calendar styles */
+        .calendar-container {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 24px;
+            height: calc(100vh - 200px);
+        }
+
+        .calendar-main {
+            background-color: white;
+            border-radius: 16px;
+            border: 1px solid var(--neutral-200);
+            padding: 24px;
+        }
+
+        .dark .calendar-main {
+            background-color: var(--dark-surface);
+            border-color: var(--dark-border);
+        }
+
+        .calendar-sidebar {
+            background-color: white;
+            border-radius: 16px;
+            border: 1px solid var(--neutral-200);
+            padding: 24px;
+        }
+
+        .dark .calendar-sidebar {
+            background-color: var(--dark-surface);
+            border-color: var(--dark-border);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: var(--neutral-200);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .dark .calendar-grid {
+            background-color: var(--dark-border);
+        }
+
+        .calendar-day {
+            background-color: white;
+            min-height: 120px;
+            padding: 8px;
+            position: relative;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .calendar-day:hover {
+            background-color: var(--neutral-50);
+        }
+
+        .dark .calendar-day {
+            background-color: var(--dark-surface);
+        }
+
+        .dark .calendar-day:hover {
+            background-color: var(--dark-elevated);
+        }
+
+        .calendar-day.today {
+            background-color: var(--sage-50);
+            border: 2px solid var(--sage-400);
+        }
+
+        .dark .calendar-day.today {
+            background-color: rgba(168, 197, 167, 0.1);
+        }
+
+        .calendar-day.other-month {
+            color: var(--neutral-400);
+            background-color: var(--neutral-50);
+        }
+
+        .dark .calendar-day.other-month {
+            color: var(--dark-text-tertiary);
+            background-color: var(--dark-surface);
+        }
+
+        .calendar-event {
+            background-color: var(--sage-400);
+            color: white;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            margin-bottom: 2px;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .calendar-event:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-event.meeting {
+            background-color: var(--peach-400);
+        }
+
+        .calendar-event.deadline {
+            background-color: var(--error);
+        }
+
+        .calendar-event.reminder {
+            background-color: var(--warning);
+        }
+
+        .calendar-event.personal {
+            background-color: var(--info);
+        }
+
+        /* Header styles */
+        .header {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--neutral-200);
+            position: fixed;
+            top: 0;
+            left: 280px;
+            right: 0;
+            z-index: 30;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            transition: all 300ms ease;
+        }
+
+        .header-collapsed {
+            left: 80px;
+        }
+
+        .dark .header {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-bottom-color: var(--dark-border);
+        }
+
+        .content-wrapper {
+            padding-top: 72px;
+            padding: 72px 24px 24px 24px;
+        }
+
+        /* Animation classes */
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .slide-up {
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slideUp 0.3s ease forwards;
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Mini calendar */
+        .mini-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 24px;
+        }
+
+        .mini-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 200ms ease;
+            font-size: 13px;
+        }
+
+        .mini-day:hover {
+            background-color: var(--neutral-100);
+        }
+
+        .dark .mini-day:hover {
+            background-color: var(--dark-surface);
+        }
+
+        .mini-day.today {
+            background-color: var(--sage-400);
+            color: white;
+        }
+
+        .mini-day.other-month {
+            color: var(--neutral-400);
+        }
+
+        .dark .mini-day.other-month {
+            color: var(--dark-text-tertiary);
+        }
+
+        /* Upcoming events */
+        .upcoming-event {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--neutral-200);
+            margin-bottom: 8px;
+            transition: all 200ms ease;
+        }
+
+        .upcoming-event:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .dark .upcoming-event {
+            border-color: var(--dark-border);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar sidebar-expanded" id="sidebar">
+        <div class="p-6">
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-sage-400 flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">N</span>
+                </div>
+                <div class="sidebar-text">
+                    <h1 class="text-xl font-semibold text-neutral-800 dark:text-neutral-100">NEXUS</h1>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">Productivity OS</p>
+                </div>
+            </div>
+
+            <nav class="space-y-1">
+                <a href="index.html" class="nav-item">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                    </svg>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <a href="today.html" class="nav-item">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="sidebar-text">Today</span>
+                </a>
+
+                <a href="kanban.html" class="nav-item">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                    </svg>
+                    <span class="sidebar-text">Kanban</span>
+                </a>
+
+                <a href="calendar.html" class="nav-item active">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="sidebar-text">Calendar</span>
+                </a>
+
+                <a href="marketplace.html" class="nav-item">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 2L3 7v11a1 1 0 001 1h12a1 1 0 001-1V7l-7-5zM6 9a1 1 0 112 0 1 1 0 01-2 0zm6 0a1 1 0 112 0 1 1 0 01-2 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="sidebar-text">Marketplace</span>
+                </a>
+
+                <a href="design-system.html" class="nav-item">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="sidebar-text">Design System</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="absolute bottom-6 left-6 right-6">
+            <button id="sidebar-toggle" class="w-full p-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                <svg class="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                </svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="flex items-center justify-between w-full">
+            <div>
+                <h2 class="text-2xl font-semibold text-neutral-800 dark:text-neutral-100">Calendar</h2>
+                <p class="text-sm text-neutral-500 dark:text-neutral-400">November 2025 • 12 events scheduled</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="btn-secondary">New Event</button>
+                <button id="theme-toggle" class="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2L13.09 8.26L20 9L14 14.74L15.18 21.02L10 17.77L4.82 21.02L6 14.74L0 9L6.91 8.26L10 2Z"/>
+                    </svg>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-sage-400 flex items-center justify-center text-white font-medium">
+                    U
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <div class="content-wrapper">
+            <!-- Calendar Navigation -->
+            <section class="mb-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-3xl font-semibold text-neutral-800 dark:text-neutral-100">November 2025</h1>
+                        <div class="flex items-center space-x-2">
+                            <button class="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                            <button class="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-4 py-2 rounded-lg bg-sage-100 dark:bg-sage-900/20 text-sage-700 dark:text-sage-400 font-medium">Month</button>
+                        <button class="px-4 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors">Week</button>
+                        <button class="px-4 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors">Day</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calendar Container -->
+            <section class="calendar-container">
+                <!-- Main Calendar -->
+                <div class="calendar-main">
+                    <!-- Calendar Header -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 py-2">Sun</div>
+                        <div class="text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 py-2">Mon</div>
+                        <div class="text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 py-2">Tue</div>
+                        <div class="text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 py-2">Wed</div>
+                        <div class="text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 py-2">Thu</div>
+                        <div class="text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 py-2">Fri</div>
+                        <div class="text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 py-2">Sat</div>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div class="calendar-grid">
+                        <!-- Week 1 -->
+                        <div class="calendar-day other-month">26</div>
+                        <div class="calendar-day other-month">27</div>
+                        <div class="calendar-day other-month">28</div>
+                        <div class="calendar-day other-month">29</div>
+                        <div class="calendar-day other-month">30</div>
+                        <div class="calendar-day other-month">31</div>
+                        <div class="calendar-day">1</div>
+
+                        <!-- Week 2 -->
+                        <div class="calendar-day">2</div>
+                        <div class="calendar-day">3</div>
+                        <div class="calendar-day">4</div>
+                        <div class="calendar-day">5</div>
+                        <div class="calendar-day">6</div>
+                        <div class="calendar-day">7</div>
+                        <div class="calendar-day">8</div>
+
+                        <!-- Week 3 -->
+                        <div class="calendar-day">9</div>
+                        <div class="calendar-day today">10
+                            <div class="calendar-event">Team Standup</div>
+                            <div class="calendar-event meeting">Design Review</div>
+                            <div class="calendar-event deadline">Project Deadline</div>
+                        </div>
+                        <div class="calendar-day">11
+                            <div class="calendar-event meeting">Client Call</div>
+                        </div>
+                        <div class="calendar-day">12</div>
+                        <div class="calendar-day">13
+                            <div class="calendar-event">Code Review</div>
+                        </div>
+                        <div class="calendar-day">14
+                            <div class="calendar-event meeting">Sprint Planning</div>
+                        </div>
+                        <div class="calendar-day">15</div>
+
+                        <!-- Week 4 -->
+                        <div class="calendar-day">16</div>
+                        <div class="calendar-day">17
+                            <div class="calendar-event">Team Building</div>
+                        </div>
+                        <div class="calendar-day">18</div>
+                        <div class="calendar-day">19
+                            <div class="calendar-event deadline">Milestone Check</div>
+                        </div>
+                        <div class="calendar-day">20</div>
+                        <div class="calendar-day">21
+                            <div class="calendar-event meeting">Retrospective</div>
+                        </div>
+                        <div class="calendar-day">22</div>
+
+                        <!-- Week 5 -->
+                        <div class="calendar-day">23</div>
+                        <div class="calendar-day">24
+                            <div class="calendar-event">Demo Preparation</div>
+                        </div>
+                        <div class="calendar-day">25</div>
+                        <div class="calendar-day">26</div>
+                        <div class="calendar-day">27</div>
+                        <div class="calendar-day">28</div>
+                        <div class="calendar-day">29</div>
+
+                        <!-- Week 6 -->
+                        <div class="calendar-day">30</div>
+                        <div class="calendar-day other-month">1</div>
+                        <div class="calendar-day other-month">2</div>
+                        <div class="calendar-day other-month">3</div>
+                        <div class="calendar-day other-month">4</div>
+                        <div class="calendar-day other-month">5</div>
+                        <div class="calendar-day other-month">6</div>
+                    </div>
+                </div>
+
+                <!-- Calendar Sidebar -->
+                <div class="calendar-sidebar">
+                    <!-- Mini Calendar -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-4">Mini Calendar</h3>
+                        <div class="mini-calendar">
+                            <!-- Previous month days -->
+                            <div class="mini-day other-month">29</div>
+                            <div class="mini-day other-month">30</div>
+                            <div class="mini-day other-month">31</div>
+                            
+                            <!-- Current month -->
+                            <div class="mini-day">1</div>
+                            <div class="mini-day">2</div>
+                            <div class="mini-day">3</div>
+                            <div class="mini-day">4</div>
+                            <div class="mini-day">5</div>
+                            <div class="mini-day">6</div>
+                            <div class="mini-day">7</div>
+                            <div class="mini-day">8</div>
+                            <div class="mini-day">9</div>
+                            <div class="mini-day today">10</div>
+                            <div class="mini-day">11</div>
+                            <div class="mini-day">12</div>
+                            <div class="mini-day">13</div>
+                            <div class="mini-day">14</div>
+                            <div class="mini-day">15</div>
+                            <div class="mini-day">16</div>
+                            <div class="mini-day">17</div>
+                            <div class="mini-day">18</div>
+                            <div class="mini-day">19</div>
+                            <div class="mini-day">20</div>
+                            <div class="mini-day">21</div>
+                            <div class="mini-day">22</div>
+                            <div class="mini-day">23</div>
+                            <div class="mini-day">24</div>
+                            <div class="mini-day">25</div>
+                            <div class="mini-day">26</div>
+                            <div class="mini-day">27</div>
+                            <div class="mini-day">28</div>
+                            <div class="mini-day">29</div>
+                            <div class="mini-day">30</div>
+                            
+                            <!-- Next month days -->
+                            <div class="mini-day other-month">1</div>
+                        </div>
+                    </div>
+
+                    <!-- Today's Events -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-4">Today's Events</h3>
+                        <div class="space-y-2">
+                            <div class="upcoming-event border-l-4 border-sage-400">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-medium text-sm">Team Standup</h4>
+                                    <span class="text-xs text-neutral-400">9:00 AM</span>
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400">Daily sync with the development team</p>
+                            </div>
+
+                            <div class="upcoming-event border-l-4 border-peach-400">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-medium text-sm">Design Review</h4>
+                                    <span class="text-xs text-neutral-400">2:00 PM</span>
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400">Review new mockups with stakeholders</p>
+                            </div>
+
+                            <div class="upcoming-event border-l-4 border-error">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-medium text-sm">Project Deadline</h4>
+                                    <span class="text-xs text-neutral-400">5:00 PM</span>
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400">Final submission for current sprint</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Events -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-4">Upcoming Events</h3>
+                        <div class="space-y-2">
+                            <div class="upcoming-event border-l-4 border-peach-400">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-medium text-sm">Client Call</h4>
+                                    <span class="text-xs text-neutral-400">Tomorrow</span>
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400">Discuss project requirements</p>
+                            </div>
+
+                            <div class="upcoming-event border-l-4 border-sage-400">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-medium text-sm">Sprint Planning</h4>
+                                    <span class="text-xs text-neutral-400">Nov 14</span>
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400">Plan next development sprint</p>
+                            </div>
+
+                            <div class="upcoming-event border-l-4 border-warning">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-medium text-sm">Team Building</h4>
+                                    <span class="text-xs text-neutral-400">Nov 17</span>
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400">Quarterly team event</p>
+                            </div>
+
+                            <div class="upcoming-event border-l-4 border-error">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-medium text-sm">Milestone Check</h4>
+                                    <span class="text-xs text-neutral-400">Nov 19</span>
+                                </div>
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400">Review project progress</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            html.classList.add('dark');
+        }
+
+        // Sidebar toggle
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const header = document.getElementById('header');
+        const mainContent = document.getElementById('main-content');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('sidebar-expanded');
+            sidebar.classList.toggle('sidebar-collapsed');
+            header.classList.toggle('header-collapsed');
+            mainContent.classList.toggle('main-content-collapsed');
+            
+            // Hide/show sidebar text
+            const sidebarTexts = document.querySelectorAll('.sidebar-text');
+            sidebarTexts.forEach(text => {
+                text.style.display = sidebar.classList.contains('sidebar-collapsed') ? 'none' : 'block';
+            });
+        });
+
+        // Calendar event interactions
+        document.querySelectorAll('.calendar-event').forEach(event => {
+            event.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Add click animation
+                anime({
+                    targets: this,
+                    scale: [1, 0.95, 1],
+                    duration: 200,
+                    easing: 'easeOutQuad'
+                });
+
+                // Show event details
+                setTimeout(() => {
+                    alert('Event details would open here. This would show the full event information, attendees, and options to edit or delete.');
+                }, 200);
+            });
+        });
+
+        // Calendar day interactions
+        document.querySelectorAll('.calendar-day').forEach(day => {
+            day.addEventListener('click', function() {
+                // Add click animation
+                anime({
+                    targets: this,
+                    backgroundColor: ['rgba(168, 197, 167, 0.1)', 'transparent'],
+                    duration: 500,
+                    easing: 'easeOutQuad'
+                });
+
+                // Show add event option
+                if (!this.classList.contains('other-month')) {
+                    setTimeout(() => {
+                        const dayNumber = this.textContent.trim().split('\n')[0];
+                        if (confirm(`Add new event on November ${dayNumber}?`)) {
+                            alert('Event creation form would open here.');
+                        }
+                    }, 300);
+                }
+            });
+        });
+
+        // View mode buttons
+        document.querySelectorAll('.px-4.py-2.rounded-lg').forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.px-4.py-2.rounded-lg').forEach(btn => {
+                    btn.classList.remove('bg-sage-100', 'dark:bg-sage-900/20', 'text-sage-700', 'dark:text-sage-400', 'font-medium');
+                    btn.classList.add('hover:bg-neutral-100', 'dark:hover:bg-neutral-800', 'text-neutral-600', 'dark:text-neutral-400');
+                });
+                
+                // Add active class to clicked button
+                this.classList.add('bg-sage-100', 'dark:bg-sage-900/20', 'text-sage-700', 'dark:text-sage-400', 'font-medium');
+                this.classList.remove('hover:bg-neutral-100', 'dark:hover:bg-neutral-800', 'text-neutral-600', 'dark:text-neutral-400');
+
+                // Show view change message
+                const viewType = this.textContent.trim();
+                if (viewType !== 'Month') {
+                    alert(`${viewType} view would be displayed here.`);
+                }
+            });
+        });
+
+        // Upcoming event interactions
+        document.querySelectorAll('.upcoming-event').forEach(event => {
+            event.addEventListener('click', function() {
+                // Add click animation
+                anime({
+                    targets: this,
+                    scale: [1, 0.98, 1],
+                    duration: 200,
+                    easing: 'easeOutQuad'
+                });
+
+                // Show event details
+                setTimeout(() => {
+                    alert('Event details would open here.');
+                }, 200);
+            });
+        });
+
+        // Add fade-in animation to elements as they come into view
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all calendar days
+        document.querySelectorAll('.calendar-day').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

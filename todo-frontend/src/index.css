@@ -1,12 +1,15 @@
 /* src/index.css */
 
-/* 1. Tải Font "Inter" (font mới của bạn từ Figma) */
+/* 1. Tải Font "Inter" */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 /* 2. Tải Tailwind (chuẩn v4) */
 @import "tailwindcss";
 
-/* 3. Định nghĩa TOÀN BỘ "Theme" mới của bạn (từ file HTML) */
+/* 3. Import react-day-picker CSS */
+@import 'react-day-picker/style.css';
+
+/* 3. Định nghĩa TOÀN BỘ "Theme" mới của bạn (ĐÃ SỬA LỖI DẤU ",") */
 @theme {
   /* Primary Sage */
   --color-sage-50: #F5F9F5;
@@ -61,21 +64,17 @@
   --color-warning: #EAB676;
   --color-error: #E07A7A;
   --color-info: #7AB8E0;
-
+  
   /* Font (Mới) */
   --font-family-sans: 'Inter', -apple-system, system-ui, sans-serif;
-  /* (Giữ lại font "cổ điển" nếu bạn muốn) */
-  --font-family-serif: 'Georgia', serif; 
+  --font-family-serif: 'Georgia', serif; /* (Giữ lại font "cổ điển" nếu bạn muốn) */
 }
 
 /* 4. Áp dụng "Theme" MỚI vào trang */
 @layer base {
   body {
-    /* Dùng nền "neutral-50" (Warm Gray) */
     background-color: var(--color-neutral-50);
-    /* Dùng chữ "neutral-800" (Gần đen) */
     color: var(--color-neutral-800);
-    /* Dùng font "sans" (Inter) */
     font-family: var(--font-family-sans);
   }
 }
