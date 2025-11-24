@@ -14,7 +14,12 @@ const GOOGLE_CLIENT_ID = "1010300950363-kqkr35p43a655gtt6lrn70gsijock5lh.apps.go
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         <App />
       </BrowserRouter>
     </GoogleOAuthProvider>
