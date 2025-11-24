@@ -1,231 +1,172 @@
-// src/pages/MarketplacePage.jsx
-import React, { useState } from 'react';
-import PageHeader from '../components/PageHeader';
-import { FiSearch, FiFilter, FiDownload, FiStar, FiTag } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import PageHeader from '../components/PageHeader'; // Header chung của chúng ta
+import apiService from '../services/apiService';
+import { FiSearch, FiFilter, FiDownload, FiStar, FiSettings, FiCheck } from 'react-icons/fi';
 
-// --- MOCK DATA (Dữ liệu giả lập) ---
-const MOCK_APPS = [
-    {
-        id: 1,
-        name: "CRM Starter Pack",
-        description: "A complete CRM template with contacts, deals, and pipeline view.",
-        author: "NEXUS Team",
-        category: "Template",
-        tags: ["Business", "Sales"],
-        downloads: 1250,
-        rating: 4.8,
-        color: "sage" // Để style icon
-    },
-    {
-        id: 2,
-        name: "AI Text Summarizer",
-        description: "Automatically summarize long descriptions using OpenAI integration.",
-        author: "DevCommunity",
-        category: "Module",
-        tags: ["AI", "Productivity"],
-        downloads: 890,
-        rating: 4.5,
-        color: "peach"
-    },
-    {
-        id: 3,
-        name: "Kanban Board Pro",
-        description: "Advanced Kanban board with swimlanes and WIP limits.",
-        author: "TaskMaster",
-        category: "Component",
-        tags: ["Project Management"],
-        downloads: 3400,
-        rating: 4.9,
-        color: "butter"
-    },
-    {
-        id: 4,
-        name: "Email Automation",
-        description: "Send automated emails when a task status changes.",
-        author: "AutoBot",
-        category: "Automation",
-        tags: ["Workflow", "Email"],
-        downloads: 560,
-        rating: 4.2,
-        color: "info"
-    },
-    {
-        id: 5,
-        name: "Finance Tracker",
-        description: "Track expenses and income with visual charts.",
-        author: "FinTech",
-        category: "Template",
-        tags: ["Finance", "Dashboard"],
-        downloads: 1100,
-        rating: 4.7,
-        color: "sage"
-    },
-    {
-        id: 6,
-        name: "Slack Integration",
-        description: "Connect your tasks to Slack channels for real-time updates.",
-        author: "Connectify",
-        category: "Module",
-        tags: ["Communication", "Integration"],
-        downloads: 2100,
-        rating: 4.6,
-        color: "peach"
-    }
-];
+// Helper Icons (Giữ nguyên)
+const FiUsersIcon = () => <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg>;
 
-const CATEGORIES = ["All", "Template", "Module", "Component", "Automation"];
-
-// --- COMPONENT: APP CARD ---
-const AppCard = ({ app }) => {
-    // Map màu sắc cho icon nền
+// --- COMPONENT APP CARD (Đã nâng cấp logic) ---
+const AppCard = ({ app, onInstall }) => {
     const colorClasses = {
-        'sage': 'bg-sage-100 text-sage-600',
-        'peach': 'bg-peach-100 text-peach-600',
-        'butter': 'bg-butter-100 text-butter-600',
-        'info': 'bg-info/20 text-info',
+        'sage': 'from-sage-400 to-sage-600 bg-gradient-to-br',
+        'peach': 'from-peach-400 to-peach-600 bg-gradient-to-br',
+        'butter': 'from-butter-400 to-butter-600 bg-gradient-to-br',
+        'neutral': 'bg-neutral-400',
     };
-    const iconColor = colorClasses[app.color] || 'bg-neutral-100 text-neutral-600';
-
+    
     return (
-        <div className="bg-white border border-neutral-200 rounded-xl p-5 transition-all hover:shadow-lg hover:border-sage-300 flex flex-col h-full">
-            {/* Card Header: Icon & Meta */}
-            <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${iconColor}`}>
-                    <span className="text-lg font-bold">{app.name.charAt(0)}</span>
-                </div>
-                <div className="flex items-center gap-1 text-sm text-neutral-500">
-                    <FiStar className="text-warning fill-current" />
-                    <span>{app.rating}</span>
-                </div>
+        <div className={`bg-white border border-neutral-200 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer ${app.isInstalled ? 'border-success/50 bg-success/5' : ''}`}>
+            {/* Icon */}
+            <div className={`w-12 h-12 ${colorClasses[app.color] || 'bg-neutral-400'} rounded-xl mx-auto mb-3 flex items-center justify-center shadow-sm`}>
+                <FiSettings className="w-6 h-6 text-white" />
+            </div>
+            
+            {/* Content */}
+            <h4 className="font-semibold text-sm mb-1 text-neutral-800">{app.name}</h4>
+            <p className="text-xs text-neutral-500 mb-3 line-clamp-2 h-8">{app.description}</p>
+            
+            {/* Category Tag */}
+            <div className="mb-3">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">
+                    {app.category}
+                </span>
             </div>
 
-            {/* Card Body: Content */}
-            <div className="flex-1 mb-4">
-                <h3 className="text-lg font-semibold text-neutral-800 mb-2">{app.name}</h3>
-                <p className="text-sm text-neutral-600 line-clamp-2">{app.description}</p>
-            </div>
-
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-4">
-                {app.tags.map(tag => (
-                    <span key={tag} className="text-xs px-2 py-1 bg-neutral-100 text-neutral-600 rounded-md">
-                        #{tag}
-                    </span>
-                ))}
-            </div>
-
-            {/* Card Footer: Author & Action */}
-            <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
-                <div className="text-xs text-neutral-500">
-                    by <span className="font-medium text-neutral-700">{app.author}</span>
-                </div>
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-700 text-sm font-medium rounded-lg hover:bg-sage-100 transition-colors">
-                    <FiDownload />
-                    Install
-                </button>
+            {/* Footer: Price & Action */}
+            <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
+                <span className={`text-xs font-medium px-2 py-1 rounded ${app.price ? 'bg-warning/10 text-warning' : 'bg-sage-100 text-sage-700'}`}>
+                    {app.price || 'Free'}
+                </span>
+                
+                {app.isInstalled ? (
+                    <button disabled className="flex items-center gap-1 text-xs font-bold text-success">
+                        <FiCheck /> Installed
+                    </button>
+                ) : (
+                    <button 
+                        onClick={() => onInstall(app.id)}
+                        className="text-xs font-bold text-sage-600 hover:text-sage-800 hover:underline"
+                    >
+                        Install
+                    </button>
+                )}
             </div>
         </div>
     );
 };
 
-// --- MAIN PAGE COMPONENT ---
+// --- TRANG CHÍNH ---
 function MarketplacePage() {
-    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [apps, setApps] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    
+    // 1. Tải dữ liệu từ API khi vào trang
+    useEffect(() => {
+        const fetchApps = async () => {
+            try {
+                setLoading(true);
+                const response = await apiService.getMarketplaceApps();
+                setApps(response.data);
+            } catch (error) {
+                console.error("Lỗi tải Marketplace:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchApps();
+    }, []);
 
-    // Logic lọc ứng dụng
-    const filteredApps = MOCK_APPS.filter(app => {
-        const matchCategory = selectedCategory === "All" || app.category === selectedCategory;
-        const matchSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          app.description.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchCategory && matchSearch;
+    // 2. Xử lý cài đặt App
+    const handleInstall = async (appId) => {
+        try {
+            // Gọi API
+            await apiService.installApp(appId);
+            // Cập nhật UI ngay lập tức (Optimistic update)
+            setApps(prevApps => prevApps.map(app => 
+                app.id === appId ? { ...app, isInstalled: true } : app
+            ));
+            alert("Cài đặt thành công!");
+        } catch (error) {
+            alert("Lỗi khi cài đặt app.");
+        }
+    };
+
+    // 3. Logic Lọc & Tìm kiếm (Client-side)
+    const filteredApps = apps.filter(app => {
+        const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              app.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory === "All" || app.category === selectedCategory;
+        
+        return matchesSearch && matchesCategory;
     });
 
+    const categories = ["All", "Template", "Module", "Component", "Automation"];
+
+    if (loading) return <div className="p-10 text-center text-neutral-500">Đang tải chợ ứng dụng...</div>;
+
     return (
-        <div className="bg-transparent p-0">
-            {/* 1. Header: Tiêu đề và Tìm kiếm */}
-            {/* Chúng ta tái sử dụng PageHeader nhưng tùy biến một chút */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-semibold text-neutral-800 mb-2">Marketplace</h1>
-                <p className="text-neutral-500 mb-6">Explore and install apps to supercharge your workspace.</p>
-                
-                {/* Search Bar & Filter Toggle (Mobile) */}
-                <div className="relative max-w-xl">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <FiSearch className="text-neutral-400" />
-                    </div>
-                    <input 
-                        type="text" 
-                        placeholder="Search apps, templates, plugins..." 
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-200 focus:border-sage-400 focus:ring-2 focus:ring-sage-400/20 outline-none transition-all"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </div>
+        <div className="flex flex-col gap-8">
+            {/* Dùng PageHeader chung để đồng bộ giao diện */}
+            <PageHeader 
+                title="Marketplace" 
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm} // Kích hoạt ô tìm kiếm trên Header
+            />
 
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* 2. Sidebar: Categories (Bộ lọc) */}
-                <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
-                    <div>
-                        <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider mb-3">Categories</h3>
-                        <div className="flex flex-col gap-1">
-                            {CATEGORIES.map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setSelectedCategory(cat)}
-                                    className={`text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                        selectedCategory === cat 
-                                        ? 'bg-sage-100 text-sage-700' 
-                                        : 'text-neutral-600 hover:bg-neutral-100'
+            {/* Featured Banner (Giữ nguyên tĩnh cho đẹp) */}
+            <section className="bg-gradient-to-r from-sage-50 to-peach-50 rounded-2xl p-8 border border-sage-100 relative overflow-hidden">
+                <div className="relative z-10">
+                    <span className="px-3 py-1 bg-white text-sage-700 text-xs font-bold rounded-full mb-4 inline-block shadow-sm">NEW ARRIVAL</span>
+                    <h2 className="text-3xl font-bold text-neutral-800 mb-2">AI Agent Builder</h2>
+                    <p className="text-neutral-600 max-w-lg mb-6">Create custom AI assistants to automate your workflow without writing a single line of code.</p>
+                    <button className="px-6 py-2.5 bg-neutral-800 text-white rounded-xl font-medium hover:bg-black transition-all shadow-lg hover:shadow-xl">
+                        Try Beta Access
+                    </button>
+                </div>
+                {/* Decorative circle */}
+                <div className="absolute -right-10 -top-10 w-64 h-64 bg-sage-200 rounded-full opacity-20 blur-3xl"></div>
+            </section>
+
+            {/* Main Content Area */}
+            <section>
+                {/* Toolbar: Category Filter */}
+                <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2">
+                    <div className="flex gap-2">
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-4 py-2 text-sm font-medium rounded-xl transition-all whitespace-nowrap
+                                    ${selectedCategory === cat 
+                                        ? 'bg-sage-600 text-white shadow-md' 
+                                        : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
                                     }`}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Recommended (Giả lập) */}
-                    <div className="bg-peach-50 rounded-xl p-4 border border-peach-100">
-                        <h4 className="text-peach-800 font-semibold mb-2 flex items-center gap-2">
-                            <FiStar className="fill-current" /> Featured
-                        </h4>
-                        <p className="text-xs text-peach-700 mb-3">Try the new <strong>AI Agent Builder</strong> to automate your workflow.</p>
-                        <button className="w-full py-1.5 bg-white text-peach-700 text-xs font-medium rounded shadow-sm hover:bg-peach-50">View Details</button>
-                    </div>
-                </div>
-
-                {/* 3. Main Content: App Grid */}
-                <div className="flex-1">
-                    <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm text-neutral-500">Showing {filteredApps.length} results</span>
-                        <select className="text-sm border-none bg-transparent text-neutral-600 font-medium cursor-pointer focus:ring-0">
-                            <option>Most Popular</option>
-                            <option>Newest</option>
-                            <option>Top Rated</option>
-                        </select>
-                    </div>
-
-                    {filteredApps.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {filteredApps.map(app => (
-                                <AppCard key={app.id} app={app} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-20 bg-white rounded-xl border border-dashed border-neutral-300">
-                            <p className="text-neutral-500">No apps found matching your criteria.</p>
-                            <button 
-                                onClick={() => {setSearchTerm(""); setSelectedCategory("All");}}
-                                className="mt-2 text-sage-600 font-medium hover:underline"
                             >
-                                Clear filters
+                                {cat}
                             </button>
-                        </div>
-                    )}
+                        ))}
+                    </div>
+                    <div className="text-sm text-neutral-400 font-medium hidden md:block">
+                        {filteredApps.length} apps found
+                    </div>
                 </div>
-            </div>
+
+                {/* Apps Grid */}
+                {filteredApps.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {filteredApps.map(app => (
+                            <AppCard key={app.id} app={app} onInstall={handleInstall} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-neutral-300">
+                        <p className="text-neutral-500">Không tìm thấy ứng dụng nào khớp với bộ lọc.</p>
+                    </div>
+                )}
+            </section>
         </div>
     );
 }

@@ -1,165 +1,214 @@
 // src/pages/AppBuilderPage.jsx
 import React, { useState } from 'react';
-import { FiBox, FiLayout, FiDatabase, FiCpu, FiPlay, FiSave, FiSettings, FiPlus } from 'react-icons/fi';
+import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import { FiBox, FiLayout, FiType, FiImage, FiPlay, FiSave, FiTrash2, FiUploadCloud, FiX } from 'react-icons/fi';
+import apiService from '../services/apiService'; // Import API
+import { useNavigate } from 'react-router-dom';
 
-// --- MOCK COMPONENTS ---
-const UI_COMPONENTS = [
-    { icon: FiLayout, label: "Container" },
-    { icon: FiBox, label: "Button" },
-    { icon: FiLayout, label: "Input Field" },
-    { icon: FiLayout, label: "Table" },
-    { icon: FiLayout, label: "Card" },
-    { icon: FiLayout, label: "Image" },
+// (Giữ nguyên TOOLS, DraggableTool, CanvasArea như cũ)
+const TOOLS = [
+    { type: 'container', label: 'Container', icon: FiLayout },
+    { type: 'button', label: 'Button', icon: FiBox },
+    { type: 'input', label: 'Input Field', icon: FiType },
+    { type: 'text', label: 'Text Block', icon: FiType },
+    { type: 'image', label: 'Image', icon: FiImage },
 ];
 
-function AppBuilderPage() {
-    const [activeTab, setActiveTab] = useState('ui'); // ui, data, logic
+const DraggableTool = ({ tool }) => {
+    const { attributes, listeners, setNodeRef, transform } = useDraggable({
+        id: `tool-${tool.type}`,
+        data: { type: tool.type, label: tool.label }
+    });
+    const style = transform ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        zIndex: 999, opacity: 0.8, boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+    } : undefined;
 
     return (
-        // Container chiếm toàn bộ chiều cao còn lại (trừ header chính)
-        <div className="flex h-[calc(100vh-6rem)] bg-neutral-50 overflow-hidden border border-neutral-200 rounded-xl shadow-sm m-[-24px]">
-            
-            {/* --- 1. LEFT SIDEBAR (Tools) --- */}
-            <div className="w-64 bg-white border-r border-neutral-200 flex flex-col">
-                <div className="p-4 border-b border-neutral-200">
-                    <h3 className="font-semibold text-neutral-800">Toolbox</h3>
-                </div>
-                
-                {/* Tabs */}
-                <div className="flex border-b border-neutral-200">
-                    <button 
-                        className={`flex-1 py-3 text-sm font-medium ${activeTab === 'ui' ? 'text-sage-600 border-b-2 border-sage-600' : 'text-neutral-500'}`}
-                        onClick={() => setActiveTab('ui')}
-                    >
-                        UI
-                    </button>
-                    <button 
-                        className={`flex-1 py-3 text-sm font-medium ${activeTab === 'data' ? 'text-sage-600 border-b-2 border-sage-600' : 'text-neutral-500'}`}
-                        onClick={() => setActiveTab('data')}
-                    >
-                        Data
-                    </button>
-                    <button 
-                        className={`flex-1 py-3 text-sm font-medium ${activeTab === 'logic' ? 'text-sage-600 border-b-2 border-sage-600' : 'text-neutral-500'}`}
-                        onClick={() => setActiveTab('logic')}
-                    >
-                        Logic
-                    </button>
-                </div>
+        <div ref={setNodeRef} {...listeners} {...attributes} style={style}
+            className="flex flex-col items-center justify-center p-3 bg-white border border-neutral-200 rounded-lg cursor-move hover:border-sage-400 hover:bg-sage-50 transition-all shadow-sm">
+            <tool.icon className="w-6 h-6 text-neutral-600 mb-1" />
+            <span className="text-xs text-neutral-600">{tool.label}</span>
+        </div>
+    );
+};
 
-                {/* Tool Content */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    {activeTab === 'ui' && (
-                        <div className="space-y-6">
-                            <div>
-                                <h4 className="text-xs font-bold text-neutral-400 uppercase mb-3">Basic Elements</h4>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {UI_COMPONENTS.map((comp, i) => (
-                                        <div key={i} className="flex flex-col items-center justify-center p-3 bg-neutral-50 border border-neutral-200 rounded-lg cursor-move hover:border-sage-400 hover:bg-sage-50 transition-colors">
-                                            <comp.icon className="w-6 h-6 text-neutral-600 mb-1" />
-                                            <span className="text-xs text-neutral-600">{comp.label}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+const CanvasArea = ({ items, onRemoveItem }) => {
+    const { setNodeRef, isOver } = useDroppable({ id: 'canvas-area' });
+    return (
+        <div ref={setNodeRef} className={`w-full max-w-3xl min-h-[600px] rounded-xl transition-colors border-2 border-dashed relative ${isOver ? 'border-sage-500 bg-sage-50' : 'border-neutral-200 bg-white'}`}>
+            {items.length === 0 && !isOver && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <p className="text-neutral-400 text-sm">Kéo các thành phần từ Toolbox vào đây</p>
+                </div>
+            )}
+            <div className="p-6 flex flex-col gap-4">
+                {items.map((item) => (
+                    <div key={item.id} className="relative group">
+                        <div className="p-4 border border-transparent hover:border-sage-300 rounded-lg transition-all">
+                            {item.type === 'button' && <button className="px-4 py-2 bg-sage-500 text-white rounded-lg shadow-sm">Button</button>}
+                            {item.type === 'input' && <input type="text" placeholder="Input field..." className="w-full p-2 border rounded-lg bg-neutral-50" />}
+                            {item.type === 'container' && <div className="h-24 bg-neutral-100 rounded-lg border-2 border-dashed border-neutral-300 flex items-center justify-center text-neutral-400">Container Area</div>}
+                            {item.type === 'text' && <p className="text-neutral-700">Đây là một đoạn văn bản mẫu.</p>}
+                            {item.type === 'image' && <div className="h-32 bg-neutral-200 rounded-lg flex items-center justify-center text-neutral-500">Image Placeholder</div>}
                         </div>
-                    )}
-                    {activeTab === 'data' && (
-                        <div className="text-center text-neutral-500 mt-10">
-                            <FiDatabase className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">Data Models will appear here</p>
-                            <button className="mt-4 px-3 py-1.5 bg-sage-100 text-sage-700 text-xs font-medium rounded-lg">
-                                + New Table
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* --- 2. CENTER CANVAS (Preview) --- */}
-            <div className="flex-1 bg-neutral-100 flex flex-col relative">
-                {/* Canvas Header */}
-                <div className="h-12 bg-white border-b border-neutral-200 flex items-center justify-between px-4">
-                    <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-neutral-500">Page:</span>
-                        <select className="text-sm border-none bg-transparent font-semibold text-neutral-800 focus:ring-0">
-                            <option>Home Page</option>
-                            <option>Details Page</option>
-                            <option>Settings</option>
-                        </select>
+                        <button onClick={() => onRemoveItem(item.id)} className="absolute top-2 right-2 p-1 bg-white shadow-md rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <FiTrash2 size={14} />
+                        </button>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button className="p-1.5 text-neutral-500 hover:bg-neutral-100 rounded"><FiLayout /></button>
-                        <button className="p-1.5 text-neutral-500 hover:bg-neutral-100 rounded"><FiCpu /></button>
-                    </div>
-                </div>
-
-                {/* The Canvas Itself */}
-                <div className="flex-1 p-8 overflow-auto flex justify-center">
-                    <div className="w-full max-w-3xl bg-white min-h-[600px] shadow-sm border border-neutral-200 rounded-lg relative">
-                        {/* Placeholder Content */}
-                        <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-200 m-4 rounded-lg">
-                            <div className="text-center">
-                                <p className="text-neutral-400 text-sm">Drag components here to build your app</p>
-                            </div>
-                        </div>
-                        
-                        {/* Fake header for preview */}
-                        <div className="border-b border-neutral-100 p-6">
-                            <div className="h-8 w-1/3 bg-neutral-100 rounded mb-4"></div>
-                            <div className="h-4 w-1/2 bg-neutral-50 rounded"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* --- 3. RIGHT SIDEBAR (Properties) --- */}
-            <div className="w-72 bg-white border-l border-neutral-200 flex flex-col">
-                <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-                    <h3 className="font-semibold text-neutral-800">Properties</h3>
-                    <button className="text-sage-600 text-xs font-medium hover:underline">Reset</button>
-                </div>
-                <div className="p-4 space-y-6">
-                    <div className="text-sm text-neutral-500 italic text-center mt-10">
-                        Select a component on the canvas to edit its properties.
-                    </div>
-                    
-                    {/* Fake Properties Form */}
-                    <div className="opacity-50 pointer-events-none">
-                        <div className="space-y-3">
-                            <div>
-                                <label className="text-xs font-medium text-neutral-700 block mb-1">Component ID</label>
-                                <input type="text" value="container_1" className="w-full text-xs p-2 border rounded bg-neutral-50" readOnly />
-                            </div>
-                            <div>
-                                <label className="text-xs font-medium text-neutral-700 block mb-1">Width</label>
-                                <div className="flex gap-2">
-                                    <input type="text" value="100%" className="w-full text-xs p-2 border rounded" />
-                                    <select className="text-xs border rounded"><option>px</option><option>%</option></select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-medium text-neutral-700 block mb-1">Background</label>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded border bg-white"></div>
-                                    <input type="text" value="#FFFFFF" className="flex-1 text-xs p-2 border rounded" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Bottom Actions */}
-                <div className="mt-auto p-4 border-t border-neutral-200 bg-neutral-50">
-                    <button className="w-full py-2 bg-sage-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-sage-600">
-                        <FiPlay className="w-4 h-4" /> Preview App
-                    </button>
-                    <button className="w-full mt-2 py-2 border border-neutral-300 text-neutral-700 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-white">
-                        <FiSave className="w-4 h-4" /> Save Draft
-                    </button>
-                </div>
+                ))}
             </div>
         </div>
+    );
+};
+
+// --- MAIN PAGE ---
+function AppBuilderPage() {
+    const [activeTab, setActiveTab] = useState('ui');
+    const [canvasItems, setCanvasItems] = useState([]);
+    const navigate = useNavigate();
+
+    // State cho Modal Publish
+    const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+    const [publishData, setPublishData] = useState({ name: '', description: '', category: 'Template', price: '' });
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && over.id === 'canvas-area') {
+            const toolType = active.data.current?.type;
+            if (toolType) {
+                const newItem = { id: `item-${Date.now()}`, type: toolType };
+                setCanvasItems((prev) => [...prev, newItem]);
+            }
+        }
+    };
+
+    const handleRemoveItem = (id) => setCanvasItems((prev) => prev.filter(item => item.id !== id));
+
+    // Xử lý Publish
+    const handlePublish = async (e) => {
+        e.preventDefault();
+        try {
+            // Gọi API
+            await apiService.publishApp({
+                ...publishData,
+                // appDataJson: JSON.stringify(canvasItems) // Gửi kèm cấu trúc app (nếu cần sau này)
+            });
+            
+            alert("Đã xuất bản ứng dụng thành công!");
+            setIsPublishModalOpen(false);
+            
+            // Chuyển hướng về Marketplace để xem thành quả
+            navigate('/marketplace');
+        } catch (error) {
+            console.error("Lỗi publish:", error);
+            alert("Không thể xuất bản ứng dụng.");
+        }
+    };
+
+    return (
+        <DndContext onDragEnd={handleDragEnd}>
+            <div className="flex h-[calc(100vh-6rem)] bg-neutral-50 overflow-hidden border border-neutral-200 rounded-xl shadow-sm m-[-24px]">
+                
+                {/* LEFT SIDEBAR */}
+                <div className="w-64 bg-white border-r border-neutral-200 flex flex-col">
+                    <div className="p-4 border-b border-neutral-200"><h3 className="font-semibold text-neutral-800">Toolbox</h3></div>
+                    <div className="flex border-b border-neutral-200">
+                        <button className={`flex-1 py-3 text-sm font-medium ${activeTab === 'ui' ? 'text-sage-600 border-b-2 border-sage-600' : 'text-neutral-500'}`} onClick={() => setActiveTab('ui')}>UI</button>
+                        <button className={`flex-1 py-3 text-sm font-medium ${activeTab === 'data' ? 'text-sage-600 border-b-2 border-sage-600' : 'text-neutral-500'}`} onClick={() => setActiveTab('data')}>Data</button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4">
+                        {activeTab === 'ui' && <div className="grid grid-cols-2 gap-2">{TOOLS.map((tool) => <DraggableTool key={tool.type} tool={tool} />)}</div>}
+                        {activeTab === 'data' && <p className="text-center text-sm text-neutral-400 mt-4">Data models here</p>}
+                    </div>
+                </div>
+
+                {/* CENTER CANVAS */}
+                <div className="flex-1 bg-neutral-100 flex flex-col relative">
+                    <div className="h-12 bg-white border-b border-neutral-200 flex items-center justify-between px-4">
+                        <span className="text-sm font-medium text-neutral-500">Canvas Editor</span>
+                        {/* Nút Publish mới */}
+                        <button 
+                            onClick={() => setIsPublishModalOpen(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-sage-500 text-white text-xs font-medium rounded-lg hover:bg-sage-600 transition-colors"
+                        >
+                            <FiUploadCloud /> Publish to Marketplace
+                        </button>
+                    </div>
+                    <div className="flex-1 p-8 overflow-auto flex justify-center">
+                        <CanvasArea items={canvasItems} onRemoveItem={handleRemoveItem} />
+                    </div>
+                </div>
+
+                {/* RIGHT SIDEBAR */}
+                <div className="w-72 bg-white border-l border-neutral-200 flex flex-col">
+                    <div className="p-4 border-b border-neutral-200"><h3 className="font-semibold text-neutral-800">Properties</h3></div>
+                    <div className="p-4 flex-1"><p className="text-sm text-neutral-400 italic text-center mt-10">Select an item on canvas to edit.</p></div>
+                </div>
+            </div>
+
+            {/* --- MODAL PUBLISH --- */}
+            {isPublishModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-neutral-200 animation-fade-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-semibold text-neutral-800">Publish to Marketplace</h3>
+                            <button onClick={() => setIsPublishModalOpen(false)} className="p-1 hover:bg-neutral-100 rounded-full"><FiX /></button>
+                        </div>
+                        
+                        <form onSubmit={handlePublish} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-1">App Name</label>
+                                <input 
+                                    type="text" required 
+                                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-sage-400 focus:border-sage-400 outline-none"
+                                    value={publishData.name}
+                                    onChange={e => setPublishData({...publishData, name: e.target.value})}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+                                <textarea 
+                                    required rows="3"
+                                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-sage-400 focus:border-sage-400 outline-none"
+                                    value={publishData.description}
+                                    onChange={e => setPublishData({...publishData, description: e.target.value})}
+                                ></textarea>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-700 mb-1">Category</label>
+                                    <select 
+                                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none"
+                                        value={publishData.category}
+                                        onChange={e => setPublishData({...publishData, category: e.target.value})}
+                                    >
+                                        <option>Template</option>
+                                        <option>Module</option>
+                                        <option>Component</option>
+                                        <option>Automation</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-700 mb-1">Price (Optional)</label>
+                                    <input 
+                                        type="text" placeholder="Free"
+                                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none"
+                                        value={publishData.price}
+                                        onChange={e => setPublishData({...publishData, price: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="pt-4 flex gap-3">
+                                <button type="button" onClick={() => setIsPublishModalOpen(false)} className="flex-1 py-2.5 border border-neutral-300 text-neutral-700 font-medium rounded-xl hover:bg-neutral-50">Cancel</button>
+                                <button type="submit" className="flex-1 py-2.5 bg-sage-500 text-white font-medium rounded-xl hover:bg-sage-600 shadow-lg shadow-sage-500/20">Publish App</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </DndContext>
     );
 }
 

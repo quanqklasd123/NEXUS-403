@@ -106,6 +106,23 @@ const apiService = {
         return apiClient.get('/todoitems/my-all');
     },
 
+    getMarketplaceApps: () => {
+        return apiClient.get('/marketplace/apps');
+    },
+
+    installApp: (id) => {
+        return apiClient.post(`/marketplace/install/${id}`);
+    },
+
+    // HÀM MỚI: Lấy các component đã cài để dùng trong Builder
+    getMyInstalledComponents: () => {
+        return apiClient.get('/marketplace/my-components');
+    },
+
+    publishApp: (appData) => {
+        return apiClient.post('/marketplace/publish', appData);
+    },
+
 };
 
 // Xuất "apiService" để các component khác có thể dùng
