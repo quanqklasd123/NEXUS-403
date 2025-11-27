@@ -21,19 +21,20 @@ function App() {
     // ... CỦA BẠN GIỮ NGUYÊN)
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-
+    const [isLoading, setIsLoading] = useState(true); // Thêm state để track việc đang kiểm tra auth
 
     useEffect(() => {
-
+        // Kiểm tra token ngay khi component mount
         const token = localStorage.getItem('authToken');
-
+        
         if (token) {
-
             setIsAuthenticated(true);
-
+        } else {
+            setIsAuthenticated(false);
         }
-
+        
+        // Đánh dấu đã kiểm tra xong
+        setIsLoading(false);
     }, []);
 
 
@@ -84,6 +85,15 @@ function App() {
 
                 <div className="p-6 md:p-10">
 
+                    {/* Hiển thị loading khi đang kiểm tra authentication */}
+                    {isLoading ? (
+                        <div className="flex items-center justify-center min-h-screen">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-600 mx-auto mb-4"></div>
+                                <p className="text-neutral-500">Đang tải...</p>
+                            </div>
+                        </div>
+                    ) : (
                     <Routes>
 
                         {!isAuthenticated ? (
@@ -149,7 +159,7 @@ function App() {
                         )}
 
                     </Routes>
-
+                    )}
                 </div>
 
             </main>

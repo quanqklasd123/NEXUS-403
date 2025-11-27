@@ -63,12 +63,6 @@ function Sidebar() {
                     <FiShoppingBag className="w-5 h-5 mr-3" />
                     <span>Marketplace</span>
                 </NavLink>
-
-                <NavLink to="/" className={getLinkClass}>
-                    {/* Dùng icon CPU/Tool cho Builder */}
-                    <FiCpu className="w-5 h-5 mr-3" />
-                    <span>App Builder</span>
-                </NavLink>
             </nav>
         </aside>
     );
