@@ -1,13 +1,18 @@
 // src/pages/AppBuilderPage.jsx
 import React, { useState, useEffect } from 'react';
 import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
-import { FiBox, FiLayout, FiType, FiImage, FiUploadCloud, FiX, FiTrash2, FiSave } from 'react-icons/fi'; // Thêm FiSave
+import { 
+    FiBox, FiLayout, FiType, FiImage, FiUploadCloud, FiX, FiTrash2, FiSave,
+    FiGrid, FiCreditCard, FiPieChart, FiMinus, FiCheckSquare, FiList
+} from 'react-icons/fi';
 import apiService from '../services/apiService';
-import { useNavigate, useParams } from 'react-router-dom'; // Thêm useParams
+import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
 import PropertiesPanel from '../components/builder/PropertiesPanel';
 
-// 1. TOOLS (Giữ nguyên)
+// 1. CẬP NHẬT: ĐỊNH NGHĨA CÁC CÔNG CỤ (Thêm Grid, Card, Chart, Divider, Checkbox, Select)
 const TOOLS = [
+    // --- Layout ---
     { 
         type: 'container', 
         label: 'Container', 
@@ -16,12 +21,102 @@ const TOOLS = [
         defaultStyle: { 
             width: '100%', 
             height: '150px', 
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#f8fafc', // neutral-50
             padding: '20px',
             margin: '0px',
             border: '1px dashed #cbd5e1' 
         } 
     },
+    { 
+        type: 'row', 
+        label: 'Row (Flex)', 
+        icon: FiGrid, 
+        defaultProps: { label: 'Row' }, 
+        defaultStyle: { 
+            width: '100%', 
+            height: 'auto', 
+            display: 'flex',
+            gap: '10px',
+            padding: '10px',
+            border: '1px dashed #94a3b8' 
+        } 
+    },
+    { 
+        type: 'divider', 
+        label: 'Divider', 
+        icon: FiMinus, 
+        defaultProps: { label: '' }, 
+        defaultStyle: { 
+            width: '100%', 
+            height: '1px', 
+            backgroundColor: '#e2e8f0', 
+            margin: '10px 0' 
+        } 
+    },
+
+    // --- Display ---
+    { 
+        type: 'card', 
+        label: 'Card', 
+        icon: FiCreditCard, 
+        defaultProps: { label: 'Card Content' }, 
+        defaultStyle: { 
+            width: '300px', 
+            height: '200px', 
+            backgroundColor: '#ffffff', 
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            padding: '20px',
+            border: '1px solid #e2e8f0'
+        } 
+    },
+    { 
+        type: 'chart', 
+        label: 'Chart (Mock)', 
+        icon: FiPieChart, 
+        defaultProps: { label: 'Sales Chart' }, 
+        defaultStyle: { 
+            width: '100%', 
+            height: '200px', 
+            backgroundColor: '#f0fdf4', // light green bg
+            border: '1px solid #bbf7d0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#166534'
+        } 
+    },
+    { 
+        type: 'image', 
+        label: 'Image', 
+        icon: FiImage, 
+        defaultProps: { label: 'Image' }, 
+        defaultStyle: { 
+            width: '100%', 
+            height: '200px', 
+            backgroundColor: '#e2e8f0',
+            margin: '10px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        } 
+    },
+    { 
+        type: 'text', 
+        label: 'Text Block', 
+        icon: FiType, 
+        defaultProps: { label: 'Lorem ipsum dolor sit amet.' }, 
+        defaultStyle: { 
+            width: '100%', 
+            height: 'auto', 
+            color: '#333333',
+            padding: '5px',
+            margin: '5px 0',
+            fontSize: '16px'
+        } 
+    },
+
+    // --- Form ---
     { 
         type: 'button', 
         label: 'Button', 
@@ -30,12 +125,13 @@ const TOOLS = [
         defaultStyle: { 
             width: 'auto', 
             height: 'auto', 
-            backgroundColor: '#2563eb',
+            backgroundColor: '#2563eb', // blue-600
             color: '#ffffff', 
             padding: '10px 20px',
             margin: '5px',
             borderRadius: '8px',
-            border: 'none'
+            border: 'none',
+            cursor: 'pointer'
         } 
     },
     { 
@@ -55,32 +151,34 @@ const TOOLS = [
         } 
     },
     { 
-        type: 'text', 
-        label: 'Text Block', 
-        icon: FiType, 
-        defaultProps: { label: 'Lorem ipsum dolor sit amet.' }, 
+        type: 'checkbox', 
+        label: 'Checkbox', 
+        icon: FiCheckSquare, 
+        defaultProps: { label: 'Check me' }, 
         defaultStyle: { 
-            width: '100%', 
+            width: 'auto', 
             height: 'auto', 
-            color: '#333333',
-            padding: '5px',
-            margin: '5px 0',
-            fontSize: '16px'
+            margin: '5px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#333333'
         } 
     },
     { 
-        type: 'image', 
-        label: 'Image', 
-        icon: FiImage, 
-        defaultProps: { label: 'Image' }, 
+        type: 'select', 
+        label: 'Select / Dropdown', 
+        icon: FiList, 
+        defaultProps: { label: 'Select Option' }, 
         defaultStyle: { 
             width: '100%', 
-            height: '200px', 
-            backgroundColor: '#e2e8f0',
-            margin: '10px 0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            height: 'auto',
+            padding: '10px',
+            margin: '5px 0',
+            backgroundColor: '#ffffff',
+            color: '#333333',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px'
         } 
     },
 ];
@@ -100,34 +198,67 @@ const DraggableTool = ({ tool }) => {
         <div ref={setNodeRef} {...listeners} {...attributes} style={style}
             className="flex flex-col items-center justify-center p-3 bg-white border border-neutral-200 rounded-lg cursor-move hover:border-sage-400 hover:bg-sage-50 transition-all shadow-sm">
             <tool.icon className="w-6 h-6 text-neutral-600 mb-1" />
-            <span className="text-xs text-neutral-600">{tool.label}</span>
+            <span className="text-xs text-neutral-600 text-center">{tool.label}</span>
         </div>
     );
 };
 
-// 3. RENDER COMPONENT (Giữ nguyên bản mới nhất)
+// 3. CẬP NHẬT: RENDER COMPONENT (Hỗ trợ các component mới)
 const RenderComponent = ({ item, isSelected, onClick }) => {
     const itemStyle = {
         ...item.style,
         position: 'relative',
-        border: isSelected ? '2px solid #2563eb' : '1px solid transparent',
+        border: isSelected ? '2px solid #2563eb' : item.style.border || 'none', // Ưu tiên viền chọn, fallback về viền style
         cursor: 'pointer',
-        boxSizing: 'border-box', 
+        boxSizing: 'border-box',
     };
 
     const content = () => {
         switch (item.type) {
+            // --- Layout ---
+            case 'container':
+                return (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
+                        {item.props.label} (Drop items here)
+                    </div>
+                );
+            case 'row':
+                return (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm bg-neutral-50">
+                        Row Container (Flex)
+                    </div>
+                );
+            case 'divider':
+                return null; // Divider chỉ cần style của wrapper
+
+            // --- Display ---
+            case 'card':
+                return (
+                    <div className="w-full h-full">
+                        <h3 className="font-bold text-lg mb-2">Card Title</h3>
+                        <p className="text-sm text-gray-500">{item.props.label}</p>
+                    </div>
+                );
+            case 'chart':
+                return (
+                    <div className="w-full h-full flex flex-col items-center justify-center">
+                        <FiPieChart className="w-10 h-10 mb-2 opacity-50" />
+                        <span className="font-medium">{item.props.label}</span>
+                    </div>
+                );
+            case 'image':
+                return (
+                    <div className="flex items-center justify-center h-full w-full text-neutral-400">
+                        <FiImage className="w-8 h-8" />
+                    </div>
+                );
+            case 'text':
+                return <p>{item.props.label}</p>;
+
+            // --- Form ---
             case 'button':
                 return (
-                    <button 
-                        className="rounded flex items-center justify-center" 
-                        style={{ 
-                            width: '100%', height: '100%', 
-                            background: item.style.backgroundColor || 'transparent', 
-                            color: item.style.color || 'inherit',
-                            padding: item.style.padding, margin: 0 
-                        }}
-                    >
+                    <button className="w-full h-full flex items-center justify-center">
                         {item.props.label}
                     </button>
                 );
@@ -136,38 +267,22 @@ const RenderComponent = ({ item, isSelected, onClick }) => {
                     <input 
                         type="text" 
                         placeholder={item.props.placeholder} 
-                        className="border border-neutral-300 rounded pointer-events-none"
-                        style={{ 
-                            width: '100%', height: '100%',
-                            padding: item.style.padding,
-                            background: item.style.backgroundColor,
-                            color: item.style.color
-                        }} 
+                        className="w-full h-full bg-transparent outline-none pointer-events-none" 
                         readOnly
                     />
                 );
-            case 'text':
+            case 'checkbox':
                 return (
-                    <p style={{ 
-                        width: '100%', height: '100%',
-                        padding: item.style.padding,
-                        color: item.style.color
-                    }}>
-                        {item.props.label}
-                    </p>
-                );
-            case 'image':
-                return (
-                    <div className="flex items-center justify-center h-full w-full text-neutral-400"
-                         style={{ backgroundColor: item.style.backgroundColor }}>
-                        <FiImage className="w-8 h-8" />
+                    <div className="flex items-center gap-2 w-full h-full pointer-events-none">
+                        <input type="checkbox" className="w-4 h-4" readOnly />
+                        <span>{item.props.label}</span>
                     </div>
                 );
-            case 'container':
+            case 'select':
                 return (
-                    <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-neutral-300 text-neutral-400 text-sm"
-                         style={{ backgroundColor: item.style.backgroundColor, padding: item.style.padding }}>
-                        {item.props.label}
+                    <div className="w-full h-full flex items-center justify-between px-2 text-gray-500 pointer-events-none bg-transparent">
+                        <span>{item.props.label}</span>
+                        <span className="text-xs">▼</span>
                     </div>
                 );
             default:
@@ -175,24 +290,18 @@ const RenderComponent = ({ item, isSelected, onClick }) => {
         }
     };
 
-    const wrapperStyle = {
-        ...itemStyle,
-        padding: item.type === 'button' || item.type === 'input' ? 0 : itemStyle.padding,
-        backgroundColor: item.type === 'button' || item.type === 'input' ? 'transparent' : itemStyle.backgroundColor,
-    };
-
     return (
         <div 
             onClick={(e) => { e.stopPropagation(); onClick(item.id); }} 
-            style={wrapperStyle}
-            className="hover:ring-1 hover:ring-sage-300 transition-all rounded-md"
+            style={itemStyle}
+            className={`transition-all rounded-md ${item.type !== 'divider' ? 'hover:ring-1 hover:ring-sage-300' : ''}`}
         >
             {content()}
         </div>
     );
 };
 
-// 4. CANVAS AREA (Giữ nguyên)
+// 4. CANVAS AREA (Giữ nguyên logic cũ)
 const CanvasArea = ({ items, selectedId, onSelectItem }) => {
     const { setNodeRef, isOver } = useDroppable({ id: 'canvas-area' });
     return (
@@ -245,44 +354,23 @@ function AppBuilderPage() {
     // --- 1. TẢI DỮ LIỆU KHI MỞ TRANG ---
     useEffect(() => {
         const fetchProject = async () => {
-            if (!projectId) return;
-            
+            if (!projectId || isNaN(Number(projectId))) {
+                setProjectInfo(null);
+                setLoading(false);
+                return;
+            }
             try {
-                setLoading(true);
-                const response = await apiService.getProject(projectId);
-                const project = response.data;
-                
-                setProjectInfo(project);
-                
-                // Parse JSON string thành mảng canvasItems
-                if (project.jsonData) {
-                    try {
-                        const items = JSON.parse(project.jsonData);
-                        setCanvasItems(items);
-                    } catch (e) {
-                        console.error("Lỗi parse JSON:", e);
-                        setCanvasItems([]);
-                    }
-                }
-                
-                // Điền sẵn thông tin cho form Publish
-                setPublishData(prev => ({
-                    ...prev,
-                    name: project.name,
-                    description: project.description || ''
-                }));
-
+                const res = await axios.get(`/api/projects/${projectId}`);
+                setProjectInfo(res.data);
             } catch (error) {
                 console.error("Lỗi tải Project:", error);
-                alert("Không thể tải dự án.");
-                navigate('/');
+                setProjectInfo(null);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchProject();
-    }, [projectId, navigate]);
+    }, [projectId]);
     // ------------------------------------
 
     const handleDragEnd = (event) => {
@@ -357,7 +445,7 @@ function AppBuilderPage() {
         <DndContext onDragEnd={handleDragEnd}>
             <div className="flex h-[calc(100vh-6rem)] bg-neutral-100 overflow-hidden border border-neutral-200 rounded-xl shadow-sm m-[-24px]">
                 
-                {/* LEFT: Toolbox */}
+                {/* LEFT: Toolbox (Đã nâng cấp UI) */}
                 <div className="w-64 bg-white border-r border-neutral-200 flex flex-col z-10">
                     <div className="p-4 border-b border-neutral-200"><h3 className="font-semibold text-neutral-800">Toolbox</h3></div>
                     <div className="flex border-b border-neutral-200">
@@ -378,7 +466,7 @@ function AppBuilderPage() {
                             <span className="text-xs text-neutral-400 px-2 py-0.5 bg-neutral-100 rounded">Draft</span>
                         </div>
                         <div className="flex gap-2">
-                            {/* Nút SAVE mới */}
+                            {/* Nút SAVE */}
                             <button 
                                 onClick={handleSave}
                                 disabled={saving}
@@ -410,7 +498,7 @@ function AppBuilderPage() {
                 </div>
             </div>
 
-             {/* Modal Publish (Giữ nguyên) */}
+             {/* Modal Publish */}
              {isPublishModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-neutral-200 animation-fade-in">
