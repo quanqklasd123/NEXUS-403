@@ -119,9 +119,8 @@ const apiService = {
         return apiClient.get('/marketplace/my-components');
     },
 
-    publishApp: (appData) => {
-        return apiClient.post('/marketplace/publish', appData);
-    },
+
+    
 
     // --- PROJECTS (APP BUILDER) ---
     getProjects: () => {
@@ -143,6 +142,12 @@ const apiService = {
 
     deleteProject: (id) => {
         return apiClient.delete(`/projects/${id}`);
+    },
+
+    // Gọi API: POST /api/projects/{id}/publish
+    publishProject: (projectId, appData) => {
+        // appData chứa: { name, description, category, price }
+        return apiClient.post(`/projects/${projectId}/publish`, appData);
     },
 
 };

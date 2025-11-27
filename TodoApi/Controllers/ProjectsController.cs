@@ -151,5 +151,24 @@ namespace TodoApi.Controllers
 
             return NoContent();
         }
+
+        // --- API MỚI: PUBLISH ---
+        [HttpPost("{id}/publish")]
+        public async Task<IActionResult> PublishProject(long id, [FromBody] PublishAppDTO publishDto)
+        {
+            var userId = GetCurrentUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.AppUserId == userId);
+
+            if (project == null) return NotFound("Project not found.");
+
+            // Cập nhật thông tin và đánh dấu đã xuất bản
+            project.Name = publishDto.Name;
+            project.Description = publishDto.Description;
+            project.IsPublished = true;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Project published successfully!", projectId = project.Id });
+        }
     }
 }

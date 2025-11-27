@@ -6,184 +6,25 @@ import {
     FiGrid, FiCreditCard, FiPieChart, FiMinus, FiCheckSquare, FiList
 } from 'react-icons/fi';
 import apiService from '../services/apiService';
-import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import PropertiesPanel from '../components/builder/PropertiesPanel';
 
-// 1. CẬP NHẬT: ĐỊNH NGHĨA CÁC CÔNG CỤ (Thêm Grid, Card, Chart, Divider, Checkbox, Select)
+// 1. TOOLS
 const TOOLS = [
-    // --- Layout ---
-    { 
-        type: 'container', 
-        label: 'Container', 
-        icon: FiLayout, 
-        defaultProps: { label: 'Container' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: '150px', 
-            backgroundColor: '#f8fafc', // neutral-50
-            padding: '20px',
-            margin: '0px',
-            border: '1px dashed #cbd5e1' 
-        } 
-    },
-    { 
-        type: 'row', 
-        label: 'Row (Flex)', 
-        icon: FiGrid, 
-        defaultProps: { label: 'Row' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto', 
-            display: 'flex',
-            gap: '10px',
-            padding: '10px',
-            border: '1px dashed #94a3b8' 
-        } 
-    },
-    { 
-        type: 'divider', 
-        label: 'Divider', 
-        icon: FiMinus, 
-        defaultProps: { label: '' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: '1px', 
-            backgroundColor: '#e2e8f0', 
-            margin: '10px 0' 
-        } 
-    },
-
-    // --- Display ---
-    { 
-        type: 'card', 
-        label: 'Card', 
-        icon: FiCreditCard, 
-        defaultProps: { label: 'Card Content' }, 
-        defaultStyle: { 
-            width: '300px', 
-            height: '200px', 
-            backgroundColor: '#ffffff', 
-            borderRadius: '12px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            padding: '20px',
-            border: '1px solid #e2e8f0'
-        } 
-    },
-    { 
-        type: 'chart', 
-        label: 'Chart (Mock)', 
-        icon: FiPieChart, 
-        defaultProps: { label: 'Sales Chart' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: '200px', 
-            backgroundColor: '#f0fdf4', // light green bg
-            border: '1px solid #bbf7d0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#166534'
-        } 
-    },
-    { 
-        type: 'image', 
-        label: 'Image', 
-        icon: FiImage, 
-        defaultProps: { label: 'Image' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: '200px', 
-            backgroundColor: '#e2e8f0',
-            margin: '10px 0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        } 
-    },
-    { 
-        type: 'text', 
-        label: 'Text Block', 
-        icon: FiType, 
-        defaultProps: { label: 'Lorem ipsum dolor sit amet.' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto', 
-            color: '#333333',
-            padding: '5px',
-            margin: '5px 0',
-            fontSize: '16px'
-        } 
-    },
-
-    // --- Form ---
-    { 
-        type: 'button', 
-        label: 'Button', 
-        icon: FiBox, 
-        defaultProps: { label: 'Click Me' }, 
-        defaultStyle: { 
-            width: 'auto', 
-            height: 'auto', 
-            backgroundColor: '#2563eb', // blue-600
-            color: '#ffffff', 
-            padding: '10px 20px',
-            margin: '5px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer'
-        } 
-    },
-    { 
-        type: 'input', 
-        label: 'Input Field', 
-        icon: FiType, 
-        defaultProps: { label: 'Input', placeholder: 'Enter text...' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto',
-            padding: '10px',
-            margin: '5px 0',
-            backgroundColor: '#ffffff',
-            color: '#333333',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px'
-        } 
-    },
-    { 
-        type: 'checkbox', 
-        label: 'Checkbox', 
-        icon: FiCheckSquare, 
-        defaultProps: { label: 'Check me' }, 
-        defaultStyle: { 
-            width: 'auto', 
-            height: 'auto', 
-            margin: '5px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: '#333333'
-        } 
-    },
-    { 
-        type: 'select', 
-        label: 'Select / Dropdown', 
-        icon: FiList, 
-        defaultProps: { label: 'Select Option' }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto',
-            padding: '10px',
-            margin: '5px 0',
-            backgroundColor: '#ffffff',
-            color: '#333333',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px'
-        } 
-    },
+    { type: 'container', label: 'Container', icon: FiLayout, defaultProps: { label: 'Container' }, defaultStyle: { width: '100%', height: '150px', backgroundColor: '#f8fafc', padding: '20px', margin: '0px', border: '1px dashed #cbd5e1' } },
+    { type: 'row', label: 'Row (Flex)', icon: FiGrid, defaultProps: { label: 'Row' }, defaultStyle: { width: '100%', height: 'auto', display: 'flex', gap: '10px', padding: '10px', border: '1px dashed #94a3b8' } },
+    { type: 'divider', label: 'Divider', icon: FiMinus, defaultProps: { label: '' }, defaultStyle: { width: '100%', height: '1px', backgroundColor: '#e2e8f0', margin: '10px 0' } },
+    { type: 'card', label: 'Card', icon: FiCreditCard, defaultProps: { label: 'Card Content' }, defaultStyle: { width: '300px', height: '200px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '20px', border: '1px solid #e2e8f0'} },
+    { type: 'chart', label: 'Chart (Mock)', icon: FiPieChart, defaultProps: { label: 'Sales Chart' }, defaultStyle: { width: '100%', height: '200px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#166534'} },
+    { type: 'image', label: 'Image', icon: FiImage, defaultProps: { label: 'Image' }, defaultStyle: { width: '100%', height: '200px', backgroundColor: '#e2e8f0', margin: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+    { type: 'text', label: 'Text Block', icon: FiType, defaultProps: { label: 'Lorem ipsum dolor sit amet.' }, defaultStyle: { width: '100%', height: 'auto', color: '#333333', padding: '5px', margin: '5px 0', fontSize: '16px' } },
+    { type: 'button', label: 'Button', icon: FiBox, defaultProps: { label: 'Click Me' }, defaultStyle: { width: 'auto', height: 'auto', backgroundColor: '#2563eb', color: '#ffffff', padding: '10px 20px', margin: '5px', borderRadius: '8px', border: 'none', cursor: 'pointer' } },
+    { type: 'input', label: 'Input Field', icon: FiType, defaultProps: { label: 'Input', placeholder: 'Enter text...' }, defaultStyle: { width: '100%', height: 'auto', padding: '10px', margin: '5px 0', backgroundColor: '#ffffff', color: '#333333', border: '1px solid #e2e8f0', borderRadius: '8px' } },
+    { type: 'checkbox', label: 'Checkbox', icon: FiCheckSquare, defaultProps: { label: 'Check me' }, defaultStyle: { width: 'auto', height: 'auto', margin: '5px', display: 'flex', alignItems: 'center', gap: '8px', color: '#333333' } },
+    { type: 'select', label: 'Select / Dropdown', icon: FiList, defaultProps: { label: 'Select Option' }, defaultStyle: { width: '100%', height: 'auto', padding: '10px', margin: '5px 0', backgroundColor: '#ffffff', color: '#333333', border: '1px solid #e2e8f0', borderRadius: '8px' } },
 ];
 
-// 2. DRAGGABLE TOOL (Giữ nguyên)
+// 2. DRAGGABLE TOOL
 const DraggableTool = ({ tool }) => {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: `tool-${tool.type}`,
@@ -203,132 +44,52 @@ const DraggableTool = ({ tool }) => {
     );
 };
 
-// 3. CẬP NHẬT: RENDER COMPONENT (Hỗ trợ các component mới)
+// 3. RENDER COMPONENT
 const RenderComponent = ({ item, isSelected, onClick }) => {
-    const itemStyle = {
-        ...item.style,
-        position: 'relative',
-        border: isSelected ? '2px solid #2563eb' : item.style.border || 'none', // Ưu tiên viền chọn, fallback về viền style
-        cursor: 'pointer',
-        boxSizing: 'border-box',
-    };
+    const contentStyle = { ...item.style, width: '100%', height: '100%', margin: 0, position: undefined, border: undefined };
 
     const content = () => {
         switch (item.type) {
-            // --- Layout ---
-            case 'container':
-                return (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
-                        {item.props.label} (Drop items here)
-                    </div>
-                );
-            case 'row':
-                return (
-                    <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm bg-neutral-50">
-                        Row Container (Flex)
-                    </div>
-                );
-            case 'divider':
-                return null; // Divider chỉ cần style của wrapper
-
-            // --- Display ---
-            case 'card':
-                return (
-                    <div className="w-full h-full">
-                        <h3 className="font-bold text-lg mb-2">Card Title</h3>
-                        <p className="text-sm text-gray-500">{item.props.label}</p>
-                    </div>
-                );
-            case 'chart':
-                return (
-                    <div className="w-full h-full flex flex-col items-center justify-center">
-                        <FiPieChart className="w-10 h-10 mb-2 opacity-50" />
-                        <span className="font-medium">{item.props.label}</span>
-                    </div>
-                );
-            case 'image':
-                return (
-                    <div className="flex items-center justify-center h-full w-full text-neutral-400">
-                        <FiImage className="w-8 h-8" />
-                    </div>
-                );
-            case 'text':
-                return <p>{item.props.label}</p>;
-
-            // --- Form ---
-            case 'button':
-                return (
-                    <button className="w-full h-full flex items-center justify-center">
-                        {item.props.label}
-                    </button>
-                );
-            case 'input':
-                return (
-                    <input 
-                        type="text" 
-                        placeholder={item.props.placeholder} 
-                        className="w-full h-full bg-transparent outline-none pointer-events-none" 
-                        readOnly
-                    />
-                );
-            case 'checkbox':
-                return (
-                    <div className="flex items-center gap-2 w-full h-full pointer-events-none">
-                        <input type="checkbox" className="w-4 h-4" readOnly />
-                        <span>{item.props.label}</span>
-                    </div>
-                );
-            case 'select':
-                return (
-                    <div className="w-full h-full flex items-center justify-between px-2 text-gray-500 pointer-events-none bg-transparent">
-                        <span>{item.props.label}</span>
-                        <span className="text-xs">▼</span>
-                    </div>
-                );
-            default:
-                return null;
+            case 'button': return <button className="flex items-center justify-center" style={contentStyle}>{item.props.label}</button>;
+            case 'input': return <input type="text" placeholder={item.props.placeholder} className="outline-none pointer-events-none" style={contentStyle} readOnly />;
+            case 'text': return <p style={contentStyle}>{item.props.label}</p>;
+            case 'checkbox': return <div style={contentStyle} className="pointer-events-none flex items-center gap-2"><input type="checkbox" className="w-4 h-4" readOnly /><span>{item.props.label}</span></div>;
+            case 'select': return <div style={contentStyle} className="flex items-center justify-between px-2 text-gray-500 pointer-events-none"><span>{item.props.label}</span><span className="text-xs">▼</span></div>;
+            case 'card': return <div style={contentStyle}><h3 className="font-bold text-lg mb-2">Card Title</h3><p className="text-sm text-gray-500">{item.props.label}</p></div>;
+            case 'chart': return <div style={contentStyle} className="flex flex-col items-center justify-center"><FiPieChart className="w-10 h-10 mb-2 opacity-50" /><span className="font-medium">{item.props.label}</span></div>;
+            case 'image': return <div style={contentStyle} className="flex items-center justify-center text-neutral-400"><FiImage className="w-8 h-8" /></div>;
+            case 'container': return <div style={contentStyle} className="flex items-center justify-center text-neutral-400 text-sm">{item.props.label} (Drop items here)</div>;
+            case 'row': return <div style={contentStyle} className="flex items-center justify-center text-neutral-400 text-sm">Row (Flex)</div>;
+            case 'divider': return <div style={contentStyle}></div>;
+            default: return null;
         }
     };
 
-    return (
-        <div 
-            onClick={(e) => { e.stopPropagation(); onClick(item.id); }} 
-            style={itemStyle}
-            className={`transition-all rounded-md ${item.type !== 'divider' ? 'hover:ring-1 hover:ring-sage-300' : ''}`}
-        >
-            {content()}
-        </div>
-    );
+    // Wrapper Style: Layout & Background (cho Container/Card)
+    const wrapperStyle = {
+        width: item.style.width, height: item.style.height, margin: item.style.margin,
+        position: 'relative', border: isSelected ? '2px solid #2563eb' : (item.style.border || 'none'),
+        cursor: 'pointer', boxSizing: 'border-box', display: item.style.display || 'block', gap: item.style.gap,
+        backgroundColor: ['container', 'card', 'row', 'image', 'chart'].includes(item.type) ? item.style.backgroundColor : 'transparent',
+        padding: ['container', 'card', 'row'].includes(item.type) ? item.style.padding : 0,
+        borderRadius: item.style.borderRadius
+    };
+
+    // Với input/button... style nằm trong contentStyle
+    if (['button', 'input', 'select', 'checkbox', 'text'].includes(item.type)) {
+         return <div onClick={(e) => { e.stopPropagation(); onClick(item.id); }} style={wrapperStyle} className={`transition-all rounded-sm ${item.type !== 'divider' ? 'hover:ring-1 hover:ring-sage-300' : ''}`}>{content()}</div>;
+    }
+    return <div onClick={(e) => { e.stopPropagation(); onClick(item.id); }} style={wrapperStyle} className={`transition-all rounded-sm ${item.type !== 'divider' ? 'hover:ring-1 hover:ring-sage-300' : ''}`}>{content()}</div>;
 };
 
-// 4. CANVAS AREA (Giữ nguyên logic cũ)
+// 4. CANVAS AREA
 const CanvasArea = ({ items, selectedId, onSelectItem }) => {
     const { setNodeRef, isOver } = useDroppable({ id: 'canvas-area' });
     return (
-        <div ref={setNodeRef} 
-            className={`w-full max-w-4xl min-h-[700px] bg-white rounded-xl shadow-sm transition-colors relative overflow-hidden
-                ${isOver ? 'ring-4 ring-sage-100' : ''}
-            `}
-            onClick={() => onSelectItem(null)}
-        >
-            {items.length === 0 && !isOver && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-center">
-                        <p className="text-neutral-400 mb-2">Canvas trống</p>
-                        <p className="text-xs text-neutral-300">Kéo component vào đây</p>
-                    </div>
-                </div>
-            )}
-            
+        <div ref={setNodeRef} className={`w-full max-w-4xl min-h-[700px] bg-white rounded-xl shadow-sm transition-colors relative overflow-hidden ${isOver ? 'ring-4 ring-sage-100' : ''}`} onClick={() => onSelectItem(null)}>
+            {items.length === 0 && !isOver && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="text-center"><p className="text-neutral-400 mb-2">Canvas trống</p><p className="text-xs text-neutral-300">Kéo component vào đây</p></div></div>}
             <div className="p-8 flex flex-col gap-4 items-start"> 
-                {items.map((item) => (
-                    <RenderComponent 
-                        key={item.id} 
-                        item={item} 
-                        isSelected={item.id === selectedId}
-                        onClick={onSelectItem}
-                    />
-                ))}
+                {items.map((item) => <RenderComponent key={item.id} item={item} isSelected={item.id === selectedId} onClick={onSelectItem} />)}
             </div>
         </div>
     );
@@ -340,38 +101,48 @@ function AppBuilderPage() {
     const [canvasItems, setCanvasItems] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     
-    // --- NEW STATE ---
-    const { projectId } = useParams(); // Lấy ID từ URL
-    const [projectInfo, setProjectInfo] = useState(null); // Lưu tên, mô tả...
+    const { projectId } = useParams();
+    const [projectInfo, setProjectInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    // -----------------
+    const [publishing, setPublishing] = useState(false); // ĐÃ THÊM STATE NÀY ĐỂ FIX LỖI
     
     const navigate = useNavigate();
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
     const [publishData, setPublishData] = useState({ name: '', description: '', category: 'Template', price: '' });
 
-    // --- 1. TẢI DỮ LIỆU KHI MỞ TRANG ---
     useEffect(() => {
         const fetchProject = async () => {
-            if (!projectId || isNaN(Number(projectId))) {
-                setProjectInfo(null);
-                setLoading(false);
-                return;
-            }
+            if (!projectId) return;
             try {
-                const res = await axios.get(`/api/projects/${projectId}`);
-                setProjectInfo(res.data);
+                setLoading(true);
+                const response = await apiService.getProject(projectId);
+                const project = response.data;
+                setProjectInfo(project);
+                if (project.jsonData) {
+                    try {
+                        const items = JSON.parse(project.jsonData);
+                        setCanvasItems(items);
+                    } catch (e) {
+                        console.error("Lỗi parse JSON:", e);
+                        setCanvasItems([]);
+                    }
+                }
+                setPublishData(prev => ({
+                    ...prev,
+                    name: project.name,
+                    description: project.description || ''
+                }));
             } catch (error) {
                 console.error("Lỗi tải Project:", error);
-                setProjectInfo(null);
+                alert("Không thể tải dự án.");
+                navigate('/');
             } finally {
                 setLoading(false);
             }
         };
         fetchProject();
-    }, [projectId]);
-    // ------------------------------------
+    }, [projectId, navigate]);
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
@@ -390,30 +161,19 @@ function AppBuilderPage() {
         }
     };
 
-    const handleUpdateItem = (id, updatedItem) => {
-        setCanvasItems(prev => prev.map(item => item.id === id ? updatedItem : item));
-    };
-
-    const handleDeleteItem = (id) => {
-        setCanvasItems(prev => prev.filter(item => item.id !== id));
-        setSelectedId(null);
-    };
-
+    const handleUpdateItem = (id, updatedItem) => setCanvasItems(prev => prev.map(item => item.id === id ? updatedItem : item));
+    const handleDeleteItem = (id) => { setCanvasItems(prev => prev.filter(item => item.id !== id)); setSelectedId(null); };
     const selectedItem = canvasItems.find(i => i.id === selectedId);
 
-    // --- 2. XỬ LÝ LƯU (SAVE) ---
     const handleSave = async () => {
         if (!projectId) return;
-        
         setSaving(true);
         try {
-            // Chuẩn bị dữ liệu update
             const updateDto = {
                 name: projectInfo.name,
                 description: projectInfo.description,
-                jsonData: JSON.stringify(canvasItems) // Chuyển mảng thành chuỗi JSON
+                jsonData: JSON.stringify(canvasItems)
             };
-
             await apiService.updateProject(projectId, updateDto);
             alert("Đã lưu thành công!");
         } catch (error) {
@@ -423,19 +183,24 @@ function AppBuilderPage() {
             setSaving(false);
         }
     };
-    // ---------------------------
 
-    // (Logic Publish giữ nguyên)
+    // --- HÀM PUBLISH (Đã Fix) ---
     const handlePublish = async (e) => {
         e.preventDefault();
+        if (!projectId) return;
+
+        setPublishing(true);
         try {
-            await apiService.publishApp({ ...publishData });
-            alert("Đã xuất bản ứng dụng thành công!");
+            await apiService.publishProject(projectId, { ...publishData });
+            
+            alert("Đã xuất bản ứng dụng thành công lên Marketplace!");
             setIsPublishModalOpen(false);
             navigate('/marketplace');
         } catch (error) {
             console.error("Lỗi publish:", error);
             alert("Không thể xuất bản ứng dụng.");
+        } finally {
+            setPublishing(false);
         }
     };
 
@@ -445,7 +210,7 @@ function AppBuilderPage() {
         <DndContext onDragEnd={handleDragEnd}>
             <div className="flex h-[calc(100vh-6rem)] bg-neutral-100 overflow-hidden border border-neutral-200 rounded-xl shadow-sm m-[-24px]">
                 
-                {/* LEFT: Toolbox (Đã nâng cấp UI) */}
+                {/* LEFT: Toolbox */}
                 <div className="w-64 bg-white border-r border-neutral-200 flex flex-col z-10">
                     <div className="p-4 border-b border-neutral-200"><h3 className="font-semibold text-neutral-800">Toolbox</h3></div>
                     <div className="flex border-b border-neutral-200">
@@ -463,15 +228,12 @@ function AppBuilderPage() {
                     <div className="h-12 bg-white border-b border-neutral-200 flex items-center justify-between px-4 shadow-sm z-10">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-neutral-700">{projectInfo?.name}</span>
-                            <span className="text-xs text-neutral-400 px-2 py-0.5 bg-neutral-100 rounded">Draft</span>
+                            <span className={`text-xs text-white px-2 py-0.5 rounded ${projectInfo?.isPublished ? 'bg-green-500' : 'bg-gray-400'}`}>
+                                {projectInfo?.isPublished ? 'PUBLISHED' : 'DRAFT'}
+                            </span>
                         </div>
                         <div className="flex gap-2">
-                            {/* Nút SAVE */}
-                            <button 
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 text-neutral-700 text-xs font-medium rounded-lg hover:bg-neutral-50 transition-colors"
-                            >
+                            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 text-neutral-700 text-xs font-medium rounded-lg hover:bg-neutral-50 transition-colors">
                                 <FiSave /> {saving ? 'Saving...' : 'Save'}
                             </button>
                             <button onClick={() => setIsPublishModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-sage-500 text-white text-xs font-medium rounded-lg hover:bg-sage-600">
@@ -480,21 +242,13 @@ function AppBuilderPage() {
                         </div>
                     </div>
                     <div className="flex-1 p-10 overflow-auto flex justify-center items-start">
-                        <CanvasArea 
-                            items={canvasItems} 
-                            selectedId={selectedId} 
-                            onSelectItem={setSelectedId} 
-                        />
+                        <CanvasArea items={canvasItems} selectedId={selectedId} onSelectItem={setSelectedId} />
                     </div>
                 </div>
 
                 {/* RIGHT: Properties Panel */}
                 <div className="w-80 bg-white border-l border-neutral-200 flex flex-col z-10">
-                    <PropertiesPanel 
-                        selectedItem={selectedItem}
-                        onUpdateItem={handleUpdateItem}
-                        onDeleteItem={handleDeleteItem}
-                    />
+                    <PropertiesPanel selectedItem={selectedItem} onUpdateItem={handleUpdateItem} onDeleteItem={handleDeleteItem} />
                 </div>
             </div>
 
@@ -532,7 +286,9 @@ function AppBuilderPage() {
                             </div>
                             <div className="pt-4 flex gap-3">
                                 <button type="button" onClick={() => setIsPublishModalOpen(false)} className="flex-1 py-2.5 border border-neutral-300 text-neutral-700 font-medium rounded-xl hover:bg-neutral-50">Cancel</button>
-                                <button type="submit" className="flex-1 py-2.5 bg-sage-500 text-white font-medium rounded-xl hover:bg-sage-600 shadow-lg shadow-sage-500/20">Publish App</button>
+                                <button type="submit" disabled={publishing} className="flex-1 py-2.5 bg-sage-500 text-white font-medium rounded-xl hover:bg-sage-600 shadow-lg shadow-sage-500/20">
+                                    {publishing ? 'Publishing...' : 'Publish App'}
+                                </button>
                             </div>
                         </form>
                     </div>

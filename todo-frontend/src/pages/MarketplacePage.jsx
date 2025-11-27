@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader'; // Header chung của chúng ta
 import apiService from '../services/apiService';
 import { FiSearch, FiFilter, FiDownload, FiStar, FiSettings, FiCheck } from 'react-icons/fi';
@@ -62,8 +63,9 @@ function MarketplacePage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
+    const location = useLocation();
     
-    // 1. Tải dữ liệu từ API khi vào trang
+    // 1. Tải dữ liệu từ API khi vào trang hoặc khi location thay đổi (refresh khi navigate từ trang khác)
     useEffect(() => {
         const fetchApps = async () => {
             try {
@@ -77,7 +79,7 @@ function MarketplacePage() {
             }
         };
         fetchApps();
-    }, []);
+    }, [location.pathname, location.key]); // Refresh khi pathname hoặc location key thay đổi (đảm bảo refresh mỗi khi navigate đến trang này)
 
     // 2. Xử lý cài đặt App
     const handleInstall = async (appId) => {
@@ -90,6 +92,7 @@ function MarketplacePage() {
             ));
             alert("Cài đặt thành công!");
         } catch (error) {
+            console.error("Lỗi khi cài đặt app:", error);
             alert("Lỗi khi cài đặt app.");
         }
     };
