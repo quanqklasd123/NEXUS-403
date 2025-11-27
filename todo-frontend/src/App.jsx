@@ -133,7 +133,7 @@ function App() {
                                 <Route path="/marketplace" element={<MarketplacePage />} />
 
                                 {/* Tuyến đường cho App Builder */}
-                                <Route path="/builder" element={<AppBuilderPage />} />
+                                <Route path="/builder/:projectId" element={<AppBuilderPage />} />
 
                                 {/* (Các link "giả" từ Sidebar) */}
                                 {/* <Route path="/kanban" element={...} /> */}

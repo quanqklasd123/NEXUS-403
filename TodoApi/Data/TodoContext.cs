@@ -14,5 +14,7 @@ namespace TodoApi.Data
 
         public DbSet<TodoItem> TodoItems { get; set; } = null!;
         public DbSet<TodoList> TodoLists { get; set; } = null!;
+        public DbSet<Project> Projects { get; set; } = null!;
     }
 }
+

@@ -123,6 +123,28 @@ const apiService = {
         return apiClient.post('/marketplace/publish', appData);
     },
 
+    // --- PROJECTS (APP BUILDER) ---
+    getProjects: () => {
+        return apiClient.get('/projects');
+    },
+
+    getProject: (id) => {
+        return apiClient.get(`/projects/${id}`);
+    },
+
+    createProject: (data) => {
+        // data: { name, description, jsonData }
+        return apiClient.post('/projects', data);
+    },
+
+    updateProject: (id, data) => {
+        return apiClient.put(`/projects/${id}`, data);
+    },
+
+    deleteProject: (id) => {
+        return apiClient.delete(`/projects/${id}`);
+    },
+
 };
 
 // Xuất "apiService" để các component khác có thể dùng
