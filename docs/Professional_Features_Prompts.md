@@ -1,8 +1,8 @@
 # Các Prompt cho Tính năng Chuyên nghiệp - App Builder
 
 **Ngày tạo:** 11/27/2025  
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/5 tính năng
+**Trạng thái:** Đang triển khai  
+**Tiến độ:** 3/5 tính năng (60%)
 
 ---
 
@@ -16,7 +16,7 @@
 
 ---
 
-## 1. Chế độ Preview (Xem trước)
+## 1. Chế độ Preview (Xem trước) ✅ **ĐÃ HOÀN THÀNH**
 
 ### Mục tiêu
 Tạo chế độ Preview để người dùng xem ứng dụng như người dùng cuối sẽ thấy, ẩn tất cả các công cụ chỉnh sửa.
@@ -66,9 +66,22 @@ Yêu cầu:
 ### Ước tính độ phức tạp
 ⭐⭐ (Trung bình)
 
+### Trạng thái triển khai
+✅ **Đã hoàn thành** - Ngày hoàn thành: 11/27/2025
+
+**Chi tiết triển khai:**
+- ✅ State `isPreviewMode` đã được thêm vào `AppBuilderPage.jsx`
+- ✅ Nút "Preview" với icon `FiEye` đã được thêm vào thanh công cụ Canvas
+- ✅ Toolbox và Properties Panel được ẩn trong preview mode (conditional rendering)
+- ✅ Thanh công cụ Canvas chỉ hiển thị nút "Exit Preview" trong preview mode
+- ✅ `RenderComponent` nhận prop `isPreview` và ẩn border selection, border dashed
+- ✅ Pointer events hoạt động trong preview mode (bỏ readOnly, pointer-events-none)
+- ✅ Keyboard shortcut ESC để exit preview đã được triển khai
+- ✅ Nút "Exit Preview" restore lại UI bình thường
+
 ---
 
-## 2. Undo / Redo (Hoàn tác)
+## 2. Undo / Redo (Hoàn tác) ✅ **ĐÃ HOÀN THÀNH**
 
 ### Mục tiêu
 Thêm tính năng Undo/Redo để người dùng có thể hoàn tác các thao tác đã làm (thêm, xóa, sửa component).
@@ -137,9 +150,23 @@ Yêu cầu:
 ### Ước tính độ phức tạp
 ⭐⭐⭐ (Khá phức tạp)
 
+### Trạng thái triển khai
+✅ **Đã hoàn thành** - Ngày hoàn thành: 11/27/2025
+
+**Chi tiết triển khai:**
+- ✅ State `history`, `historyIndex`, `maxHistorySize` đã được thêm
+- ✅ Hàm `saveToHistory()` với deep copy và quản lý history stack
+- ✅ Hàm `handleUndo()` và `handleRedo()` đã được triển khai
+- ✅ `handleDragEnd`, `handleDeleteItem`, `handleUpdateItem` đã tích hợp saveToHistory
+- ✅ Debounce cho `handleUpdateItem` để tránh lưu quá nhiều khi đang type
+- ✅ Keyboard shortcuts Ctrl+Z (Undo) và Ctrl+Y/Ctrl+Shift+Z (Redo) đã được triển khai
+- ✅ Nút Undo (FiCornerUpLeft) và Redo (FiCornerUpRight) đã được thêm vào thanh công cụ
+- ✅ Nút disable khi không thể undo/redo
+- ✅ Sử dụng `useCallback` và `useRef` để tối ưu performance
+
 ---
 
-## 3. Hệ thống Sự kiện (Event System)
+## 3. Hệ thống Sự kiện (Event System) ✅ **ĐÃ HOÀN THÀNH**
 
 ### Mục tiêu
 Thêm hệ thống sự kiện để các component có thể thực hiện các hành động khi được tương tác (ví dụ: Button onClick).
@@ -211,6 +238,31 @@ Yêu cầu:
 ### Ước tính độ phức tạp
 ⭐⭐⭐⭐ (Phức tạp)
 
+### Trạng thái triển khai
+✅ **Đã hoàn thành** - Ngày hoàn thành: 11/27/2025
+
+**Chi tiết triển khai:**
+- ✅ `PropertiesPanel.jsx` đã được cập nhật với tabs "Properties" và "Events"
+- ✅ Tab Events hiển thị danh sách events của component với UI đầy đủ
+- ✅ Cấu trúc `events: {}` đã được thêm vào `defaultProps` của các component hỗ trợ events
+- ✅ File `todo-frontend/src/utils/eventHandler.js` đã được tạo với hàm `handleEvent`
+- ✅ EventHandler hỗ trợ 5 loại actions: Navigate, Notification, API, Modal, Variable
+- ✅ `RenderComponent` đã được cập nhật với event handlers (onClick, onChange, onFocus, onBlur)
+- ✅ Events chỉ hoạt động trong Preview mode (`isPreview = true`)
+- ✅ UI trong PropertiesPanel cho Events đã được triển khai:
+  - Dropdown chọn Event Type và Action Type
+  - Form fields để nhập Action Config (route, message, endpoint, method, params, title, content, variableName, value)
+  - Nút "Add Event" (+) và "Remove Event" (X)
+- ✅ Events được lưu vào `item.props.events` khi user chỉnh sửa
+- ✅ File hướng dẫn `docs/Event_System_Guide.md` đã được tạo
+
+**Các component hỗ trợ Events:**
+- Button: onClick
+- Card: onClick
+- Container: onClick
+- Input: onChange, onFocus, onBlur
+- Select, DatePicker, Checkbox, Switch, FileUpload: onChange
+
 ---
 
 ## 4. Responsive Design Mode
@@ -278,6 +330,9 @@ Yêu cầu:
 
 ### Ước tính độ phức tạp
 ⭐⭐ (Trung bình)
+
+### Trạng thái triển khai
+⏳ **Chưa bắt đầu**
 
 ---
 
@@ -367,23 +422,26 @@ Yêu cầu:
 ### Ước tính độ phức tạp
 ⭐⭐⭐⭐⭐ (Rất phức tạp)
 
+### Trạng thái triển khai
+⏳ **Chưa bắt đầu**
+
 ---
 
 ## 📊 Tổng kết
 
-| Tính năng | Độ phức tạp | Ưu tiên | Trạng thái |
-|-----------|-------------|---------|------------|
-| 1. Preview Mode | ⭐⭐ | Cao | Chưa làm |
-| 2. Undo/Redo | ⭐⭐⭐ | Cao | Chưa làm |
-| 3. Event System | ⭐⭐⭐⭐ | Trung bình | Chưa làm |
-| 4. Responsive Mode | ⭐⭐ | Trung bình | Chưa làm |
-| 5. Data Binding | ⭐⭐⭐⭐⭐ | Thấp | Chưa làm |
+| Tính năng | Độ phức tạp | Ưu tiên | Trạng thái | Ngày hoàn thành |
+|-----------|-------------|---------|------------|-----------------|
+| 1. Preview Mode | ⭐⭐ | Cao | ✅ Đã hoàn thành | 11/27/2025 |
+| 2. Undo/Redo | ⭐⭐⭐ | Cao | ✅ Đã hoàn thành | 11/27/2025 |
+| 3. Event System | ⭐⭐⭐⭐ | Trung bình | ✅ Đã hoàn thành | 11/27/2025 |
+| 4. Responsive Mode | ⭐⭐ | Trung bình | ⏳ Chưa bắt đầu | - |
+| 5. Data Binding | ⭐⭐⭐⭐⭐ | Thấp | ⏳ Chưa bắt đầu | - |
 
 ### Gợi ý thứ tự triển khai
-1. **Preview Mode** (dễ, tác động lớn)
-2. **Undo/Redo** (quan trọng cho UX)
+1. **Preview Mode** (dễ, tác động lớn) ✅
+2. **Undo/Redo** (quan trọng cho UX) ✅
 3. **Responsive Mode** (hữu ích cho mobile)
-4. **Event System** (thêm logic)
+4. **Event System** (thêm logic) ✅
 5. **Data Binding** (phức tạp nhất, cần nền tảng vững)
 
 ---
@@ -398,4 +456,23 @@ Yêu cầu:
 ---
 
 **Cập nhật lần cuối:** 11/27/2025
+
+---
+
+## 📈 Tiến độ chi tiết
+
+### ✅ Đã hoàn thành (3/5 - 60%)
+1. **Preview Mode** - Cho phép xem ứng dụng như người dùng cuối, ẩn tất cả công cụ chỉnh sửa
+2. **Undo/Redo** - Hệ thống hoàn tác với history stack, keyboard shortcuts
+3. **Event System** - Hệ thống sự kiện đầy đủ với 5 loại actions, UI quản lý events trong PropertiesPanel
+
+### ⏳ Đang chờ (2/5 - 40%)
+4. **Responsive Design Mode** - Chế độ xem và chỉnh sửa cho các kích thước màn hình khác nhau
+5. **Data Binding** - Kết nối dữ liệu động với syntax `{{variable}}`
+
+### 📝 Ghi chú
+- Tất cả các tính năng đã hoàn thành đều đã được test và hoạt động ổn định
+- Event System có file hướng dẫn chi tiết tại `docs/Event_System_Guide.md`
+- Các tính năng còn lại sẽ được triển khai theo thứ tự ưu tiên
+- PropertiesPanel đã được fix các lỗi liên quan đến event.config null/undefined
 

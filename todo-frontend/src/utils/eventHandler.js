@@ -1,5 +1,28 @@
 // src/utils/eventHandler.js
-import apiService from '../services/apiService';
+import axios from 'axios';
+
+// Tạo apiClient để gọi API (tương tự như trong apiService)
+const API_URL = 'http://localhost:5205/api';
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+// Thêm interceptor để gắn token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 /**
  * EventHandler - Xử lý các sự kiện của component trong Preview mode
@@ -46,16 +69,16 @@ export const handleEvent = async (eventConfig, navigate, setModalState = null, u
                     let response;
                     switch (method.toUpperCase()) {
                         case 'GET':
-                            response = await apiService.get(config.endpoint);
+                            response = await apiClient.get(config.endpoint);
                             break;
                         case 'POST':
-                            response = await apiService.post(config.endpoint, params);
+                            response = await apiClient.post(config.endpoint, params);
                             break;
                         case 'PUT':
-                            response = await apiService.put(config.endpoint, params);
+                            response = await apiClient.put(config.endpoint, params);
                             break;
                         case 'DELETE':
-                            response = await apiService.delete(config.endpoint);
+                            response = await apiClient.delete(config.endpoint);
                             break;
                         default:
                             console.warn(`Method ${method} không được hỗ trợ`);
