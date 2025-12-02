@@ -22,6 +22,7 @@ function App() {
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true); // Thêm state để track việc đang kiểm tra auth
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State để quản lý việc ẩn/hiện sidebar
 
     useEffect(() => {
         // Kiểm tra token ngay khi component mount
@@ -61,7 +62,7 @@ function App() {
 
             {/* Logic: Nếu đã đăng nhập, hiển thị Sidebar */}
 
-            {isAuthenticated && <Sidebar />}
+            {isAuthenticated && <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />}
 
 
 
@@ -73,7 +74,7 @@ function App() {
 
             */}
 
-            <main className={`flex-1 transition-all duration-300 ${isAuthenticated ? 'ml-72' : 'ml-0'}`}>
+            <main className={`flex-1 transition-all duration-300 ${isAuthenticated && isSidebarOpen ? 'ml-72' : 'ml-0'}`}>
 
 
 

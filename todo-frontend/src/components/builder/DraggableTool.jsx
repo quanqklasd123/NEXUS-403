@@ -21,10 +21,11 @@ const DraggableTool = ({ tool }) => {
             {...listeners} 
             {...attributes} 
             style={style}
-            className="flex flex-col items-center justify-center p-3 bg-white border border-neutral-200 rounded-lg cursor-move hover:border-sage-400 hover:bg-sage-50 transition-all shadow-sm"
+            className="flex flex-col items-center justify-center p-1.5 bg-white border border-neutral-200 rounded cursor-move hover:border-sage-400 hover:bg-sage-50 transition-all shadow-sm min-w-[60px] max-w-[60px] flex-shrink-0 h-12"
+            title={tool.label}
         >
-            <tool.icon className="w-6 h-6 text-neutral-600 mb-1" />
-            <span className="text-xs text-neutral-600 text-center">{tool.label}</span>
+            <tool.icon className="w-4 h-4 text-neutral-600 mb-0.5" />
+            <span className="text-[10px] text-neutral-600 text-center leading-tight truncate w-full">{tool.label}</span>
         </div>
     );
 };

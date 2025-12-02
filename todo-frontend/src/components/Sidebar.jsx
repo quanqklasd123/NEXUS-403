@@ -6,6 +6,8 @@ import {
     FiCheckSquare,
     FiTrello,
     FiCalendar,
+    FiMenu,
+    FiX,
 } from 'react-icons/fi';
 import { FiShoppingBag, FiCpu } from 'react-icons/fi';
 
@@ -21,20 +23,43 @@ const getLinkClass = ({ isActive }) => {
   `;
 };
 
-function Sidebar() {
+function Sidebar({ isOpen = true, onToggle }) {
     return (
-        <aside className="w-72 bg-white border-r border-neutral-200 h-screen fixed top-0 left-0 z-40 flex flex-col">
+        <>
+            {/* Nút toggle khi sidebar bị ẩn */}
+            {!isOpen && (
+                <button
+                    onClick={onToggle}
+                    className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-neutral-200 rounded-lg flex items-center justify-center shadow-md hover:bg-neutral-50 transition-colors"
+                    title="Hiện sidebar"
+                >
+                    <FiMenu className="w-5 h-5 text-neutral-700" />
+                </button>
+            )}
+            
+            <aside className={`w-72 bg-white border-r border-neutral-200 h-screen fixed top-0 left-0 z-40 flex flex-col transition-transform duration-300 ease-in-out ${
+                isOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}>
 
-            {/* Logo */}
+            {/* Logo và nút đóng */}
             <div className="p-6">
-                <div className="flex items-center space-x-3 mb-8">
-                    <div className="w-10 h-10 rounded-xl bg-sage-400 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">N</span>
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-sage-400 flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">N</span>
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-semibold text-neutral-800">NEXUS</h1>
+                            <p className="text-sm text-neutral-500">Productivity OS</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl font-semibold text-neutral-800">NEXUS</h1>
-                        <p className="text-sm text-neutral-500">Productivity OS</p>
-                    </div>
+                    <button
+                        onClick={onToggle}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
+                        title="Ẩn sidebar"
+                    >
+                        <FiX className="w-5 h-5 text-neutral-600" />
+                    </button>
                 </div>
             </div>
 
@@ -65,6 +90,7 @@ function Sidebar() {
                 </NavLink>
             </nav>
         </aside>
+        </>
     );
 }
 

@@ -1,115 +1,257 @@
 # File Tree: NEXUS-403
 
-**Generated:** 11/27/2025, 7:57:20 PM
-**Root Path:** `d:\NEXUS-403`
+**Generated:** 12/3/2025, 6:38:50 AM
+
+**Root Path:**`d:\NEXUS-403`
 
 ```
+
 ├── 📁 TodoApi
+
 │   ├── 📁 AI
+
 │   │   ├── 📁 Models
+
 │   │   │   ├── 📄 TaskInput.cs
+
 │   │   │   └── 📄 TaskPriorityPrediction.cs
+
 │   │   ├── 📄 AiModelService.cs
+
 │   │   ├── 📄 AiPredictionService.cs
+
 │   │   └── 📄 task-data.csv
+
 │   ├── 📁 Controllers
+
 │   │   ├── 📄 AdminController.cs
+
 │   │   ├── 📄 AiController.cs
+
 │   │   ├── 📄 AuthController.cs
+
 │   │   ├── 📄 DashboardController.cs
+
 │   │   ├── 📄 MarketplaceController.cs
+
 │   │   ├── 📄 ProjectsController.cs
+
 │   │   ├── 📄 TodoItemsController.cs
+
 │   │   └── 📄 TodoListsController.cs
+
 │   ├── 📁 Data
+
 │   │   └── 📄 TodoContext.cs
+
 │   ├── 📁 Dtos
+
 │   │   ├── 📄 AuthRequestDTO.cs
+
 │   │   ├── 📄 AuthResponseDTO.cs
+
 │   │   ├── 📄 CreateProjectDTO.cs
+
 │   │   ├── 📄 CreateTodoItemDTO.cs
+
 │   │   ├── 📄 CreateTodoListDTO.cs
+
 │   │   ├── 📄 DashboardStatsDTO.cs
+
 │   │   ├── 📄 MarketplaceAppDTO.cs
+
 │   │   ├── 📄 ProjectDTO.cs
+
 │   │   ├── 📄 PublishAppDTO.cs
+
 │   │   ├── 📄 TodoItemDTO.cs
+
 │   │   ├── 📄 TodoListDTO.cs
+
 │   │   └── 📄 UpdateItemStatusDTO.cs
+
 │   ├── 📁 Migrations
+
 │   │   ├── 📄 20251104150320_InitialCreate.Designer.cs
+
 │   │   ├── 📄 20251104150320_InitialCreate.cs
+
 │   │   ├── 📄 20251104152646_AddPriorityAndDueDateToItems.Designer.cs
+
 │   │   ├── 📄 20251104152646_AddPriorityAndDueDateToItems.cs
+
 │   │   ├── 📄 20251104153901_AddTodoListRelationships.Designer.cs
+
 │   │   ├── 📄 20251104153901_AddTodoListRelationships.cs
+
 │   │   ├── 📄 20251104161018_AddIdentitySupport.Designer.cs
+
 │   │   ├── 📄 20251104161018_AddIdentitySupport.cs
+
 │   │   ├── 📄 20251104162240_AddUserTodoListRelationship.Designer.cs
+
 │   │   ├── 📄 20251104162240_AddUserTodoListRelationship.cs
+
 │   │   ├── 📄 20251113162459_ReplacedIsDoneWithStatus.Designer.cs
+
 │   │   ├── 📄 20251113162459_ReplacedIsDoneWithStatus.cs
+
 │   │   ├── 📄 20251127113459_AddProjectsTable.Designer.cs
+
 │   │   ├── 📄 20251127113459_AddProjectsTable.cs
+
 │   │   └── 📄 TodoContextModelSnapshot.cs
+
 │   ├── 📁 Models
+
 │   │   ├── 📄 AppUser.cs
+
 │   │   ├── 📄 Project.cs
+
 │   │   ├── 📄 TodoItem.cs
+
 │   │   └── 📄 TodoList.cs
+
 │   ├── 📁 Profiles
+
 │   │   └── 📄 MappingProfile.cs
+
 │   ├── 📁 Properties
+
 │   │   └── ⚙️ launchSettings.json
+
 │   ├── ⚙️ .gitignore
+
 │   ├── 📄 Program.cs
+
 │   ├── 📄 TodoApi.csproj
+
 │   ├── 📄 TodoApi.http
+
 │   ├── ⚙️ appsettings.Development.json
+
 │   ├── ⚙️ appsettings.json
+
 │   ├── ⚙️ package-lock.json
+
 │   └── ⚙️ package.json
+
 ├── 📁 docs
-│   └── 📝 Toolbox _Items.md
+
+│   ├── 📝 Event_System_Guide.md
+
+│   ├── 📝 Professional_Features_Prompts.md
+
+│   ├── 📝 Refactoring_Summary.md
+
+│   ├── 📝 Testing_Checklist.md
+
+│   ├── 📝 Toolbox _Items.md
+
+│   └── 📝 publish.md
+
 ├── 📁 todo-frontend
+
 │   ├── 📁 public
+
 │   ├── 📁 src
+
 │   │   ├── 📁 assets
+
 │   │   │   └── 🖼️ react.svg
+
 │   │   ├── 📁 components
+
 │   │   │   ├── 📁 builder
-│   │   │   │   └── 📄 PropertiesPanel.jsx
+
+│   │   │   │   ├── 📄 CanvasArea.jsx
+
+│   │   │   │   ├── 📄 CanvasToolbar.jsx
+
+│   │   │   │   ├── 📄 DraggableTool.jsx
+
+│   │   │   │   ├── 📄 PropertiesPanel.jsx
+
+│   │   │   │   ├── 📄 RenderComponent.jsx
+
+│   │   │   │   └── 📄 Toolbox.jsx
+
 │   │   │   ├── 📄 PageHeader.jsx
+
 │   │   │   ├── 📄 Sidebar.jsx
+
 │   │   │   └── 📄 Stats.jsx
+
+│   │   ├── 📁 constants
+
+│   │   │   └── 📄 toolboxItems.js
+
 │   │   ├── 📁 hooks
+
+│   │   │   ├── 📄 useAppBuilderHistory.js
+
 │   │   │   └── 📄 useDebounce.js
+
 │   │   ├── 📁 pages
+
 │   │   │   ├── 📄 AppBuilderPage.jsx
+
 │   │   │   ├── 📄 CalendarPage.jsx
+
 │   │   │   ├── 🎨 CalendarStyles.css
+
 │   │   │   ├── 📄 DashboardPage.jsx
+
 │   │   │   ├── 📄 KanbanPage.jsx
+
 │   │   │   ├── 📄 ListDetailPage.jsx
+
 │   │   │   ├── 📄 LoginPage.jsx
+
 │   │   │   ├── 📄 MarketplacePage.jsx
+
 │   │   │   ├── 📄 RegisterPage.jsx
+
 │   │   │   └── 📄 TodoList.jsx
+
 │   │   ├── 📁 services
+
 │   │   │   └── 📄 apiService.js
+
+│   │   ├── 📁 utils
+
+│   │   │   ├── 📄 conditionEvaluator.js
+
+│   │   │   ├── 📄 eventHandler.js
+
+│   │   │   └── 📄 getCategoryByType.js
+
 │   │   ├── 📄 App.jsx
+
 │   │   ├── 🎨 index.css
+
 │   │   └── 📄 main.jsx
+
 │   ├── ⚙️ .gitignore
+
 │   ├── 📝 README.md
+
 │   ├── 📄 eslint.config.js
+
 │   ├── 🌐 index.html
+
 │   ├── ⚙️ package-lock.json
+
 │   ├── ⚙️ package.json
+
 │   ├── 📄 postcss.config.js
+
 │   ├── 📄 tailwind.config.js
+
 │   └── 📄 vite.config.js
+
 └── 📄 NEXUS-403.sln
+
 ```
 
 ---

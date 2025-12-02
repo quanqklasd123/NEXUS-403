@@ -1,6 +1,6 @@
 // src/pages/AppBuilderPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { DndContext } from '@dnd-kit/core';
+import { DndContext, useSensor, useSensors, PointerSensor, MouseSensor } from '@dnd-kit/core';
 import { FiX, FiUploadCloud } from 'react-icons/fi';
 import apiService from '../services/apiService';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -104,82 +104,213 @@ function AppBuilderPage() {
         fetchProject();
     }, [projectId, navigate, initializeHistory]);
 
+    // Sensors for drag and drop
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(MouseSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
+
     // Handle drag and drop
     const handleDragEnd = (event) => {
-        const { active, over } = event;
+        const { active, over, delta } = event;
         if (!over) return;
         
         const toolData = active.data.current;
-        if (!toolData) return;
+        const activeId = active.id;
+        
+        // Nếu đang kéo component từ toolbox (có toolData và không phải là component ID)
+        if (toolData && !activeId.startsWith('comp-')) {
+            // Xác định parentId và order
+            let parentId = null;
+            let order = 0;
 
-        // Xác định parentId và order
-        let parentId = null;
-        let order = 0;
-
-        if (over.id === 'canvas-area') {
-            // Thêm vào root level
-            parentId = null;
-            order = canvasItems.filter(item => !item.parentId).length;
-        } else if (over.id.startsWith('comp-')) {
-            // Thêm vào container
-            const parentItem = canvasItems.find(i => i.id === over.id);
-            if (parentItem && (parentItem.type === 'container' || parentItem.type === 'row' || parentItem.type === 'grid')) {
-                parentId = parentItem.id;
-                order = (parentItem.children || []).length;
-            } else {
-                // Nếu không phải container, thêm vào root
+            if (over.id === 'canvas-area') {
+                // Thêm vào root level với vị trí tự do
                 parentId = null;
                 order = canvasItems.filter(item => !item.parentId).length;
-            }
-        }
-
-        const newItem = { 
-            id: `comp-${Date.now()}`, 
-            name: toolData.label || toolData.type,
-            type: toolData.type,
-            metadata: {
-                category: getCategoryByType(toolData.type),
-                tags: [],
-                notes: '',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                version: 1
-            },
-            parentId: parentId,
-            children: [],
-            order: order,
-            props: { 
-                ...toolData.defaultProps,
-                events: toolData.defaultProps.events || {}
-            },
-            style: { ...toolData.defaultStyle }
-        };
-
-        setCanvasItems((prev) => {
-            const newItems = [...prev, newItem];
-            
-            // Cập nhật children của parent nếu có
-            if (parentId) {
-                const parentIndex = newItems.findIndex(i => i.id === parentId);
-                if (parentIndex !== -1) {
-                    newItems[parentIndex] = {
-                        ...newItems[parentIndex],
-                        children: [...(newItems[parentIndex].children || []), newItem.id]
-                    };
+            } else if (over.id.startsWith('comp-')) {
+                // Thêm vào container
+                const parentItem = canvasItems.find(i => i.id === over.id);
+                if (parentItem && (parentItem.type === 'container' || parentItem.type === 'row' || parentItem.type === 'grid')) {
+                    parentId = parentItem.id;
+                    order = (parentItem.children || []).length;
+                } else {
+                    // Nếu không phải container, thêm vào root
+                    parentId = null;
+                    order = canvasItems.filter(item => !item.parentId).length;
                 }
             }
+
+            // Lấy vị trí drop từ event - sử dụng tọa độ chuột thực tế
+            let x = 50;
+            let y = 50;
             
-            // Lưu history sau khi thêm component
-            saveToHistory(newItems);
-            return newItems;
-        });
-        setSelectedId(newItem.id);
+            if (over.id === 'canvas-area') {
+                const canvasElement = document.getElementById('canvas-area');
+                if (canvasElement) {
+                    const canvasRect = canvasElement.getBoundingClientRect();
+                    
+                    // Sử dụng delta để tính vị trí mới dựa trên vị trí ban đầu của active element
+                    if (active.rect && delta) {
+                        // Tính vị trí mới = vị trí ban đầu + delta
+                        const initialX = active.rect.left - canvasRect.left;
+                        const initialY = active.rect.top - canvasRect.top;
+                        x = initialX + delta.x;
+                        y = initialY + delta.y;
+                    } else if (over.rect) {
+                        // Fallback: sử dụng tọa độ của over rect (vị trí drop zone)
+                        x = over.rect.left - canvasRect.left + (over.rect.width / 2) - 100;
+                        y = over.rect.top - canvasRect.top + 50;
+                    }
+                    
+                    // Đảm bảo vị trí không âm
+                    x = Math.max(0, x);
+                    y = Math.max(0, y);
+                    
+                    // Tránh xếp chồng: kiểm tra xem có component nào ở vị trí gần đó không
+                    const existingItems = canvasItems.filter(item => !item.parentId && item.position);
+                    const minDistance = 10; // Khoảng cách tối thiểu giữa các component
+                    
+                    let adjustedX = x;
+                    let adjustedY = y;
+                    let attempts = 0;
+                    const maxAttempts = 20;
+                    
+                    while (attempts < maxAttempts) {
+                        const tooClose = existingItems.some(item => {
+                            const itemPos = item.position || { x: 0, y: 0 };
+                            const distance = Math.sqrt(
+                                Math.pow(itemPos.x - adjustedX, 2) + 
+                                Math.pow(itemPos.y - adjustedY, 2)
+                            );
+                            return distance < minDistance;
+                        });
+                        
+                        if (!tooClose) break;
+                        
+                        // Di chuyển sang phải và xuống dưới một chút
+                        adjustedX += 30;
+                        adjustedY += 30;
+                        attempts++;
+                    }
+                    
+                    x = adjustedX;
+                    y = adjustedY;
+                }
+            }
+
+            const newItem = { 
+                id: `comp-${Date.now()}`, 
+                name: toolData.label || toolData.type,
+                type: toolData.type,
+                metadata: {
+                    category: getCategoryByType(toolData.type),
+                    tags: [],
+                    notes: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    version: 1
+                },
+                parentId: parentId,
+                children: [],
+                order: order,
+                position: parentId ? null : { x, y }, // Chỉ lưu position cho root items
+                props: { 
+                    ...(toolData.defaultProps || {}),
+                    events: (toolData.defaultProps?.events || {})
+                },
+                style: { 
+                    ...(toolData.defaultStyle || {}),
+                    width: toolData.defaultStyle?.width || '200px',
+                    height: toolData.defaultStyle?.height || 'auto'
+                }
+            };
+
+            setCanvasItems((prev) => {
+                const newItems = [...prev, newItem];
+                
+                // Cập nhật children của parent nếu có
+                if (parentId) {
+                    const parentIndex = newItems.findIndex(i => i.id === parentId);
+                    if (parentIndex !== -1) {
+                        newItems[parentIndex] = {
+                            ...newItems[parentIndex],
+                            children: [...(newItems[parentIndex].children || []), newItem.id]
+                        };
+                    }
+                }
+                
+                // Lưu history sau khi thêm component
+                saveToHistory(newItems);
+                return newItems;
+            });
+        } 
+        // Nếu đang di chuyển component trên canvas (không có toolData)
+        else if (active.id.startsWith('comp-') && over.id === 'canvas-area' && delta) {
+            const itemId = active.id;
+            const item = canvasItems.find(i => i.id === itemId);
+            
+            if (item && !item.parentId) {
+                // Lấy vị trí ban đầu từ active.rect và cộng với delta
+                const canvasElement = document.getElementById('canvas-area');
+                if (canvasElement && active.rect) {
+                    const canvasRect = canvasElement.getBoundingClientRect();
+                    const initialX = active.rect.left - canvasRect.left;
+                    const initialY = active.rect.top - canvasRect.top;
+                    
+                    const newPosition = {
+                        x: Math.max(0, initialX + delta.x),
+                        y: Math.max(0, initialY + delta.y)
+                    };
+                    
+                    setCanvasItems((prev) => {
+                        const newItems = prev.map(i => 
+                            i.id === itemId 
+                                ? { ...i, position: newPosition }
+                                : i
+                        );
+                        saveToHistory(newItems);
+                        return newItems;
+                    });
+                } else {
+                    // Fallback: sử dụng position hiện tại + delta
+                    const currentPosition = item.position || { x: 0, y: 0 };
+                    const newPosition = {
+                        x: Math.max(0, currentPosition.x + delta.x),
+                        y: Math.max(0, currentPosition.y + delta.y)
+                    };
+                    
+                    setCanvasItems((prev) => {
+                        const newItems = prev.map(i => 
+                            i.id === itemId 
+                                ? { ...i, position: newPosition }
+                                : i
+                        );
+                        saveToHistory(newItems);
+                        return newItems;
+                    });
+                }
+            }
+        }
+        // Không tự động chọn component khi kéo vào - chỉ chọn khi click vào component
     };
 
     // Handle item updates
     const handleUpdateItem = (id, updatedItem) => {
-        setCanvasItems(prev => prev.map(item => item.id === id ? updatedItem : item));
-        // History sẽ được lưu tự động qua useAppBuilderHistory hook
+        setCanvasItems(prev => {
+            const newItems = prev.map(item => item.id === id ? updatedItem : item);
+            // Lưu history khi cập nhật
+            saveToHistory(newItems);
+            return newItems;
+        });
     };
     
     // Handle item deletion
@@ -321,10 +452,71 @@ function AppBuilderPage() {
     if (loading) return <div className="p-10 text-center">Đang tải dự án...</div>;
 
     return (
-        <DndContext onDragEnd={isPreviewMode ? undefined : handleDragEnd}>
-            <div className="flex h-[calc(100vh-6rem)] bg-neutral-100 overflow-hidden border border-neutral-200 rounded-xl shadow-sm m-[-24px]">
+        <div className="fixed inset-0 left-0 right-0 top-0 bottom-0" style={{ margin: 0, padding: 0, zIndex: 1 }}>
+            <DndContext 
+                sensors={sensors}
+                onDragEnd={isPreviewMode ? undefined : handleDragEnd}
+            >
+                <div className="flex flex-col h-screen w-full bg-white overflow-hidden" style={{ margin: 0, padding: 0 }}>
                 
-                {/* LEFT: Toolbox - Ẩn trong preview mode */}
+                {/* MAIN CONTENT AREA */}
+                <div className="flex flex-1 overflow-hidden">
+                    {/* CENTER: Canvas */}
+                    <div className={`flex-1 bg-white flex flex-col relative overflow-hidden ${isPreviewMode ? 'w-full' : ''}`}>
+                        {/* Canvas Toolbar */}
+                        <CanvasToolbar
+                            projectInfo={projectInfo}
+                            isPreviewMode={isPreviewMode}
+                            onEnterPreview={handleEnterPreview}
+                            onExitPreview={handleExitPreview}
+                            onSave={handleSave}
+                            saving={saving}
+                            onPublish={() => setIsPublishModalOpen(true)}
+                            onUndo={onUndo}
+                            onRedo={onRedo}
+                            canUndo={canUndo}
+                            canRedo={canRedo}
+                        />
+                        
+                        {/* Canvas Area */}
+                        <div className="flex-1 overflow-auto w-full h-full">
+                            <CanvasArea 
+                                items={canvasItems} 
+                                selectedId={selectedId} 
+                                onSelectItem={setSelectedId} 
+                                isPreview={isPreviewMode} 
+                                navigate={navigate}
+                                searchQuery={searchQuery}
+                                filterTag={filterTag}
+                                context={appState}
+                            />
+                        </div>
+                    </div>
+
+                    {/* RIGHT: Properties Panel - Chỉ hiển thị khi có component được chọn */}
+                    {!isPreviewMode && (
+                        <div className={`bg-white border-l border-neutral-200 flex flex-col z-10 transition-all duration-300 ease-in-out overflow-hidden ${
+                            selectedId && selectedItem ? 'w-80' : 'w-0 border-l-0'
+                        }`}>
+                            {selectedItem && (
+                                <div className="w-80 h-full">
+                                    <PropertiesPanel 
+                                        selectedItem={selectedItem} 
+                                        onUpdateItem={handleUpdateItem} 
+                                        onDeleteItem={(id) => {
+                                            handleDeleteItem(id);
+                                            setSelectedId(null);
+                                        }}
+                                        allItems={canvasItems}
+                                        onClose={() => setSelectedId(null)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* BOTTOM: Toolbox - Ẩn trong preview mode */}
                 {!isPreviewMode && (
                     <Toolbox 
                         canvasItems={canvasItems}
@@ -333,50 +525,6 @@ function AppBuilderPage() {
                         filterTag={filterTag}
                         setFilterTag={setFilterTag}
                     />
-                )}
-
-                {/* CENTER: Canvas */}
-                <div className={`flex-1 bg-neutral-100 flex flex-col relative overflow-hidden ${isPreviewMode ? 'w-full' : ''}`}>
-                    {/* Canvas Toolbar */}
-                    <CanvasToolbar
-                        projectInfo={projectInfo}
-                        isPreviewMode={isPreviewMode}
-                        onEnterPreview={handleEnterPreview}
-                        onExitPreview={handleExitPreview}
-                        onSave={handleSave}
-                        saving={saving}
-                        onPublish={() => setIsPublishModalOpen(true)}
-                        onUndo={onUndo}
-                        onRedo={onRedo}
-                        canUndo={canUndo}
-                        canRedo={canRedo}
-                    />
-                    
-                    {/* Canvas Area */}
-                    <div className="flex-1 p-10 overflow-auto flex justify-center items-start">
-                        <CanvasArea 
-                            items={canvasItems} 
-                            selectedId={selectedId} 
-                            onSelectItem={setSelectedId} 
-                            isPreview={isPreviewMode} 
-                            navigate={navigate}
-                            searchQuery={searchQuery}
-                            filterTag={filterTag}
-                            context={appState}
-                        />
-                    </div>
-                </div>
-
-                {/* RIGHT: Properties Panel - Ẩn trong preview mode */}
-                {!isPreviewMode && (
-                    <div className="w-80 bg-white border-l border-neutral-200 flex flex-col z-10">
-                        <PropertiesPanel 
-                            selectedItem={selectedItem} 
-                            onUpdateItem={handleUpdateItem} 
-                            onDeleteItem={handleDeleteItem}
-                            allItems={canvasItems}
-                        />
-                    </div>
                 )}
             </div>
 
@@ -456,7 +604,8 @@ function AppBuilderPage() {
                     </div>
                 </div>
             )}
-        </DndContext>
+            </DndContext>
+        </div>
     );
 }
 

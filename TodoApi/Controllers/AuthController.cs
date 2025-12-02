@@ -121,6 +121,11 @@ namespace TodoApi.Controllers
             {
                 // 3. (QUAN TRỌNG) Xác thực token với máy chủ của Google
                 // Bước này sẽ thất bại nếu token là giả mạo hoặc hết hạn
+                if (string.IsNullOrEmpty(request.IdToken))
+                {
+                    return BadRequest("IdToken không được để trống.");
+                }
+                
                 payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
             }
             catch (Exception ex)

@@ -24,9 +24,11 @@ builder.Services.AddCors(options =>
                       {
                           // Cho phép các nguồn gốc này
                           policy.WithOrigins("http://localhost:3000", // Cổng mặc định của React
-                                           "http://localhost:5173") // Cổng mặc định của Vue/Vite
+                                           "http://localhost:5173", // Cổng mặc định của Vite
+                                           "http://localhost:5174") // Cổng Vite khi 5173 bị chiếm
                                 .AllowAnyHeader()   // Cho phép mọi header
-                                .AllowAnyMethod();  // Cho phép mọi phương thức (GET, POST, PUT...)
+                                .AllowAnyMethod()   // Cho phép mọi phương thức (GET, POST, PUT...)
+                                .AllowCredentials(); // Cho phép gửi credentials (cookies, headers)
                       });
 });
 // ===================================
@@ -124,15 +126,10 @@ app.UseHttpsRedirection();
 
 app.UseCors(MyAllowSpecificOrigins); // <-- THÊM DÒNG NÀY
 
-app.UseAuthentication();
-app.UseAuthorization();
-// ========================================
-
-// --- THÊM 2 DÒNG NÀY ---
-// (QUAN TRỌNG: Phải nằm TRƯỚC UseAuthorization)
+// (QUAN TRỌNG: Phải nằm SAU UseCors và TRƯỚC MapControllers)
 app.UseAuthentication(); // Bật "Xác thực"
 app.UseAuthorization();  // Bật "Quyền"
-// --- KẾT THÚC THÊM ---
+// ========================================
 
 await SeedRoles(app);
 

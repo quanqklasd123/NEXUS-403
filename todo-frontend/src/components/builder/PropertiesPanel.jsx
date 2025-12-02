@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { FiTrash2, FiType, FiLayout, FiMaximize, FiMonitor, FiZap, FiPlus, FiX, FiInfo, FiTag, FiFolder, FiSettings } from 'react-icons/fi';
 
-const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = [] }) => {
+const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = [], onClose }) => {
     const [activeTab, setActiveTab] = useState('properties');
     
     if (!selectedItem) {
@@ -40,19 +40,30 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
 
         // Tự động thêm 'px' cho width/height/padding/margin nếu người dùng chỉ nhập số
         if (section === 'style' && ['width', 'height', 'padding', 'margin'].includes(key)) {
-            // Kiểm tra xem value có phải là số không (regex)
-            if (value && /^[0-9]+$/.test(value)) {
+            // Kiểm tra xem value có phải là số không (regex) - cho phép số thập phân
+            if (value && /^[0-9]+(\.[0-9]+)?$/.test(value.toString().trim())) {
                 finalValue = `${value}px`;
+            } else if (value === '' || value === null || value === undefined) {
+                // Nếu xóa giá trị, giữ nguyên hoặc set về undefined
+                finalValue = undefined;
             }
         }
 
+        // Merge đúng cách để không mất các property khác
         const currentSection = selectedItem[section] || {};
+        const updatedSection = {
+            ...currentSection,
+            [key]: finalValue
+        };
+        
+        // Nếu finalValue là undefined, xóa key đó
+        if (finalValue === undefined) {
+            delete updatedSection[key];
+        }
+
         onUpdateItem(selectedItem.id, {
             ...selectedItem,
-            [section]: {
-                ...currentSection,
-                [key]: finalValue
-            }
+            [section]: updatedSection
         });
     };
 
@@ -129,9 +140,20 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
             <div className="p-4 border-b border-neutral-200 bg-neutral-50/50">
                 <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">ID: {selectedItem.id.slice(-4)}</span>
-                    <span className="px-2 py-0.5 bg-sage-100 text-sage-700 text-[10px] uppercase font-bold rounded-full">
-                        {selectedItem.type}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-sage-100 text-sage-700 text-[10px] uppercase font-bold rounded-full">
+                            {selectedItem.type}
+                        </span>
+                        {onClose && (
+                            <button
+                                onClick={onClose}
+                                className="w-6 h-6 flex items-center justify-center rounded hover:bg-neutral-200 transition-colors"
+                                title="Đóng panel"
+                            >
+                                <FiX className="w-4 h-4 text-neutral-600" />
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <h3 className="font-semibold text-neutral-800">
                     {selectedItem.name || selectedItem.type}
