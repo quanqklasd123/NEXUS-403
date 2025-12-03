@@ -36,8 +36,8 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
         try {
             setLoading(true);
             setError(null);
-            const data = await apiService.getAllMyItems();
-            const items = Array.isArray(data) ? data : [];
+            const response = await apiService.getAllMyItems();
+            const items = Array.isArray(response.data) ? response.data : [];
             const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
             setTasks(filtered);
         } catch (err) {

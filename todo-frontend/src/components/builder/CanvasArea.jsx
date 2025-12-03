@@ -38,10 +38,10 @@ const CanvasArea = ({ items, selectedId, onSelectItem, isPreview = false, naviga
             className={`w-full h-full bg-neutral-50 transition-colors overflow-auto ${!isPreview && isOver ? 'ring-4 ring-sage-100' : ''}`} 
             onClick={handleCanvasClick}
             style={{
-                backgroundImage: !isPreview ? `
+                backgroundImage: `
                     linear-gradient(to right, #e5e7eb 1px, transparent 1px),
                     linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)
-                ` : 'none',
+                `,
                 backgroundSize: '20px 20px',
                 backgroundPosition: '0 0'
             }}
@@ -113,10 +113,7 @@ const DraggableComponent = ({ item, items, isSelected, onClick, isPreview, navig
                 }
             }}
             className={`
-                ${isSelected ? 'ring-2 ring-sage-400 ring-offset-2' : ''} 
-                ${isDragging ? 'shadow-2xl' : ''} 
-                ${!isPreview ? 'cursor-move hover:ring-2 hover:ring-sage-200' : ''}
-                rounded-lg
+                ${isDragging ? 'shadow-2xl' : ''}
             `}
         >
             <RenderComponent 

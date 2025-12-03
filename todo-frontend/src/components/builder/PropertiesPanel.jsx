@@ -782,13 +782,13 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                             <div>
                                 <label className="block text-xs font-medium text-neutral-500 mb-1.5">Hiển thị cột</label>
                                 <div className="space-y-2">
-                                    {['title', 'status', 'priority', 'dueDate'].map(col => (
+                                    {['title', 'status', 'priority', 'dueDate', 'category'].map(col => (
                                         <label key={col} className="flex items-center gap-2">
                                             <input
                                                 type="checkbox"
-                                                checked={(selectedItem.props?.columns || ['title', 'status', 'priority', 'dueDate']).includes(col)}
+                                                checked={(selectedItem.props?.columns || ['title', 'status', 'priority', 'dueDate', 'category']).includes(col)}
                                                 onChange={(e) => {
-                                                    const current = selectedItem.props?.columns || ['title', 'status', 'priority', 'dueDate'];
+                                                    const current = selectedItem.props?.columns || ['title', 'status', 'priority', 'dueDate', 'category'];
                                                     const newCols = e.target.checked 
                                                         ? [...current, col]
                                                         : current.filter(c => c !== col);
@@ -796,7 +796,7 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                                                 }}
                                                 className="w-4 h-4 text-sage-600"
                                             />
-                                            <span className="text-sm capitalize">{col}</span>
+                                            <span className="text-sm capitalize">{col === 'category' ? 'Category (Danh mục)' : col}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -872,6 +872,15 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                                         className="w-4 h-4 text-sage-600"
                                     />
                                     <span className="text-sm">Hiển thị ngày hết hạn</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.showCategory !== false}
+                                        onChange={(e) => handleChange('props', 'showCategory', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Hiển thị Category (Danh mục)</span>
                                 </label>
                                 <label className="flex items-center gap-2">
                                     <input
@@ -1414,7 +1423,7 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                             </div>
                             <input
                                 type="text"
-                                value={selectedItem.style?.backgroundColor || 'transparent'}
+                                value={selectedItem.style?.backgroundColor || ''}
                                 onChange={(e) => handleChange('style', 'backgroundColor', e.target.value)}
                                 className="flex-1 px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none uppercase"
                             />

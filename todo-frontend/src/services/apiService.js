@@ -61,7 +61,15 @@ const apiService = {
     },
 
     createTodoList: (name) => {
-        return apiClient.post('/todolists', { name });
+        return apiClient.post('/todolists', { Name: name });
+    },
+
+    updateTodoList: (id, name) => {
+        return apiClient.put(`/todolists/${id}`, { Name: name });
+    },
+
+    deleteTodoList: (id) => {
+        return apiClient.delete(`/todolists/${id}`);
     },
 
     createTodoItem: (itemData) => {
@@ -99,7 +107,7 @@ const apiService = {
 
     // --- THÊM HÀM MỚI CHO KANBAN ---
     updateItemStatus: (id, newStatus) => {
-        return apiClient.patch(`/todoitems/${id}/status`, { status: newStatus });
+        return apiClient.patch(`/todoitems/${id}/status`, { Status: newStatus });
     },
 
     getAllMyItems: () => {

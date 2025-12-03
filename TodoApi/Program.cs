@@ -33,8 +33,14 @@ builder.Services.AddCors(options =>
 });
 // ===================================
 
-// 1. Thêm Services
-builder.Services.AddControllers();
+// 1. Thêm Services với JSON options để tự động map camelCase
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Cho phép tự động map giữa camelCase (frontend) và PascalCase (backend)
+        // ASP.NET Core mặc định sẽ tự động map, nhưng cấu hình rõ ràng để đảm bảo
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
 // 2. Cấu hình DbContext (Giữ nguyên)
 var connectionString = configuration.GetConnectionString("DefaultConnection");

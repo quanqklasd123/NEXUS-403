@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../services/apiService'; 
 import { Link, useNavigate } from 'react-router-dom'; 
+import { FiEdit2, FiTrash2, FiCheck, FiX } from 'react-icons/fi';
 import PageHeader from '../components/PageHeader'; // Import Header (Mới)
 import Stats from '../components/Stats';       // Import Stats (Mới)
 
@@ -12,6 +13,8 @@ function TodoList() {
     const [error, setError] = useState('');
     const [newListName, setNewListName] = useState('');
     const [searchTerm, setSearchTerm] = useState(''); // State tìm kiếm
+    const [editingId, setEditingId] = useState(null);
+    const [editListName, setEditListName] = useState('');
     const navigate = useNavigate(); 
 
     useEffect(() => {
@@ -43,6 +46,50 @@ function TodoList() {
         } catch (error) {
             console.error('Lỗi khi tạo list:', error);
             alert('Không thể tạo list mới.');
+        }
+    };
+
+    // Handle Edit
+    const handleEditClick = (list) => {
+        setEditingId(list.id);
+        setEditListName(list.name);
+    };
+
+    const handleSaveEdit = async (listId) => {
+        if (!editListName.trim()) {
+            alert('Vui lòng nhập tên danh sách!');
+            return;
+        }
+        try {
+            const response = await apiService.updateTodoList(listId, editListName.trim());
+            setLists(lists.map(list => 
+                list.id === listId ? { ...list, name: editListName.trim() } : list
+            ));
+            setEditingId(null);
+            setEditListName('');
+        } catch (error) {
+            console.error('Lỗi khi cập nhật list:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Lỗi không xác định';
+            alert(`Không thể cập nhật danh sách: ${errorMessage}`);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setEditListName('');
+    };
+
+    // Handle Delete
+    const handleDeleteList = async (listId, listName) => {
+        if (!window.confirm(`Bạn có chắc muốn xóa danh sách "${listName}"? Tất cả các task trong danh sách này sẽ bị xóa.`)) {
+            return;
+        }
+        try {
+            await apiService.deleteTodoList(listId);
+            setLists(lists.filter(list => list.id !== listId));
+        } catch (error) {
+            console.error('Lỗi khi xóa list:', error);
+            alert('Không thể xóa danh sách.');
         }
     };
 
@@ -107,20 +154,82 @@ function TodoList() {
             <div className="flex flex-col gap-3">
                 {/* Dùng danh sách đã lọc (filteredLists) */}
                 {filteredLists.map(list => (
-                    // Mỗi link là một "item" có style "card"
-                    <Link 
-                        key={list.id} 
-                        to={`/tasks/${list.id}`} // Sửa URL thành /tasks/:id
-                        className="block p-4 bg-white rounded-xl shadow-sm border border-neutral-200
-                                   font-medium text-lg text-neutral-800 
-                                   hover:shadow-md hover:border-sage-300 transition-all"
+                    <div
+                        key={list.id}
+                        className="group p-4 bg-white rounded-xl shadow-sm border border-neutral-200
+                                   hover:shadow-md hover:border-sage-300 transition-all flex items-center justify-between"
                     >
-                        {list.name}
-                        {/* (Hiển thị số lượng item con) */}
-                        <p className="text-sm font-normal text-neutral-500 mt-1">
-                            {list.items.length} công việc
-                        </p>
-                    </Link>
+                        {editingId === list.id ? (
+                            // Edit Mode
+                            <div className="flex-1 flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={editListName}
+                                    onChange={(e) => setEditListName(e.target.value)}
+                                    className="flex-1 px-3 py-2 text-lg font-medium border border-sage-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-sage-400"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleSaveEdit(list.id);
+                                        } else if (e.key === 'Escape') {
+                                            handleCancelEdit();
+                                        }
+                                    }}
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={() => handleSaveEdit(list.id)}
+                                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                    title="Lưu"
+                                >
+                                    <FiCheck size={20} />
+                                </button>
+                                <button
+                                    onClick={handleCancelEdit}
+                                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title="Hủy"
+                                >
+                                    <FiX size={20} />
+                                </button>
+                            </div>
+                        ) : (
+                            // View Mode
+                            <>
+                                <Link 
+                                    to={`/tasks/${list.id}`}
+                                    className="flex-1"
+                                >
+                                    <div className="font-medium text-lg text-neutral-800">
+                                        {list.name}
+                                    </div>
+                                    <p className="text-sm font-normal text-neutral-500 mt-1">
+                                        {list.items?.length || 0} công việc
+                                    </p>
+                                </Link>
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleEditClick(list);
+                                        }}
+                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Sửa danh sách"
+                                    >
+                                        <FiEdit2 size={18} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleDeleteList(list.id, list.name);
+                                        }}
+                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Xóa danh sách"
+                                    >
+                                        <FiTrash2 size={18} />
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 ))}
             </div>
 

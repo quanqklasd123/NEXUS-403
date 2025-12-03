@@ -79,6 +79,32 @@ namespace TodoApi.Controllers
             return CreatedAtAction(nameof(GetTodoList), new { id = listDto.Id }, listDto);
         }
 
+        // PUT: api/TodoLists/5 (PHẢI LÀ CỦA TÔI)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutTodoList(long id, [FromBody] CreateTodoListDTO updateDto)
+        {
+            if (updateDto == null || string.IsNullOrWhiteSpace(updateDto.Name))
+            {
+                return BadRequest("Name is required");
+            }
+
+            var userId = GetCurrentUserId();
+
+            var todoList = await _context.TodoLists
+                .FirstOrDefaultAsync(list => list.Id == id && list.AppUserId == userId);
+
+            if (todoList == null)
+            {
+                return NotFound();
+            }
+
+            todoList.Name = updateDto.Name;
+            await _context.SaveChangesAsync();
+
+            var listDto = _mapper.Map<TodoListDTO>(todoList);
+            return Ok(listDto);
+        }
+
         // DELETE: api/TodoLists/5 (PHẢI LÀ CỦA TÔI)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTodoList(long id)

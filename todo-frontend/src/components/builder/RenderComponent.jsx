@@ -432,29 +432,25 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
     const dataComponents = ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'];
     const controlComponents = ['viewSwitcher', 'filterBar', 'searchBox', 'addTaskButton', 'databaseTitle'];
     
-    // Trong preview mode: ẩn border selection và border dashed
+    // Border giống nhau trong cả preview và non-preview mode
     const getBorder = () => {
-        if (isPreview) return 'none';
-        if (isSelected) return '2px solid #2563eb';
-        // Ẩn border dashed trong preview
-        if (item.style.border && item.style.border.includes('dashed') && isPreview) return 'none';
         return item.style.border || 'none';
     };
     
     const wrapperStyle = {
         width: finalStyle.width, height: finalStyle.height, margin: finalStyle.margin,
         position: 'relative', border: getBorder(),
-        cursor: isPreview ? 'default' : 'pointer', boxSizing: 'border-box', display: finalStyle.display || 'block', gap: finalStyle.gap,
+        cursor: 'default', boxSizing: 'border-box', display: finalStyle.display || 'block', gap: finalStyle.gap,
         gridTemplateColumns: finalStyle.gridTemplateColumns, // Cho grid component
-        backgroundColor: [...layoutComponents, ...dataComponents].includes(item.type) ? finalStyle.backgroundColor : 'transparent',
+        backgroundColor: [...layoutComponents, ...dataComponents].includes(item.type) ? finalStyle.backgroundColor : undefined,
         padding: [...layoutComponents, ...dataComponents].includes(item.type) ? finalStyle.padding : 0,
         borderRadius: finalStyle.borderRadius,
         boxShadow: finalStyle.boxShadow
     };
 
-    // Trong preview mode: cho phép pointer-events, không có onClick để select
-    const handleClick = isPreview ? undefined : (e) => { e.stopPropagation(); onClick(item.id); };
-    const hoverClass = isPreview ? '' : (item.type !== 'divider' ? 'hover:ring-1 hover:ring-sage-300' : '');
+    // Không có onClick trong cả hai mode để giao diện giống nhau
+    const handleClick = undefined;
+    const hoverClass = '';
 
     // Với input/button... style nằm trong contentStyle
     if (formComponents.includes(item.type)) {

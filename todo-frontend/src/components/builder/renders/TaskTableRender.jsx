@@ -6,11 +6,23 @@ import apiService from '../../../services/apiService';
 const STATUS_OPTIONS = ['Todo', 'InProgress', 'Done'];
 const PRIORITY_OPTIONS = ['Low', 'Medium', 'High'];
 
+// Convert số sang string
+const convertStatusToString = (statusNum) => {
+    const statusMap = { 0: 'Todo', 1: 'InProgress', 2: 'Done' };
+    return statusMap[statusNum] || 'Todo';
+};
+
+const convertPriorityToString = (priorityNum) => {
+    const priorityMap = { 0: 'Low', 1: 'Medium', 2: 'High' };
+    return priorityMap[priorityNum] || 'Medium';
+};
+
 const COLUMN_LABELS = {
     title: 'Title',
     status: 'Status',
     priority: 'Priority',
     dueDate: 'Due Date',
+    category: 'Category', // Thêm Category
 };
 
 const StatusBadge = ({ status }) => {
@@ -40,7 +52,7 @@ const PriorityBadge = ({ priority }) => {
 };
 
 export default function TaskTableRender({ props = {}, style, isPreview = false }) {
-    const { columns = ['title', 'status', 'priority', 'dueDate'], showHeader = true, allowEdit = true, allowDelete = true, todoListId } = props || {};
+    const { columns = ['title', 'status', 'priority', 'dueDate', 'category'], showHeader = true, allowEdit = true, allowDelete = true, todoListId } = props || {};
     
     const [tasks, setTasks] = useState([]);
     const [allTasks, setAllTasks] = useState([]); // Store all tasks before filtering
@@ -91,7 +103,8 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
             result = result.filter(t => 
                 t.title?.toLowerCase().includes(query) ||
                 t.status?.toLowerCase().includes(query) ||
-                t.priority?.toLowerCase().includes(query)
+                t.priority?.toLowerCase().includes(query) ||
+                t.todoListName?.toLowerCase().includes(query)
             );
         }
 
@@ -103,9 +116,9 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
         if (isPreview) {
             // Mock data cho preview mode
             const mockData = [
-                { id: 1, title: 'Sample Task 1', status: 'Todo', priority: 'High', dueDate: '2025-12-10' },
-                { id: 2, title: 'Sample Task 2', status: 'InProgress', priority: 'Medium', dueDate: '2025-12-15' },
-                { id: 3, title: 'Sample Task 3', status: 'Done', priority: 'Low', dueDate: '2025-12-05' },
+                { id: 1, title: 'Sample Task 1', status: 'Todo', priority: 'High', dueDate: '2025-12-10', todoListName: 'Work' },
+                { id: 2, title: 'Sample Task 2', status: 'InProgress', priority: 'Medium', dueDate: '2025-12-15', todoListName: 'Personal' },
+                { id: 3, title: 'Sample Task 3', status: 'Done', priority: 'Low', dueDate: '2025-12-05', todoListName: 'Work' },
             ];
             setAllTasks(mockData);
             setTasks(mockData);
@@ -116,10 +129,16 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
         const fetchTasks = async () => {
             try {
                 setLoading(true);
-                const data = await apiService.getAllMyItems();
-                const items = Array.isArray(data) ? data : [];
+                const response = await apiService.getAllMyItems();
+                const items = Array.isArray(response.data) ? response.data : [];
                 const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
-                setAllTasks(filtered);
+                // Convert status và priority từ số sang string
+                const convertedItems = filtered.map(item => ({
+                    ...item,
+                    status: convertStatusToString(item.status),
+                    priority: convertPriorityToString(item.priority)
+                }));
+                setAllTasks(convertedItems);
             } catch (error) {
                 console.error('Failed to fetch tasks:', error);
                 setAllTasks([]);
@@ -237,6 +256,12 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
                 return <PriorityBadge priority={task.priority} />;
             case 'dueDate':
                 return task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-';
+            case 'category':
+                return task.todoListName ? (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                        {task.todoListName}
+                    </span>
+                ) : '-';
             default:
                 return task[column] || '-';
         }

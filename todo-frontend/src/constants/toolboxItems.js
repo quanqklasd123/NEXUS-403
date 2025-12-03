@@ -43,7 +43,7 @@ export const TOOLS = [
         category: 'Data',
         defaultProps: { 
             label: 'Task Table',
-            columns: ['title', 'status', 'priority', 'dueDate'],
+            columns: ['title', 'status', 'priority', 'dueDate', 'category'],
             showHeader: true,
             allowEdit: true,
             allowDelete: true,
@@ -69,6 +69,7 @@ export const TOOLS = [
             showCheckbox: true,
             showPriority: true,
             showDueDate: true,
+            showCategory: true, // Hiển thị Category
             groupByStatus: false,
             todoListId: null,
         }, 
@@ -222,7 +223,7 @@ export const TOOLS = [
             label: '+ New Task',
             defaultStatus: 'Todo',
             defaultPriority: 'Medium',
-            todoListId: null,
+            // todoListId: null, // Không cần nữa - user sẽ chọn Category khi add task
         }, 
         defaultStyle: { 
             width: 'auto', 
