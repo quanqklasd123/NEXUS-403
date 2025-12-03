@@ -59,6 +59,10 @@ export const EVENTS = {
     SEARCH_CHANGE: 'search-change',
     SEARCH_CLEAR: 'search-clear',
     
+    // Sort events
+    SORT_CHANGE: 'sort-change',
+    SORT_CLEAR: 'sort-clear',
+    
     // Task events
     TASKS_UPDATED: 'tasks-updated',
     TASK_CREATED: 'task-created',

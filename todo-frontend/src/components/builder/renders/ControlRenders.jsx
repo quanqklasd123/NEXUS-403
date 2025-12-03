@@ -1,9 +1,10 @@
 // src/components/builder/renders/ControlRenders.jsx
-// Các Control components: ViewSwitcher, FilterBar, SearchBox, AddTaskButton, DatabaseTitle
+// Các Control components: ViewSwitcher, FilterBar, SearchBox, SortDropdown, AddTaskButton, DatabaseTitle
 
 import { useState } from 'react';
-import { FiTable, FiList, FiColumns, FiCalendar, FiFilter, FiSearch, FiPlus, FiChevronDown, FiX } from 'react-icons/fi';
+import { FiTable, FiList, FiColumns, FiCalendar, FiFilter, FiSearch, FiPlus, FiChevronDown, FiX, FiArrowDown } from 'react-icons/fi';
 import apiService from '../../../services/apiService';
+import eventBus, { EVENTS } from '../../../utils/eventBus';
 
 const VIEW_ICONS = {
     table: FiTable,
@@ -189,6 +190,115 @@ export function SearchBoxRender({ props = {}, style, isPreview = false }) {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                     <FiX size={14} />
+                </button>
+            )}
+        </div>
+    );
+}
+
+// ========== SORT DROPDOWN ==========
+export function SortDropdownRender({ props = {}, style, isPreview = false }) {
+    const { 
+        label = 'Sort by',
+        sortFields = ['title', 'status', 'priority', 'dueDate'],
+        defaultSort = { field: 'title', order: 'asc' },
+        targetComponentId = null
+    } = props || {};
+    
+    const [currentSort, setCurrentSort] = useState(defaultSort);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const SORT_FIELD_LABELS = {
+        title: 'Title',
+        status: 'Status',
+        priority: 'Priority',
+        dueDate: 'Due Date',
+    };
+
+    const handleSortChange = (field, order) => {
+        const newSort = { field, order };
+        setCurrentSort(newSort);
+        setIsOpen(false);
+        
+        if (!isPreview) {
+            // Emit both window event and eventBus for compatibility
+            window.dispatchEvent(new CustomEvent('sort-change', { 
+                detail: { 
+                    sort: newSort,
+                    targetComponentId 
+                } 
+            }));
+            eventBus.emit(EVENTS.SORT_CHANGE, { sort: newSort, targetComponentId });
+        }
+    };
+
+    const toggleOrder = () => {
+        const newOrder = currentSort.order === 'asc' ? 'desc' : 'asc';
+        handleSortChange(currentSort.field, newOrder);
+    };
+
+    return (
+        <div style={style} className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+                <FiArrowDown size={14} />
+                {label}: {SORT_FIELD_LABELS[currentSort.field] || currentSort.field}
+                <span className="text-xs text-gray-500">
+                    ({currentSort.order === 'asc' ? '↑' : '↓'})
+                </span>
+                <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && (
+                <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 min-w-[200px]">
+                    <div className="space-y-1">
+                        {sortFields.map(field => (
+                            <div key={field} className="space-y-1">
+                                <div className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase">
+                                    {SORT_FIELD_LABELS[field] || field}
+                                </div>
+                                <button
+                                    onClick={() => handleSortChange(field, 'asc')}
+                                    className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                                        currentSort.field === field && currentSort.order === 'asc'
+                                            ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                            : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <span>↑</span>
+                                        Ascending
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => handleSortChange(field, 'desc')}
+                                    className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                                        currentSort.field === field && currentSort.order === 'desc'
+                                            ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                            : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <span>↓</span>
+                                        Descending
+                                    </span>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Quick toggle order button */}
+            {currentSort.field && (
+                <button
+                    onClick={toggleOrder}
+                    className="ml-2 p-1.5 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
+                    title={`Toggle ${currentSort.order === 'asc' ? 'Descending' : 'Ascending'}`}
+                >
+                    {currentSort.order === 'asc' ? '↓' : '↑'}
                 </button>
             )}
         </div>

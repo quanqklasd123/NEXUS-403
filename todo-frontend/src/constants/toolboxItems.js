@@ -4,7 +4,7 @@ import {
     FiGrid, FiCreditCard, FiPieChart, FiMinus, FiCheckSquare, FiList,
     FiCalendar, FiFileText, FiUpload, FiToggleRight, FiTable, FiList as FiListView,
     FiBarChart2, FiLayers, FiMaximize2, FiColumns, FiFilter, FiSearch, FiPlus,
-    FiDatabase, FiSliders
+    FiDatabase, FiSliders, FiArrowDown
 } from 'react-icons/fi';
 
 export const TOOLS = [
@@ -188,6 +188,29 @@ export const TOOLS = [
             padding: '8px 12px',
             border: '1px solid #e2e8f0',
             borderRadius: '8px'
+        } 
+    },
+    { 
+        type: 'sortDropdown', 
+        label: 'Sort Dropdown', 
+        icon: FiArrowDown, 
+        category: 'Control',
+        defaultProps: { 
+            label: 'Sort by',
+            sortFields: ['title', 'status', 'priority', 'dueDate'],
+            defaultSort: { field: 'title', order: 'asc' },
+            targetComponentId: null,
+        }, 
+        defaultStyle: { 
+            width: 'auto', 
+            height: 'auto', 
+            backgroundColor: '#ffffff', 
+            padding: '8px 12px',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px'
         } 
     },
     { 

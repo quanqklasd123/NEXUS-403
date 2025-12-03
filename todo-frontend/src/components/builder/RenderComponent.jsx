@@ -16,6 +16,7 @@ import {
     ViewSwitcherRender,
     FilterBarRender,
     SearchBoxRender,
+    SortDropdownRender,
     AddTaskButtonRender,
     DatabaseTitleRender,
 } from './renders';
@@ -411,6 +412,9 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
             
             case 'searchBox':
                 return <SearchBoxRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'sortDropdown':
+                return <SortDropdownRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
             
             case 'addTaskButton':
                 return <AddTaskButtonRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;

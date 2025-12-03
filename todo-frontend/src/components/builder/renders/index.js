@@ -10,6 +10,7 @@ export {
     ViewSwitcherRender,
     FilterBarRender,
     SearchBoxRender,
+    SortDropdownRender,
     AddTaskButtonRender,
     DatabaseTitleRender,
 } from './ControlRenders';

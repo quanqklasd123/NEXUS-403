@@ -10,9 +10,10 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // Filter & Search state
+    // Filter & Search & Sort state
     const [filters, setFilters] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [sort, setSort] = useState({ field: 'title', order: 'asc' });
 
     // Mock data cho preview mode
     const mockTasks = useMemo(() => [
@@ -78,22 +79,41 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
             eventBus.on(EVENTS.SEARCH_CLEAR, () => {
                 setSearchQuery('');
             }),
+            
+            // Sort change
+            eventBus.on(EVENTS.SORT_CHANGE, (data) => {
+                if (data.sort) {
+                    setSort(data.sort);
+                }
+            }),
+            
+            // Sort clear
+            eventBus.on(EVENTS.SORT_CLEAR, () => {
+                setSort({ field: 'title', order: 'asc' });
+            }),
         ];
 
         // Also listen to window events for backward compatibility
         const handleTasksUpdated = () => fetchTasks();
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
+        const handleSortChange = (e) => {
+            if (e.detail?.sort) {
+                setSort(e.detail.sort);
+            }
+        };
         
         window.addEventListener('tasks-updated', handleTasksUpdated);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
+        window.addEventListener('sort-change', handleSortChange);
 
         return () => {
             unsubscribes.forEach(unsub => unsub());
             window.removeEventListener('tasks-updated', handleTasksUpdated);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
+            window.removeEventListener('sort-change', handleSortChange);
         };
     }, [fetchTasks]);
 
@@ -147,8 +167,39 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
             );
         }
 
+        // Apply sort
+        if (sort.field) {
+            result.sort((a, b) => {
+                let aValue = a[sort.field];
+                let bValue = b[sort.field];
+                
+                // Handle null/undefined
+                if (aValue == null) aValue = '';
+                if (bValue == null) bValue = '';
+                
+                // Handle dates
+                if (sort.field === 'dueDate') {
+                    aValue = aValue ? new Date(aValue).getTime() : 0;
+                    bValue = bValue ? new Date(bValue).getTime() : 0;
+                }
+                
+                // Handle strings
+                if (typeof aValue === 'string') {
+                    aValue = aValue.toLowerCase();
+                }
+                if (typeof bValue === 'string') {
+                    bValue = bValue.toLowerCase();
+                }
+                
+                // Compare
+                if (aValue < bValue) return sort.order === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sort.order === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
         return result;
-    }, [tasks, filters, searchQuery]);
+    }, [tasks, filters, searchQuery, sort]);
 
     // Task actions
     const createTask = useCallback(async (taskData) => {
@@ -212,9 +263,10 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
         loading,
         error,
         
-        // Filter/Search state
+        // Filter/Search/Sort state
         filters,
         searchQuery,
+        sort,
         
         // Actions
         fetchTasks,
@@ -227,5 +279,6 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
         setTasks,
         setFilters,
         setSearchQuery,
+        setSort,
     };
 }

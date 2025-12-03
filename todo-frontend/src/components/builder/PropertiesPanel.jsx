@@ -1149,6 +1149,101 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                     </>
                 )}
 
+                {/* Sort Dropdown Properties */}
+                {selectedItem.type === 'sortDropdown' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Sort Dropdown Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Label</label>
+                                <input
+                                    type="text"
+                                    value={selectedItem.props?.label || 'Sort by'}
+                                    onChange={(e) => handleChange('props', 'label', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Sort Fields</label>
+                                <div className="space-y-2">
+                                    {['title', 'status', 'priority', 'dueDate'].map(field => (
+                                        <label key={field} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={(selectedItem.props?.sortFields || ['title', 'status', 'priority', 'dueDate']).includes(field)}
+                                                onChange={(e) => {
+                                                    const current = selectedItem.props?.sortFields || ['title', 'status', 'priority', 'dueDate'];
+                                                    const newFields = e.target.checked 
+                                                        ? [...current, field]
+                                                        : current.filter(f => f !== field);
+                                                    handleChange('props', 'sortFields', newFields);
+                                                }}
+                                                className="w-4 h-4 text-sage-600"
+                                            />
+                                            <span className="text-sm capitalize">{field}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Default Sort Field</label>
+                                <select
+                                    value={selectedItem.props?.defaultSort?.field || 'title'}
+                                    onChange={(e) => {
+                                        const currentDefaultSort = selectedItem.props?.defaultSort || { field: 'title', order: 'asc' };
+                                        handleChange('props', 'defaultSort', { ...currentDefaultSort, field: e.target.value });
+                                    }}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="title">Title</option>
+                                    <option value="status">Status</option>
+                                    <option value="priority">Priority</option>
+                                    <option value="dueDate">Due Date</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Default Sort Order</label>
+                                <select
+                                    value={selectedItem.props?.defaultSort?.order || 'asc'}
+                                    onChange={(e) => {
+                                        const currentDefaultSort = selectedItem.props?.defaultSort || { field: 'title', order: 'asc' };
+                                        handleChange('props', 'defaultSort', { ...currentDefaultSort, order: e.target.value });
+                                    }}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="asc">Ascending (↑)</option>
+                                    <option value="desc">Descending (↓)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Target Component ID</label>
+                                <select
+                                    value={selectedItem.props?.targetComponentId || ''}
+                                    onChange={(e) => handleChange('props', 'targetComponentId', e.target.value || null)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="">Chọn component...</option>
+                                    {allItems
+                                        .filter(item => ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'].includes(item.type))
+                                        .map(item => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name || item.props?.label || item.type} ({item.id.slice(-4)})
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+                        </div>
+                    </>
+                )}
+
                 {/* Add Task Button Properties */}
                 {selectedItem.type === 'addTaskButton' && (
                     <>
