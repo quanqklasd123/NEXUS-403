@@ -35,7 +35,7 @@ const CanvasArea = ({ items, selectedId, onSelectItem, isPreview = false, naviga
         <div 
             id="canvas-area"
             ref={setNodeRef} 
-            className={`w-full h-full bg-neutral-50 transition-colors relative overflow-auto ${!isPreview && isOver ? 'ring-4 ring-sage-100' : ''}`} 
+            className={`w-full h-full bg-neutral-50 transition-colors overflow-auto ${!isPreview && isOver ? 'ring-4 ring-sage-100' : ''}`} 
             onClick={handleCanvasClick}
             style={{
                 backgroundImage: !isPreview ? `
@@ -59,7 +59,8 @@ const CanvasArea = ({ items, selectedId, onSelectItem, isPreview = false, naviga
                     </div>
                 </div>
             )}
-            <div className="w-full h-full relative min-h-full min-w-full"> 
+            {/* Flow Layout - Components xếp theo thứ tự */}
+            <div className="w-full min-h-full p-4 flex flex-col gap-3"> 
                 {rootItems.map((item) => (
                     <DraggableComponent
                         key={item.id}
@@ -89,45 +90,34 @@ const DraggableComponent = ({ item, items, isSelected, onClick, isPreview, navig
     });
 
     const itemStyle = item.style || {};
-    const baseStyle = {
-        position: 'absolute',
-        left: `${item.position?.x || 0}px`,
-        top: `${item.position?.y || 0}px`,
-        width: itemStyle.width || '200px',
-        height: itemStyle.height || 'auto',
-        minWidth: itemStyle.minWidth || '100px',
+    
+    // Style cho wrapper - dùng flow layout thay vì absolute positioning
+    const wrapperStyle = {
+        width: itemStyle.width || '100%',
         minHeight: itemStyle.minHeight || '50px',
-        padding: itemStyle.padding || '0px',
-        margin: itemStyle.margin || '0px',
         transform: CSS.Translate.toString(transform),
         zIndex: isDragging ? 1000 : (isSelected ? 100 : 1),
-    };
-
-    // Merge với các style khác từ item.style, nhưng giữ baseStyle cho position và transform
-    const mergedStyle = {
-        ...itemStyle,
-        ...baseStyle,
-        // Đảm bảo position và transform luôn được áp dụng
-        position: baseStyle.position,
-        left: baseStyle.left,
-        top: baseStyle.top,
-        transform: baseStyle.transform,
-        zIndex: baseStyle.zIndex,
+        opacity: isDragging ? 0.8 : 1,
+        transition: isDragging ? 'none' : 'box-shadow 0.2s',
     };
 
     return (
         <div
             ref={setNodeRef}
-            style={mergedStyle}
+            style={wrapperStyle}
             {...(isPreview ? {} : { ...attributes, ...listeners })}
             onClick={(e) => {
                 e.stopPropagation();
-                // Chỉ select nếu không đang drag
                 if (!isPreview && !isDragging) {
                     onClick(item.id);
                 }
             }}
-            className={`${isSelected ? 'ring-2 ring-sage-400' : ''} ${isDragging ? 'opacity-50' : ''} ${!isPreview ? 'cursor-move' : ''}`}
+            className={`
+                ${isSelected ? 'ring-2 ring-sage-400 ring-offset-2' : ''} 
+                ${isDragging ? 'shadow-2xl' : ''} 
+                ${!isPreview ? 'cursor-move hover:ring-2 hover:ring-sage-200' : ''}
+                rounded-lg
+            `}
         >
             <RenderComponent 
                 item={item} 

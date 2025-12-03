@@ -7,6 +7,19 @@ import {
 import { handleEvent } from '../../utils/eventHandler';
 import { evaluateCondition, getConditionalStyle, getConditionalProps, resolveDataBinding } from '../../utils/conditionEvaluator';
 
+// Import Data & Control renders
+import {
+    TaskTableRender,
+    TaskListRender,
+    TaskBoardRender,
+    TaskCalendarRender,
+    ViewSwitcherRender,
+    FilterBarRender,
+    SearchBoxRender,
+    AddTaskButtonRender,
+    DatabaseTitleRender,
+} from './renders';
+
 const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = false, navigate = null, context = {} }) => {
     // Make container/row/grid droppable (hooks must be called before any early returns)
     const isDroppableType = !isPreview && (item.type === 'container' || item.type === 'row' || item.type === 'grid');
@@ -375,6 +388,35 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                     </div>
                 );
             }
+
+            // === DATA COMPONENTS (Notion-like) ===
+            case 'taskTable':
+                return <TaskTableRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'taskList':
+                return <TaskListRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'taskBoard':
+                return <TaskBoardRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'taskCalendar':
+                return <TaskCalendarRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+
+            // === CONTROL COMPONENTS ===
+            case 'viewSwitcher':
+                return <ViewSwitcherRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'filterBar':
+                return <FilterBarRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'searchBox':
+                return <SearchBoxRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'addTaskButton':
+                return <AddTaskButtonRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'databaseTitle':
+                return <DatabaseTitleRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
             
             default: return null;
         }
@@ -383,6 +425,8 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
     // Wrapper Style: Layout & Background (cho Container/Card)
     const layoutComponents = ['container', 'card', 'row', 'grid', 'image', 'chart', 'tabs', 'modal', 'statCard', 'dataTable', 'listView'];
     const formComponents = ['button', 'input', 'select', 'checkbox', 'text', 'datePicker', 'richText', 'fileUpload', 'switch'];
+    const dataComponents = ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'];
+    const controlComponents = ['viewSwitcher', 'filterBar', 'searchBox', 'addTaskButton', 'databaseTitle'];
     
     // Trong preview mode: ẩn border selection và border dashed
     const getBorder = () => {
@@ -398,8 +442,8 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
         position: 'relative', border: getBorder(),
         cursor: isPreview ? 'default' : 'pointer', boxSizing: 'border-box', display: finalStyle.display || 'block', gap: finalStyle.gap,
         gridTemplateColumns: finalStyle.gridTemplateColumns, // Cho grid component
-        backgroundColor: layoutComponents.includes(item.type) ? finalStyle.backgroundColor : 'transparent',
-        padding: layoutComponents.includes(item.type) ? finalStyle.padding : 0,
+        backgroundColor: [...layoutComponents, ...dataComponents].includes(item.type) ? finalStyle.backgroundColor : 'transparent',
+        padding: [...layoutComponents, ...dataComponents].includes(item.type) ? finalStyle.padding : 0,
         borderRadius: finalStyle.borderRadius,
         boxShadow: finalStyle.boxShadow
     };

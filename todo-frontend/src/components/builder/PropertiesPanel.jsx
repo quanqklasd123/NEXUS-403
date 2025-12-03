@@ -768,6 +768,478 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                     )}
                 </div>
 
+                {/* === DATA COMPONENTS PROPERTIES === */}
+                {/* Task Table Properties */}
+                {selectedItem.type === 'taskTable' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Task Table Settings
+                            </h4>
+                            
+                            {/* Columns */}
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Hiển thị cột</label>
+                                <div className="space-y-2">
+                                    {['title', 'status', 'priority', 'dueDate'].map(col => (
+                                        <label key={col} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={(selectedItem.props?.columns || ['title', 'status', 'priority', 'dueDate']).includes(col)}
+                                                onChange={(e) => {
+                                                    const current = selectedItem.props?.columns || ['title', 'status', 'priority', 'dueDate'];
+                                                    const newCols = e.target.checked 
+                                                        ? [...current, col]
+                                                        : current.filter(c => c !== col);
+                                                    handleChange('props', 'columns', newCols);
+                                                }}
+                                                className="w-4 h-4 text-sage-600"
+                                            />
+                                            <span className="text-sm capitalize">{col}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Options */}
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.showHeader !== false}
+                                        onChange={(e) => handleChange('props', 'showHeader', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Hiển thị header</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.allowEdit !== false}
+                                        onChange={(e) => handleChange('props', 'allowEdit', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Cho phép chỉnh sửa</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.allowDelete !== false}
+                                        onChange={(e) => handleChange('props', 'allowDelete', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Cho phép xóa</span>
+                                </label>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Task List Properties */}
+                {selectedItem.type === 'taskList' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Task List Settings
+                            </h4>
+                            
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.showCheckbox !== false}
+                                        onChange={(e) => handleChange('props', 'showCheckbox', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Hiển thị checkbox</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.showPriority !== false}
+                                        onChange={(e) => handleChange('props', 'showPriority', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Hiển thị độ ưu tiên</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.showDueDate !== false}
+                                        onChange={(e) => handleChange('props', 'showDueDate', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Hiển thị ngày hết hạn</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.groupByStatus === true}
+                                        onChange={(e) => handleChange('props', 'groupByStatus', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Nhóm theo trạng thái</span>
+                                </label>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Task Board Properties */}
+                {selectedItem.type === 'taskBoard' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Kanban Board Settings
+                            </h4>
+                            
+                            {/* Columns */}
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Hiển thị cột</label>
+                                <div className="space-y-2">
+                                    {['Todo', 'InProgress', 'Done'].map(col => (
+                                        <label key={col} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={(selectedItem.props?.columns || ['Todo', 'InProgress', 'Done']).includes(col)}
+                                                onChange={(e) => {
+                                                    const current = selectedItem.props?.columns || ['Todo', 'InProgress', 'Done'];
+                                                    const newCols = e.target.checked 
+                                                        ? [...current, col]
+                                                        : current.filter(c => c !== col);
+                                                    handleChange('props', 'columns', newCols);
+                                                }}
+                                                className="w-4 h-4 text-sage-600"
+                                            />
+                                            <span className="text-sm">{col}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.allowDrag !== false}
+                                        onChange={(e) => handleChange('props', 'allowDrag', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Cho phép kéo thả</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.showPriority !== false}
+                                        onChange={(e) => handleChange('props', 'showPriority', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Hiển thị độ ưu tiên</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.showDueDate !== false}
+                                        onChange={(e) => handleChange('props', 'showDueDate', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Hiển thị ngày hết hạn</span>
+                                </label>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Task Calendar Properties */}
+                {selectedItem.type === 'taskCalendar' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Task Calendar Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Chế độ xem mặc định</label>
+                                <select
+                                    value={selectedItem.props?.viewMode || 'month'}
+                                    onChange={(e) => handleChange('props', 'viewMode', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="month">Tháng</option>
+                                    <option value="week">Tuần</option>
+                                    <option value="day">Ngày</option>
+                                </select>
+                            </div>
+
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedItem.props?.showPriority !== false}
+                                    onChange={(e) => handleChange('props', 'showPriority', e.target.checked)}
+                                    className="w-4 h-4 text-sage-600"
+                                />
+                                <span className="text-sm">Hiển thị màu theo độ ưu tiên</span>
+                            </label>
+                        </div>
+                    </>
+                )}
+
+                {/* === CONTROL COMPONENTS PROPERTIES === */}
+                {/* View Switcher Properties */}
+                {selectedItem.type === 'viewSwitcher' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> View Switcher Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Các view hiển thị</label>
+                                <div className="space-y-2">
+                                    {['table', 'list', 'board', 'calendar'].map(view => (
+                                        <label key={view} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={(selectedItem.props?.views || ['table', 'list', 'board', 'calendar']).includes(view)}
+                                                onChange={(e) => {
+                                                    const current = selectedItem.props?.views || ['table', 'list', 'board', 'calendar'];
+                                                    const newViews = e.target.checked 
+                                                        ? [...current, view]
+                                                        : current.filter(v => v !== view);
+                                                    handleChange('props', 'views', newViews);
+                                                }}
+                                                className="w-4 h-4 text-sage-600"
+                                            />
+                                            <span className="text-sm capitalize">{view}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">View mặc định</label>
+                                <select
+                                    value={selectedItem.props?.defaultView || 'table'}
+                                    onChange={(e) => handleChange('props', 'defaultView', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    {(selectedItem.props?.views || ['table', 'list', 'board', 'calendar']).map(view => (
+                                        <option key={view} value={view}>{view}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Target Component ID</label>
+                                <select
+                                    value={selectedItem.props?.targetComponentId || ''}
+                                    onChange={(e) => handleChange('props', 'targetComponentId', e.target.value || null)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="">Chọn component...</option>
+                                    {allItems
+                                        .filter(item => ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'].includes(item.type))
+                                        .map(item => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name || item.props?.label || item.type} ({item.id.slice(-4)})
+                                            </option>
+                                        ))}
+                                </select>
+                                <p className="text-xs text-neutral-400 mt-1">Component sẽ thay đổi view khi click</p>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Filter Bar Properties */}
+                {selectedItem.type === 'filterBar' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Filter Bar Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Filter theo</label>
+                                <div className="space-y-2">
+                                    {['status', 'priority', 'dueDate'].map(field => (
+                                        <label key={field} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={(selectedItem.props?.filterFields || ['status', 'priority', 'dueDate']).includes(field)}
+                                                onChange={(e) => {
+                                                    const current = selectedItem.props?.filterFields || ['status', 'priority', 'dueDate'];
+                                                    const newFields = e.target.checked 
+                                                        ? [...current, field]
+                                                        : current.filter(f => f !== field);
+                                                    handleChange('props', 'filterFields', newFields);
+                                                }}
+                                                className="w-4 h-4 text-sage-600"
+                                            />
+                                            <span className="text-sm capitalize">{field}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Target Component ID</label>
+                                <select
+                                    value={selectedItem.props?.targetComponentId || ''}
+                                    onChange={(e) => handleChange('props', 'targetComponentId', e.target.value || null)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="">Chọn component...</option>
+                                    {allItems
+                                        .filter(item => ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'].includes(item.type))
+                                        .map(item => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name || item.props?.label || item.type} ({item.id.slice(-4)})
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Search Box Properties */}
+                {selectedItem.type === 'searchBox' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Search Box Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Placeholder</label>
+                                <input
+                                    type="text"
+                                    value={selectedItem.props?.placeholder || 'Search tasks...'}
+                                    onChange={(e) => handleChange('props', 'placeholder', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Target Component ID</label>
+                                <select
+                                    value={selectedItem.props?.targetComponentId || ''}
+                                    onChange={(e) => handleChange('props', 'targetComponentId', e.target.value || null)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="">Chọn component...</option>
+                                    {allItems
+                                        .filter(item => ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'].includes(item.type))
+                                        .map(item => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name || item.props?.label || item.type} ({item.id.slice(-4)})
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Add Task Button Properties */}
+                {selectedItem.type === 'addTaskButton' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Add Task Button Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Button Text</label>
+                                <input
+                                    type="text"
+                                    value={selectedItem.props?.label || '+ New Task'}
+                                    onChange={(e) => handleChange('props', 'label', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Status mặc định</label>
+                                <select
+                                    value={selectedItem.props?.defaultStatus || 'Todo'}
+                                    onChange={(e) => handleChange('props', 'defaultStatus', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="Todo">Todo</option>
+                                    <option value="InProgress">In Progress</option>
+                                    <option value="Done">Done</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Priority mặc định</label>
+                                <select
+                                    value={selectedItem.props?.defaultPriority || 'Medium'}
+                                    onChange={(e) => handleChange('props', 'defaultPriority', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* Database Title Properties */}
+                {selectedItem.type === 'databaseTitle' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> Database Title Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Title</label>
+                                <input
+                                    type="text"
+                                    value={selectedItem.props?.label || 'My Tasks'}
+                                    onChange={(e) => handleChange('props', 'label', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Icon (emoji)</label>
+                                <input
+                                    type="text"
+                                    value={selectedItem.props?.icon || '📋'}
+                                    onChange={(e) => handleChange('props', 'icon', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                    maxLength={2}
+                                />
+                            </div>
+
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedItem.props?.editable !== false}
+                                    onChange={(e) => handleChange('props', 'editable', e.target.checked)}
+                                    className="w-4 h-4 text-sage-600"
+                                />
+                                <span className="text-sm">Cho phép đổi tên</span>
+                            </label>
+                        </div>
+                    </>
+                )}
+
                 <hr className="border-neutral-100" />
 
                 {/* 2. KÍCH THƯỚC & BỐ CỤC (Layout) */}

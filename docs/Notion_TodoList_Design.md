@@ -1,5 +1,51 @@
 # Lộ trình thiết kế App TodoList giống Notion trong App Builder
 
+## 📊 Tiến độ tổng quan
+
+| Giai đoạn | Trạng thái | Ngày hoàn thành |
+|-----------|------------|-----------------|
+| Giai đoạn 1: Cập nhật Toolbox | ✅ Hoàn thành | 03/12/2025 |
+| Giai đoạn 2: Tạo Render Components | ✅ Hoàn thành | 03/12/2025 |
+| Giai đoạn 3: Cập nhật RenderComponent | ✅ Hoàn thành | 03/12/2025 |
+| Giai đoạn 4: Cập nhật Properties Panel | ✅ Hoàn thành | 03/12/2025 |
+| Giai đoạn 5: Event System | ✅ Hoàn thành | 03/12/2025 |
+| Giai đoạn 6: Fix Bugs & Layout | ✅ Hoàn thành | 03/12/2025 |
+
+**Tiến độ: 6/6 giai đoạn (100%)**
+
+---
+
+## 📁 Files đã tạo/cập nhật
+
+### Giai đoạn 1: Toolbox
+- ✅ `src/constants/toolboxItems.js` - Thêm Data & Control components với categories
+
+### Giai đoạn 2: Render Components
+- ✅ `src/components/builder/renders/TaskTableRender.jsx` - Bảng task với inline editing
+- ✅ `src/components/builder/renders/TaskListRender.jsx` - Danh sách task với checkbox
+- ✅ `src/components/builder/renders/TaskBoardRender.jsx` - Kanban board drag & drop
+- ✅ `src/components/builder/renders/TaskCalendarRender.jsx` - Calendar view với react-big-calendar
+- ✅ `src/components/builder/renders/ControlRenders.jsx` - ViewSwitcher, FilterBar, SearchBox, AddTaskButton, DatabaseTitle
+- ✅ `src/components/builder/renders/index.js` - Export tất cả render components
+
+### Giai đoạn 3: RenderComponent
+- ✅ `src/components/builder/RenderComponent.jsx` - Thêm cases cho Data & Control components
+
+### Giai đoạn 4: Properties Panel
+- ✅ `src/components/builder/PropertiesPanel.jsx` - Thêm settings UI cho từng component type
+
+### Giai đoạn 5: Event System
+- ✅ `src/utils/eventBus.js` - Event bus cho component communication
+- ✅ `src/hooks/useTaskData.js` - Custom hook quản lý task data
+- ✅ Updated TaskTableRender, TaskListRender, TaskBoardRender, TaskCalendarRender - Listen filter/search events
+
+### Giai đoạn 6: Bug Fixes
+- ✅ `src/components/builder/Toolbox.jsx` - Hiển thị theo categories (Layout, Display, Form, Data, Control)
+- ✅ `src/components/builder/CanvasArea.jsx` - Chuyển sang flow layout (không còn đè lên nhau)
+- ✅ `src/pages/AppBuilderPage.jsx` - Fix duplicate variable declaration
+
+---
+
 ## 1. Tổng quan
 Mục tiêu: Xây dựng các **components có thể kéo thả** trong App Builder để người dùng **tự lắp ráp** thành một ứng dụng TodoList giống Notion.
 

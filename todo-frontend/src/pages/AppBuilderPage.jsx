@@ -149,64 +149,6 @@ function AppBuilderPage() {
                 }
             }
 
-            // Lấy vị trí drop từ event - sử dụng tọa độ chuột thực tế
-            let x = 50;
-            let y = 50;
-            
-            if (over.id === 'canvas-area') {
-                const canvasElement = document.getElementById('canvas-area');
-                if (canvasElement) {
-                    const canvasRect = canvasElement.getBoundingClientRect();
-                    
-                    // Sử dụng delta để tính vị trí mới dựa trên vị trí ban đầu của active element
-                    if (active.rect && delta) {
-                        // Tính vị trí mới = vị trí ban đầu + delta
-                        const initialX = active.rect.left - canvasRect.left;
-                        const initialY = active.rect.top - canvasRect.top;
-                        x = initialX + delta.x;
-                        y = initialY + delta.y;
-                    } else if (over.rect) {
-                        // Fallback: sử dụng tọa độ của over rect (vị trí drop zone)
-                        x = over.rect.left - canvasRect.left + (over.rect.width / 2) - 100;
-                        y = over.rect.top - canvasRect.top + 50;
-                    }
-                    
-                    // Đảm bảo vị trí không âm
-                    x = Math.max(0, x);
-                    y = Math.max(0, y);
-                    
-                    // Tránh xếp chồng: kiểm tra xem có component nào ở vị trí gần đó không
-                    const existingItems = canvasItems.filter(item => !item.parentId && item.position);
-                    const minDistance = 10; // Khoảng cách tối thiểu giữa các component
-                    
-                    let adjustedX = x;
-                    let adjustedY = y;
-                    let attempts = 0;
-                    const maxAttempts = 20;
-                    
-                    while (attempts < maxAttempts) {
-                        const tooClose = existingItems.some(item => {
-                            const itemPos = item.position || { x: 0, y: 0 };
-                            const distance = Math.sqrt(
-                                Math.pow(itemPos.x - adjustedX, 2) + 
-                                Math.pow(itemPos.y - adjustedY, 2)
-                            );
-                            return distance < minDistance;
-                        });
-                        
-                        if (!tooClose) break;
-                        
-                        // Di chuyển sang phải và xuống dưới một chút
-                        adjustedX += 30;
-                        adjustedY += 30;
-                        attempts++;
-                    }
-                    
-                    x = adjustedX;
-                    y = adjustedY;
-                }
-            }
-
             const newItem = { 
                 id: `comp-${Date.now()}`, 
                 name: toolData.label || toolData.type,
@@ -222,14 +164,14 @@ function AppBuilderPage() {
                 parentId: parentId,
                 children: [],
                 order: order,
-                position: parentId ? null : { x, y }, // Chỉ lưu position cho root items
+                position: null, // Không cần position nữa, dùng flow layout
                 props: { 
                     ...(toolData.defaultProps || {}),
                     events: (toolData.defaultProps?.events || {})
                 },
                 style: { 
                     ...(toolData.defaultStyle || {}),
-                    width: toolData.defaultStyle?.width || '200px',
+                    width: toolData.defaultStyle?.width || '100%',
                     height: toolData.defaultStyle?.height || 'auto'
                 }
             };
