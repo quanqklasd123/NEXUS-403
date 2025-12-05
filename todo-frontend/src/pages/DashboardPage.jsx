@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import apiService from '../services/apiService';
 import { 
     FiCheckSquare, FiTrello, FiCalendar, FiSettings, 
-    FiPlus, FiEdit3, FiTrash2, FiLayout 
+    FiPlus, FiEdit3, FiTrash2, FiLayout, FiPackage
 } from 'react-icons/fi';
 
 // ... (Component AppMiniCard giữ nguyên) ...
@@ -210,11 +210,12 @@ function DashboardPage() {
             {/* 4. Quick Links (App Mini Grid cũ - thu gọn lại) */}
             <section>
                 <h3 className="text-xl font-medium mb-6 text-neutral-800">Lối tắt</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                     <AppMiniCard to="/tasks" icon={FiCheckSquare} title="My Tasks" subtitle="Tất cả công việc" color="sage" />
                     <AppMiniCard to="/kanban" icon={FiTrello} title="Kanban" subtitle="Xem dạng bảng" color="peach" />
                     <AppMiniCard to="/calendar" icon={FiCalendar} title="Calendar" subtitle="Xem lịch" color="butter" />
-                    <AppMiniCard to="/marketplace" icon={FiSettings} title="Marketplace" subtitle="Cài thêm App" color="neutral" />
+                    <AppMiniCard to="/marketplace" icon={FiPackage} title="Marketplace" subtitle="Cài thêm App" color="neutral" />
+                    <AppMiniCard to="/settings" icon={FiSettings} title="Settings" subtitle="Cài đặt hệ thống" color="neutral" />
                 </div>
             </section>
 

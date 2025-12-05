@@ -53,6 +53,12 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // Đăng ký AiModelService để có thể "tiêm" nó vào Controller
 builder.Services.AddSingleton<AiModelService>();
 
+// Đăng ký Google Calendar Service
+builder.Services.AddScoped<TodoApi.Services.IGoogleCalendarService, TodoApi.Services.GoogleCalendarService>();
+
+// Đăng ký Google Calendar Event Service
+builder.Services.AddScoped<TodoApi.Services.IGoogleCalendarEventService, TodoApi.Services.GoogleCalendarEventService>();
+
 // --- BẮT ĐẦU CẤU HÌNH IDENTITY & JWT ---
 
 // 4. Thêm Identity

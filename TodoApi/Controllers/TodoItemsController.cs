@@ -8,6 +8,7 @@ using AutoMapper;
 using TodoApi.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using TodoApi.Services;
 
 
 namespace TodoApi.Controllers
@@ -19,12 +20,20 @@ namespace TodoApi.Controllers
     {
         private readonly TodoContext _context;
         private readonly IMapper _mapper;
+        private readonly IGoogleCalendarEventService _calendarEventService;
+        private readonly ILogger<TodoItemsController> _logger;
 
-        // Tiêm AutoMapper
-        public TodoItemsController(TodoContext context, IMapper mapper)
+        // Tiêm AutoMapper và Google Calendar Event Service
+        public TodoItemsController(
+            TodoContext context, 
+            IMapper mapper,
+            IGoogleCalendarEventService calendarEventService,
+            ILogger<TodoItemsController> logger)
         {
             _context = context;
-            _mapper = mapper; // <-- Khởi tạo
+            _mapper = mapper;
+            _calendarEventService = calendarEventService;
+            _logger = logger;
         }
 
         private string GetCurrentUserId()
@@ -70,12 +79,43 @@ namespace TodoApi.Controllers
                 return Forbid(); // Lỗi 403 Forbidden
             }
 
+            // Lấy TodoList để có tên category
+            var todoList = await _context.TodoLists
+                .FirstOrDefaultAsync(list => list.Id == createDto.TodoListId && list.AppUserId == userId);
+            
+            if (todoList == null)
+            {
+                return Forbid();
+            }
+
             // Nếu ổn, tiếp tục tạo item
             var todoItem = _mapper.Map<TodoItem>(createDto);
 
             _context.TodoItems.Add(todoItem);
             await _context.SaveChangesAsync();
 
+            // Tự động tạo Google Calendar event nếu có dueDate
+            if (createDto.DueDate.HasValue && !string.IsNullOrEmpty(todoItem.Title))
+            {
+                try
+                {
+                    await _calendarEventService.CreateCalendarEventAsync(
+                        userId,
+                        todoItem.Id,
+                        todoItem.Title,
+                        null, // Description có thể thêm sau
+                        createDto.DueDate.Value,
+                        todoList.Name
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to create Google Calendar event for task {TaskId}, continuing anyway", todoItem.Id);
+                }
+            }
+
+            // Reload để có TodoListName
+            await _context.Entry(todoItem).Reference(i => i.TodoList).LoadAsync();
             var todoItemDto = _mapper.Map<TodoItemDTO>(todoItem);
 
             return CreatedAtAction(nameof(GetTodoItem), new { id = todoItemDto.Id }, todoItemDto);
@@ -85,12 +125,27 @@ namespace TodoApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTodoItem(long id, CreateTodoItemDTO updateDto)
         {
+            var userId = GetCurrentUserId();
+
             // (Chúng ta đang tạm dùng CreateTodoItemDTO cho cả PUT)
-            var todoItemFromDb = await _context.TodoItems.FindAsync(id);
+            var todoItemFromDb = await _context.TodoItems
+                .Include(item => item.TodoList)
+                .FirstOrDefaultAsync(item => item.Id == id);
+
             if (todoItemFromDb == null)
             {
                 return NotFound();
             }
+
+            // Kiểm tra quyền sở hữu
+            if (todoItemFromDb.TodoList.AppUserId != userId)
+            {
+                return Forbid();
+            }
+
+            // Lưu dueDate cũ để so sánh
+            var oldDueDate = todoItemFromDb.DueDate;
+            var categoryName = todoItemFromDb.TodoList.Name;
 
             // Ma thuật của AutoMapper: Cập nhật todoItemFromDb bằng dữ liệu từ updateDto
             _mapper.Map(updateDto, todoItemFromDb);
@@ -98,6 +153,24 @@ namespace TodoApi.Controllers
             // Không cần dòng này nữa: _context.Entry(todoItemFromDb).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
+
+            // Tự động update/delete Google Calendar event
+            try
+            {
+                await _calendarEventService.UpdateCalendarEventAsync(
+                    userId,
+                    id,
+                    todoItemFromDb.Title ?? "Untitled Task",
+                    null,
+                    todoItemFromDb.DueDate,
+                    categoryName
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to update Google Calendar event for task {TaskId}, continuing anyway", id);
+            }
+
             return NoContent();
         }
 
@@ -105,12 +178,33 @@ namespace TodoApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTodoItem(long id)
         {
+            var userId = GetCurrentUserId();
+
             // Tìm item dựa trên ID
-            var todoItem = await _context.TodoItems.FindAsync(id);
+            var todoItem = await _context.TodoItems
+                .Include(item => item.TodoList)
+                .FirstOrDefaultAsync(item => item.Id == id);
+            
             if (todoItem == null)
             {
                 // Nếu không tìm thấy, trả về 404
                 return NotFound();
+            }
+
+            // Kiểm tra quyền sở hữu
+            if (todoItem.TodoList.AppUserId != userId)
+            {
+                return Forbid();
+            }
+
+            // Xóa Google Calendar event trước khi xóa task
+            try
+            {
+                await _calendarEventService.DeleteCalendarEventAsync(userId, id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete Google Calendar event for task {TaskId}, continuing anyway", id);
             }
 
             // Lệnh xóa (chưa thực thi)

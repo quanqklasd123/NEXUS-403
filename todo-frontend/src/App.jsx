@@ -12,6 +12,7 @@ import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import MarketplacePage from './pages/MarketplacePage'; // <-- Thêm
 import AppBuilderPage from './pages/AppBuilderPage';
+import SettingsPage from './pages/SettingsPage';
 
 
 function App() {
@@ -144,7 +145,11 @@ function App() {
                                 <Route path="/marketplace" element={<MarketplacePage />} />
 
                                 {/* Tuyến đường cho App Builder */}
-                                <Route path="/builder/:projectId" element={<AppBuilderPage />} />
+                                <Route path="/app-builder" element={<AppBuilderPage />} />
+                                <Route path="/app-builder/:appId" element={<AppBuilderPage />} />
+
+                                {/* Tuyến đường cho Settings */}
+                                <Route path="/settings" element={<SettingsPage />} />
 
                                 {/* (Các link "giả" từ Sidebar) */}
                                 {/* <Route path="/kanban" element={...} /> */}

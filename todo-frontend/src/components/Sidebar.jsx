@@ -8,8 +8,10 @@ import {
     FiCalendar,
     FiMenu,
     FiX,
+    FiShoppingBag,
+    FiCpu,
+    FiLayers,
 } from 'react-icons/fi';
-import { FiShoppingBag, FiCpu } from 'react-icons/fi';
 
 const getLinkClass = ({ isActive }) => {
     return `
@@ -84,9 +86,17 @@ function Sidebar({ isOpen = true, onToggle }) {
                     <span>Calendar</span>
                 </NavLink>
                 <NavLink to="/marketplace" className={getLinkClass}>
-                    {/* Dùng icon Marketplace/Shopping Bag */}
                     <FiShoppingBag className="w-5 h-5 mr-3" />
                     <span>Marketplace</span>
+                </NavLink>
+
+                {/* Divider */}
+                <div className="mx-3 my-4 border-t border-neutral-200"></div>
+
+                {/* App Builder - Separated section */}
+                <NavLink to="/app-builder" className={getLinkClass}>
+                    <FiLayers className="w-5 h-5 mr-3" />
+                    <span>App Builder</span>
                 </NavLink>
             </nav>
         </aside>

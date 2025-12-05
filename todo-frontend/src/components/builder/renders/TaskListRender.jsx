@@ -40,7 +40,7 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
     const { 
         showCheckbox = true, 
         showPriority = true, 
-        showDueDate = true,
+        showDueDate = true, 
         showCategory = true, // Thêm option hiển thị Category
         groupByStatus = false,
         todoListId 

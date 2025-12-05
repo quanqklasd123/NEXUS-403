@@ -43,7 +43,6 @@ function AppBuilderPage() {
         canRedo
     } = useAppBuilderHistory(canvasItems);
     
-    const { projectId } = useParams();
     const [projectInfo, setProjectInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -53,13 +52,23 @@ function AppBuilderPage() {
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
     const [publishData, setPublishData] = useState({ name: '', description: '', category: 'Template', price: '' });
 
+    // Get appId from params (for editing existing app)
+    const { appId } = useParams();
+
     // Load project data
     useEffect(() => {
         const fetchProject = async () => {
-            if (!projectId) return;
+            // If no appId, start with blank canvas
+            if (!appId) {
+                setLoading(false);
+                setProjectInfo({ name: 'Untitled App', description: '' });
+                initializeHistory([]);
+                return;
+            }
+            
             try {
                 setLoading(true);
-                const response = await apiService.getProject(projectId);
+                const response = await apiService.getProject(appId);
                 const project = response.data;
                 setProjectInfo(project);
                 if (project.jsonData) {
@@ -96,13 +105,13 @@ function AppBuilderPage() {
             } catch (error) {
                 console.error("Lỗi tải Project:", error);
                 alert("Không thể tải dự án.");
-                navigate('/');
+                navigate('/app-builder');
             } finally {
                 setLoading(false);
             }
         };
         fetchProject();
-    }, [projectId, navigate, initializeHistory]);
+    }, [appId, navigate, initializeHistory]);
 
     // Sensors for drag and drop
     const sensors = useSensors(
@@ -298,7 +307,11 @@ function AppBuilderPage() {
 
     // Handle save
     const handleSave = async () => {
-        if (!projectId) return;
+        if (!appId) {
+            // TODO: Create new app if no appId
+            alert("Vui lòng tạo app mới trước khi lưu!");
+            return;
+        }
         setSaving(true);
         try {
             const updateDto = {
@@ -306,7 +319,7 @@ function AppBuilderPage() {
                 description: projectInfo.description,
                 jsonData: JSON.stringify(canvasItems)
             };
-            await apiService.updateProject(projectId, updateDto);
+            await apiService.updateProject(appId, updateDto);
             alert("Đã lưu thành công!");
         } catch (error) {
             console.error("Lỗi lưu:", error);
@@ -319,11 +332,14 @@ function AppBuilderPage() {
     // Handle publish
     const handlePublish = async (e) => {
         e.preventDefault();
-        if (!projectId) return;
+        if (!appId) {
+            alert("Vui lòng lưu app trước khi xuất bản!");
+            return;
+        }
 
         setPublishing(true);
         try {
-            await apiService.publishProject(projectId, { ...publishData });
+            await apiService.publishProject(appId, { ...publishData });
             alert("Đã xuất bản ứng dụng thành công lên Marketplace!");
             setIsPublishModalOpen(false);
             navigate('/marketplace');
