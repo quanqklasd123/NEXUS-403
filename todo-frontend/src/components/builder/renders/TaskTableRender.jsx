@@ -113,19 +113,6 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
 
     // Fetch tasks từ API
     useEffect(() => {
-        if (isPreview) {
-            // Mock data cho preview mode
-            const mockData = [
-                { id: 1, title: 'Sample Task 1', status: 'Todo', priority: 'High', dueDate: '2025-12-10', todoListName: 'Work' },
-                { id: 2, title: 'Sample Task 2', status: 'InProgress', priority: 'Medium', dueDate: '2025-12-15', todoListName: 'Personal' },
-                { id: 3, title: 'Sample Task 3', status: 'Done', priority: 'Low', dueDate: '2025-12-05', todoListName: 'Work' },
-            ];
-            setAllTasks(mockData);
-            setTasks(mockData);
-            setLoading(false);
-            return;
-        }
-
         const fetchTasks = async () => {
             try {
                 setLoading(true);
@@ -162,7 +149,7 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
         };
-    }, [todoListId, isPreview]);
+    }, [todoListId]);
 
     const handleEdit = (task) => {
         setEditingId(task.id);

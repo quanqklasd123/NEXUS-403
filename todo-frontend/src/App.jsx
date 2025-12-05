@@ -8,14 +8,17 @@ import TodoList from './pages/TodoList'; // (Đây là trang "My Tasks" cũ)
 import ListDetailPage from './pages/ListDetailPage';
 import RegisterPage from './pages/RegisterPage';
 import Sidebar from './components/Sidebar'; // <-- IMPORT SIDEBAR MỚI (Xanh rêu)
-import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import MarketplacePage from './pages/MarketplacePage'; // <-- Thêm
 import AppBuilderPage from './pages/AppBuilderPage';
+import AppBuilderListPage from './pages/AppBuilderListPage'; // <-- App Builder Projects List
+import AppRuntimePage from './pages/AppRuntimePage'; // <-- App Runtime Page
 import SettingsPage from './pages/SettingsPage';
+import MyAppPage from './pages/MyAppPage'; // <-- My App Page
+import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 
 
-function App() {
+function AppContent() {
 
     // (Toàn bộ logic state, useEffect, handlers...
 
@@ -23,7 +26,7 @@ function App() {
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true); // Thêm state để track việc đang kiểm tra auth
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State để quản lý việc ẩn/hiện sidebar
+    const { isSidebarOpen, toggleSidebar } = useSidebar(); // Sử dụng context thay vì local state
 
     useEffect(() => {
         // Kiểm tra token ngay khi component mount
@@ -63,7 +66,7 @@ function App() {
 
             {/* Logic: Nếu đã đăng nhập, hiển thị Sidebar */}
 
-            {isAuthenticated && <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />}
+            {isAuthenticated && <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />}
 
 
 
@@ -127,8 +130,8 @@ function App() {
 
                             // --- 3. CẬP NHẬT PHẦN "BẢO VỆ" ---
                             <>
-                                {/* TRANG CHỦ "/" BÂY GIỜ LÀ DASHBOARD */}
-                                <Route path="/" element={<DashboardPage />} />
+                                {/* TRANG CHỦ "/" BÂY GIỜ LÀ MY APPS */}
+                                <Route path="/" element={<MyAppPage />} />
 
                                 {/* Trang "/tasks" VẪN LÀ TodoList */}
                                 <Route path="/tasks" element={<TodoList />} />
@@ -145,8 +148,12 @@ function App() {
                                 <Route path="/marketplace" element={<MarketplacePage />} />
 
                                 {/* Tuyến đường cho App Builder */}
-                                <Route path="/app-builder" element={<AppBuilderPage />} />
-                                <Route path="/app-builder/:appId" element={<AppBuilderPage />} />
+                                <Route path="/app-builder" element={<AppBuilderListPage />} />
+                                <Route path="/app-builder/new" element={<AppBuilderPage />} />
+                                <Route path="/app-builder/:projectId" element={<AppBuilderPage />} />
+
+                                {/* Tuyến đường cho App Runtime (giống preview) */}
+                                <Route path="/app/:projectId" element={<AppRuntimePage />} />
 
                                 {/* Tuyến đường cho Settings */}
                                 <Route path="/settings" element={<SettingsPage />} />
@@ -176,6 +183,12 @@ function App() {
 
 }
 
-
+function App() {
+    return (
+        <SidebarProvider>
+            <AppContent />
+        </SidebarProvider>
+    );
+}
 
 export default App;

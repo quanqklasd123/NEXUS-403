@@ -10,9 +10,11 @@ import CanvasArea from '../components/builder/CanvasArea';
 import CanvasToolbar from '../components/builder/CanvasToolbar';
 import { useAppBuilderHistory } from '../hooks/useAppBuilderHistory';
 import { getCategoryByType } from '../utils/getCategoryByType';
+import { useSidebar } from '../contexts/SidebarContext';
 
 // --- MAIN PAGE ---
 function AppBuilderPage() {
+    const { isSidebarOpen } = useSidebar(); // Lấy trạng thái sidebar từ context
     const [canvasItems, setCanvasItems] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -52,14 +54,15 @@ function AppBuilderPage() {
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
     const [publishData, setPublishData] = useState({ name: '', description: '', category: 'Template', price: '' });
 
-    // Get appId from params (for editing existing app)
-    const { appId } = useParams();
+    // Get appId or projectId from params (for editing existing app)
+    const { appId, projectId } = useParams();
+    const id = appId || projectId; // Support both route patterns
 
     // Load project data
     useEffect(() => {
         const fetchProject = async () => {
-            // If no appId, start with blank canvas
-            if (!appId) {
+            // If no id, start with blank canvas
+            if (!id) {
                 setLoading(false);
                 setProjectInfo({ name: 'Untitled App', description: '' });
                 initializeHistory([]);
@@ -68,7 +71,7 @@ function AppBuilderPage() {
             
             try {
                 setLoading(true);
-                const response = await apiService.getProject(appId);
+                const response = await apiService.getProject(id);
                 const project = response.data;
                 setProjectInfo(project);
                 if (project.jsonData) {
@@ -111,7 +114,7 @@ function AppBuilderPage() {
             }
         };
         fetchProject();
-    }, [appId, navigate, initializeHistory]);
+    }, [id, navigate, initializeHistory]);
 
     // Sensors for drag and drop
     const sensors = useSensors(
@@ -307,8 +310,8 @@ function AppBuilderPage() {
 
     // Handle save
     const handleSave = async () => {
-        if (!appId) {
-            // TODO: Create new app if no appId
+        if (!id) {
+            // TODO: Create new app if no id
             alert("Vui lòng tạo app mới trước khi lưu!");
             return;
         }
@@ -319,7 +322,7 @@ function AppBuilderPage() {
                 description: projectInfo.description,
                 jsonData: JSON.stringify(canvasItems)
             };
-            await apiService.updateProject(appId, updateDto);
+            await apiService.updateProject(id, updateDto);
             alert("Đã lưu thành công!");
         } catch (error) {
             console.error("Lỗi lưu:", error);
@@ -332,14 +335,14 @@ function AppBuilderPage() {
     // Handle publish
     const handlePublish = async (e) => {
         e.preventDefault();
-        if (!appId) {
+        if (!id) {
             alert("Vui lòng lưu app trước khi xuất bản!");
             return;
         }
 
         setPublishing(true);
         try {
-            await apiService.publishProject(appId, { ...publishData });
+            await apiService.publishProject(id, { ...publishData });
             alert("Đã xuất bản ứng dụng thành công lên Marketplace!");
             setIsPublishModalOpen(false);
             navigate('/marketplace');
@@ -409,8 +412,20 @@ function AppBuilderPage() {
 
     if (loading) return <div className="p-10 text-center">Đang tải dự án...</div>;
 
+    // Tính toán margin-left dựa trên trạng thái sidebar (w-72 = 288px)
+    const sidebarWidth = 288; // 72 * 4px = 288px
+    const marginLeft = isSidebarOpen ? sidebarWidth : 0;
+
     return (
-        <div className="fixed inset-0 left-0 right-0 top-0 bottom-0" style={{ margin: 0, padding: 0, zIndex: 1 }}>
+        <div 
+            className="fixed inset-0 left-0 right-0 top-0 bottom-0 transition-all duration-300 ease-in-out" 
+            style={{ 
+                margin: 0, 
+                padding: 0, 
+                zIndex: 1,
+                marginLeft: `${marginLeft}px`
+            }}
+        >
             <DndContext 
                 sensors={sensors}
                 onDragEnd={isPreviewMode ? undefined : handleDragEnd}

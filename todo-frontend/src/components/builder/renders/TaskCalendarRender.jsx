@@ -52,21 +52,6 @@ export default function TaskCalendarRender({ props = {}, style, isPreview = fals
     }, [allTasks, filters, searchQuery]);
 
     useEffect(() => {
-        if (isPreview) {
-            const today = new Date();
-            const mockData = [
-                { id: 1, title: 'Team meeting', status: 'Todo', priority: 'High', dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2).toISOString() },
-                { id: 2, title: 'Project deadline', status: 'InProgress', priority: 'High', dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5).toISOString() },
-                { id: 3, title: 'Code review', status: 'Todo', priority: 'Medium', dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString() },
-                { id: 4, title: 'Documentation', status: 'Done', priority: 'Low', dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString() },
-                { id: 5, title: 'Sprint planning', status: 'Todo', priority: 'Medium', dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString() },
-            ];
-            setAllTasks(mockData);
-            setTasks(mockData);
-            setLoading(false);
-            return;
-        }
-
         const fetchTasks = async () => {
             try {
                 setLoading(true);
@@ -96,7 +81,7 @@ export default function TaskCalendarRender({ props = {}, style, isPreview = fals
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
         };
-    }, [todoListId, isPreview]);
+    }, [todoListId]);
 
     // Convert tasks to calendar events
     const events = useMemo(() => {

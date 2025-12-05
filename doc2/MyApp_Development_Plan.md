@@ -153,13 +153,16 @@ App Card **KHÔNG phải** card tĩnh thông thường, mà là **Mini App có t
 - 🛠️ **Created**: `[Open]` `[Edit]` `[Delete]`
 - 📥 **Downloaded**: `[Open]` `[Delete]` (không Edit được)
 
-**Tasks:**
-- [ ] Tạo component `MyAppPage.jsx`
-- [ ] Tạo component `AppCard.jsx` - **Interactive** card với mini preview
-- [ ] Tạo component `MiniAppRenderer.jsx` - Render thu nhỏ của app trong card
-- [ ] Tạo API endpoints để lưu/load app configurations
-- [ ] Implement CRUD cho user apps
-- [ ] Tạo database schema cho UserApps
+**Tasks:** ✅ COMPLETED
+- [x] Tạo component `MyAppPage.jsx`
+- [x] Tạo component `AppCard.jsx` - **Interactive** card với mini preview
+- [x] Tạo component `MiniAppRenderer.jsx` - Render thu nhỏ của app trong card
+- [x] Tạo `userAppService.js` - Frontend service
+- [x] Thêm route `/my-apps` và link trong Sidebar
+- [x] Tạo `UserApp.cs` Model (Backend)
+- [x] Tạo `UserAppDTO.cs` DTOs (Backend)
+- [x] Tạo `UserAppsController.cs` API endpoints (Backend)
+- [x] Cập nhật `TodoContext.cs` với DbSet<UserApp>
 
 ---
 

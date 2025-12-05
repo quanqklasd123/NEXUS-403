@@ -158,6 +158,41 @@ const apiService = {
         return apiClient.post(`/projects/${projectId}/publish`, appData);
     },
 
+    // --- USER APPS (My Apps) ---
+    getUserApps: (filter = 'all') => {
+        return apiClient.get(`/userapps?filter=${filter}`);
+    },
+
+    getUserApp: (id) => {
+        return apiClient.get(`/userapps/${id}`);
+    },
+
+    createUserApp: (data) => {
+        return apiClient.post('/userapps', data);
+    },
+
+    saveAppFromBuilder: (data) => {
+        return apiClient.post('/userapps/save-from-builder', data);
+    },
+
+    updateUserApp: (id, data) => {
+        return apiClient.put(`/userapps/${id}`, data);
+    },
+
+    deleteUserApp: (id) => {
+        return apiClient.delete(`/userapps/${id}`);
+    },
+
+    downloadMarketplaceApp: (marketplaceAppId) => {
+        return apiClient.post(`/userapps/download/${marketplaceAppId}`);
+    },
+
+    // Generic methods for userAppService
+    get: (url) => apiClient.get(url),
+    post: (url, data) => apiClient.post(url, data),
+    put: (url, data) => apiClient.put(url, data),
+    delete: (url) => apiClient.delete(url),
+
 };
 
 // Xuất "apiService" để các component khác có thể dùng

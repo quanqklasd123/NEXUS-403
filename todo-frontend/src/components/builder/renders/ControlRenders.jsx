@@ -415,8 +415,6 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
 
     // Load categories (TodoLists)
     const loadCategories = useCallback(async () => {
-        if (isPreview) return;
-        
         try {
             setLoadingCategories(true);
             const response = await apiService.getTodoLists();
@@ -431,15 +429,14 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
             });
         } catch (error) {
             console.error('Failed to load categories:', error);
-            alert('Không thể tải danh sách danh mục. Vui lòng thử lại.');
         } finally {
             setLoadingCategories(false);
         }
-    }, [isPreview]);
+    }, []);
 
     // Load categories when adding form opens
     useEffect(() => {
-        if (isAdding && !isPreview) {
+        if (isAdding) {
             // Reset categories khi mở form để đảm bảo load lại dữ liệu mới nhất
             if (categories.length === 0) {
                 loadCategories();
@@ -452,7 +449,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
             setEditingCategoryId(null);
             setEditCategoryName('');
         }
-    }, [isAdding, isPreview, loadCategories, categories.length]);
+    }, [isAdding, loadCategories, categories.length]);
 
     // Calculate dropdown position
     useEffect(() => {
@@ -590,13 +587,6 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
         
         if (!newTask.categoryId) {
             alert('Vui lòng chọn danh mục!');
-            return;
-        }
-
-        
-        if (isPreview) {
-            setNewTask({ title: '', status: defaultStatus, priority: defaultPriority, dueDate: null, categoryId: null });
-            setIsAdding(false);
             return;
         }
 

@@ -11,6 +11,7 @@ import {
     FiShoppingBag,
     FiCpu,
     FiLayers,
+    FiGrid,
 } from 'react-icons/fi';
 
 const getLinkClass = ({ isActive }) => {
@@ -67,9 +68,10 @@ function Sidebar({ isOpen = true, onToggle }) {
 
             {/* Điều hướng */}
             <nav className="flex-1">
+                {/* My Apps - Trang chủ */}
                 <NavLink to="/" className={getLinkClass}>
-                    <FiHome className="w-5 h-5 mr-3" />
-                    <span>Dashboard</span>
+                    <FiGrid className="w-5 h-5 mr-3" />
+                    <span>My Apps</span>
                 </NavLink>
 
                 <NavLink to="/tasks" className={getLinkClass}>
@@ -93,7 +95,7 @@ function Sidebar({ isOpen = true, onToggle }) {
                 {/* Divider */}
                 <div className="mx-3 my-4 border-t border-neutral-200"></div>
 
-                {/* App Builder - Separated section */}
+                {/* App Builder - Create new apps */}
                 <NavLink to="/app-builder" className={getLinkClass}>
                     <FiLayers className="w-5 h-5 mr-3" />
                     <span>App Builder</span>

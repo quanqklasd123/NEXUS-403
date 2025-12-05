@@ -17,6 +17,7 @@ namespace TodoApi.Data
         public DbSet<Project> Projects { get; set; } = null!;
         public DbSet<GoogleCalendarToken> GoogleCalendarTokens { get; set; } = null!;
         public DbSet<TaskCalendarEvent> TaskCalendarEvents { get; set; } = null!;
+        public DbSet<UserApp> UserApps { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

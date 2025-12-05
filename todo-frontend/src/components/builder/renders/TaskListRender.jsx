@@ -68,22 +68,6 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
     }, [allTasks, filters, searchQuery]);
 
     useEffect(() => {
-        if (isPreview) {
-            const mockData = [
-                { id: 1, title: 'Design homepage layout', status: 'Todo', priority: 'High', dueDate: '2025-12-10', todoListName: 'Work' },
-                { id: 2, title: 'Implement API endpoints', status: 'InProgress', priority: 'Medium', dueDate: '2025-12-15', todoListName: 'Work' },
-                { id: 3, title: 'Write documentation', status: 'Done', priority: 'Low', dueDate: '2025-12-05', todoListName: 'Personal' },
-                { id: 4, title: 'Code review', status: 'Todo', priority: 'Medium', dueDate: '2025-12-12', todoListName: 'Work' },
-            ];
-            // Reset filters và search khi vào preview mode
-            setFilters({});
-            setSearchQuery('');
-            setAllTasks(mockData);
-            setTasks(mockData);
-            setLoading(false);
-            return;
-        }
-
         const fetchTasks = async () => {
             try {
                 setLoading(true);
@@ -119,7 +103,7 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
         };
-    }, [todoListId, isPreview]);
+    }, [todoListId]);
 
     const toggleStatus = async (task) => {
         // Toggle logic: 

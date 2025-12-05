@@ -44,21 +44,6 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
     }, [allTasks, filters, searchQuery]);
 
     useEffect(() => {
-        if (isPreview) {
-            const mockData = [
-                { id: 1, title: 'Design system components', status: 'Todo', priority: 'High', dueDate: '2025-12-10' },
-                { id: 2, title: 'User authentication', status: 'Todo', priority: 'Medium', dueDate: '2025-12-12' },
-                { id: 3, title: 'API integration', status: 'InProgress', priority: 'High', dueDate: '2025-12-15' },
-                { id: 4, title: 'Database schema', status: 'InProgress', priority: 'Low', dueDate: '2025-12-08' },
-                { id: 5, title: 'Project setup', status: 'Done', priority: 'Medium', dueDate: '2025-12-01' },
-                { id: 6, title: 'Requirements doc', status: 'Done', priority: 'Low', dueDate: '2025-11-28' },
-            ];
-            setAllTasks(mockData);
-            setTasks(mockData);
-            setLoading(false);
-            return;
-        }
-
         const fetchTasks = async () => {
             try {
                 setLoading(true);
@@ -88,7 +73,7 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
         };
-    }, [todoListId, isPreview]);
+    }, [todoListId]);
 
     const handleDragEnd = async (result) => {
         if (!result.destination || isPreview || !allowDrag) return;

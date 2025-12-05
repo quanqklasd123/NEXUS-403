@@ -119,6 +119,8 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                         </div>
                     );
                 }
+                // Ẩn placeholder text khi ở preview mode
+                if (isPreview) return null;
                 return <div style={contentStyle} {...containerProps}>{mergedProps.label || 'Container'} (Drop items here)</div>;
             }
             case 'row': {
@@ -142,6 +144,8 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                         </div>
                     );
                 }
+                // Ẩn placeholder text khi ở preview mode
+                if (isPreview) return null;
                 return <div style={contentStyle} className={rowClassName} ref={isDroppableType ? setDroppableRef : undefined}>Row (Flex)</div>;
             }
             case 'grid': {
@@ -165,6 +169,8 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                         </div>
                     );
                 }
+                // Ẩn placeholder text khi ở preview mode
+                if (isPreview) return null;
                 return <div style={contentStyle} className={gridClassName} ref={isDroppableType ? setDroppableRef : undefined}>Grid ({mergedProps.columns || '3'} columns)</div>;
             }
             case 'divider': return <div style={contentStyle}></div>;
