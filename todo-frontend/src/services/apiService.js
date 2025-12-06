@@ -193,6 +193,33 @@ const apiService = {
     put: (url, data) => apiClient.put(url, data),
     delete: (url) => apiClient.delete(url),
 
+    // --- ADMIN APIs ---
+    // Users management
+    getAdminUsers: () => {
+        return apiClient.get('/admin/users');
+    },
+    
+    lockUser: (userId) => {
+        return apiClient.put(`/admin/users/${userId}/lock`);
+    },
+    
+    unlockUser: (userId) => {
+        return apiClient.put(`/admin/users/${userId}/unlock`);
+    },
+    
+    deleteUser: (userId) => {
+        return apiClient.delete(`/admin/users/${userId}`);
+    },
+    
+    // Marketplace apps management
+    getAdminMarketplaceApps: () => {
+        return apiClient.get('/admin/marketplace-apps');
+    },
+    
+    deleteMarketplaceApp: (appId) => {
+        return apiClient.delete(`/admin/marketplace-apps/${appId}`);
+    },
+
 };
 
 // Xuất "apiService" để các component khác có thể dùng

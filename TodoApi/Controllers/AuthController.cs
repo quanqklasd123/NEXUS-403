@@ -162,6 +162,14 @@ namespace TodoApi.Controllers
                 // Tự động gán vai trò "User"
                 await _userManager.AddToRoleAsync(user, "User");
             }
+            else
+            {
+                // Kiểm tra xem user có bị khóa không (chỉ kiểm tra nếu user đã tồn tại)
+                if (user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                {
+                    return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
+                }
+            }
 
             // 7. (ĐÃ TỒN TẠI hoặc VỪA TẠO) -> Tạo JWT Token của BẠN
             // (Đây chính là hàm 'GenerateJwtToken' mà bạn đã viết)
@@ -189,6 +197,12 @@ namespace TodoApi.Controllers
             // Kiểm tra user và mật khẩu
             if (user != null && await _userManager.CheckPasswordAsync(user, loginDto.Password))
             {
+                // Kiểm tra xem user có bị khóa không
+                if (user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                {
+                    return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
+                }
+
                 // Nếu đúng, tạo Token
                 var tokenString = await GenerateJwtToken(user); // (Giữ nguyên hàm GenerateJwtToken)
 

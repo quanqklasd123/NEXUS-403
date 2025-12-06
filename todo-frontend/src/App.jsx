@@ -15,6 +15,7 @@ import AppBuilderListPage from './pages/AppBuilderListPage'; // <-- App Builder 
 import AppRuntimePage from './pages/AppRuntimePage'; // <-- App Runtime Page
 import SettingsPage from './pages/SettingsPage';
 import MyAppPage from './pages/MyAppPage'; // <-- My App Page
+import AdminPage from './pages/AdminPage'; // <-- Admin Page
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 
 
@@ -157,6 +158,9 @@ function AppContent() {
 
                                 {/* Tuyến đường cho Settings */}
                                 <Route path="/settings" element={<SettingsPage />} />
+
+                                {/* Tuyến đường cho Admin Area */}
+                                <Route path="/admin" element={<AdminPage />} />
 
                                 {/* (Các link "giả" từ Sidebar) */}
                                 {/* <Route path="/kanban" element={...} /> */}
