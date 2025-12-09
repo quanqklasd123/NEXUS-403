@@ -4,7 +4,7 @@ import {
     FiGrid, FiCreditCard, FiPieChart, FiMinus, FiCheckSquare, FiList,
     FiCalendar, FiFileText, FiUpload, FiToggleRight, FiTable, FiList as FiListView,
     FiBarChart2, FiLayers, FiMaximize2, FiColumns, FiFilter, FiSearch, FiPlus,
-    FiDatabase, FiSliders, FiArrowDown
+    FiDatabase, FiSliders, FiArrowDown, FiMenu
 } from 'react-icons/fi';
 
 export const TOOLS = [
@@ -129,6 +129,31 @@ export const TOOLS = [
     },
 
     // === CONTROL COMPONENTS (Notion-like) ===
+    { 
+        type: 'viewSidebar', 
+        label: 'View Sidebar', 
+        icon: FiMenu, 
+        category: 'Control',
+        defaultProps: { 
+            label: 'View Sidebar',
+            views: ['table', 'list', 'board', 'calendar'],
+            defaultView: 'table',
+            position: 'left', // 'left' or 'right'
+            collapsed: false,
+        }, 
+        defaultStyle: { 
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            width: '240px',
+            height: '100vh',
+            backgroundColor: '#ffffff',
+            borderRight: '1px solid #e2e8f0',
+            boxShadow: '2px 0 8px rgba(0, 0, 0, 0.1)',
+            zIndex: 1000,
+            padding: '16px',
+        } 
+    },
     { 
         type: 'viewSwitcher', 
         label: 'View Switcher', 

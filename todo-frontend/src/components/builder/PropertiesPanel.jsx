@@ -998,6 +998,78 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                 )}
 
                 {/* === CONTROL COMPONENTS PROPERTIES === */}
+                {/* View Sidebar Properties */}
+                {selectedItem.type === 'viewSidebar' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> View Sidebar Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Các view hiển thị</label>
+                                <div className="space-y-2">
+                                    {['table', 'list', 'board', 'calendar'].map(view => (
+                                        <label key={view} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={(selectedItem.props?.views || ['table', 'list', 'board', 'calendar']).includes(view)}
+                                                onChange={(e) => {
+                                                    const current = selectedItem.props?.views || ['table', 'list', 'board', 'calendar'];
+                                                    const newViews = e.target.checked 
+                                                        ? [...current, view]
+                                                        : current.filter(v => v !== view);
+                                                    handleChange('props', 'views', newViews);
+                                                }}
+                                                className="w-4 h-4 text-sage-600"
+                                            />
+                                            <span className="text-sm capitalize">{view}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">View mặc định</label>
+                                <select
+                                    value={selectedItem.props?.defaultView || 'table'}
+                                    onChange={(e) => handleChange('props', 'defaultView', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    {(selectedItem.props?.views || ['table', 'list', 'board', 'calendar']).map(view => (
+                                        <option key={view} value={view}>{view}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Vị trí</label>
+                                <select
+                                    value={selectedItem.props?.position || 'left'}
+                                    onChange={(e) => handleChange('props', 'position', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="left">Bên trái</option>
+                                    <option value="right">Bên phải</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.collapsed || false}
+                                        onChange={(e) => handleChange('props', 'collapsed', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm text-neutral-600">Thu gọn mặc định</span>
+                                </label>
+                            </div>
+                        </div>
+                    </>
+                )}
+
                 {/* View Switcher Properties */}
                 {selectedItem.type === 'viewSwitcher' && (
                     <>

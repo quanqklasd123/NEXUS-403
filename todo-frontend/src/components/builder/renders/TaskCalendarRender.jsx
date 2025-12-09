@@ -1,49 +1,82 @@
 // src/components/builder/renders/TaskCalendarRender.jsx
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { enUS } from 'date-fns/locale';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import apiService from '../../../services/apiService';
 
-const locales = { 'en-US': enUS };
-
-const localizer = dateFnsLocalizer({
-    format,
-    parse,
-    startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-    getDay,
-    locales,
-});
-
 const PRIORITY_COLORS = {
-    Low: { bg: '#f1f5f9', border: '#94a3b8', text: '#475569' },
-    Medium: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
-    High: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
+    0: { bg: 'bg-green-100', border: 'border-green-500', text: 'text-green-700' },
+    1: { bg: 'bg-blue-100', border: 'border-blue-500', text: 'text-blue-700' },
+    2: { bg: 'bg-red-100', border: 'border-red-500', text: 'text-red-700' },
+    3: { bg: 'bg-pink-100', border: 'border-pink-500', text: 'text-pink-700' },
 };
 
-const STATUS_COLORS = {
-    Todo: { bg: '#f3f4f6', border: '#9ca3af' },
-    InProgress: { bg: '#dbeafe', border: '#3b82f6' },
-    Done: { bg: '#dcfce7', border: '#22c55e' },
+// Calendar Day Component
+const CalendarDay = ({ date, currentMonth, events, onDayClick, isPreview = false }) => {
+    const dayEvents = events.filter(event => {
+        if (!event.dueDate) return false;
+        try {
+            return isSameDay(new Date(event.dueDate), date);
+        } catch {
+            return false;
+        }
+    });
+    
+    const isCurrentMonth = isSameMonth(date, currentMonth);
+    const isTodayDate = isToday(date);
+    
+    return (
+        <div
+            className={`p-2 min-h-[80px] border border-neutral-200 bg-white ${
+                isTodayDate ? 'bg-blue-50 border-blue-300' : ''
+            } ${!isCurrentMonth ? 'bg-neutral-50 text-neutral-400' : ''} ${
+                isPreview ? 'cursor-pointer hover:bg-neutral-50' : ''
+            }`}
+            onClick={() => isPreview && onDayClick && onDayClick(date)}
+        >
+            <span className={`text-sm font-medium ${isTodayDate ? 'text-blue-600' : ''}`}>
+                {format(date, 'd')}
+            </span>
+            <div className="mt-1 space-y-1">
+                {dayEvents.slice(0, 2).map(event => {
+                    const priority = PRIORITY_COLORS[event.priority] || PRIORITY_COLORS[1];
+                    return (
+                        <div
+                            key={event.id}
+                            className={`text-xs px-1 py-0.5 rounded truncate ${priority.bg} ${priority.text} border-l-2 ${priority.border}`}
+                            title={event.title}
+                        >
+                            {event.title}
+                        </div>
+                    );
+                })}
+                {dayEvents.length > 2 && (
+                    <div className="text-xs text-neutral-500">
+                        +{dayEvents.length - 2} more
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default function TaskCalendarRender({ props = {}, style, isPreview = false }) {
-    const { viewMode = 'month', showPriority = true, todoListId } = props || {};
+    const { showPriority = true, todoListId } = props || {};
     
     const [tasks, setTasks] = useState([]);
     const [allTasks, setAllTasks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentView, setCurrentView] = useState(viewMode);
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date());
     const [filters, setFilters] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentView, setCurrentView] = useState('calendar'); // Track current view from view switcher (mặc định là 'calendar' để tránh trắng màn hình)
 
     // Apply filters and search
     useEffect(() => {
         let result = [...allTasks];
-        if (filters.status) result = result.filter(t => t.status === filters.status);
-        if (filters.priority) result = result.filter(t => t.priority === filters.priority);
+        if (filters.status !== undefined) result = result.filter(t => t.status === filters.status);
+        if (filters.priority !== undefined) result = result.filter(t => t.priority === filters.priority);
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             result = result.filter(t => t.title?.toLowerCase().includes(query));
@@ -55,8 +88,8 @@ export default function TaskCalendarRender({ props = {}, style, isPreview = fals
         const fetchTasks = async () => {
             try {
                 setLoading(true);
-                const data = await apiService.getAllMyItems();
-                const items = Array.isArray(data) ? data : [];
+                const response = await apiService.getAllMyItems();
+                const items = Array.isArray(response.data) ? response.data : [];
                 const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
                 setAllTasks(filtered);
             } catch (error) {
@@ -72,141 +105,111 @@ export default function TaskCalendarRender({ props = {}, style, isPreview = fals
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
         
+        // Listen for view change event
+        const handleViewChange = (e) => {
+            const view = e.detail?.view || 'table';
+            setCurrentView(view);
+        };
+        
         window.addEventListener('tasks-updated', handleTaskUpdate);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
+        window.addEventListener('view-change', handleViewChange);
         
         return () => {
             window.removeEventListener('tasks-updated', handleTaskUpdate);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
+            window.removeEventListener('view-change', handleViewChange);
         };
     }, [todoListId]);
 
-    // Convert tasks to calendar events
-    const events = useMemo(() => {
-        return tasks
-            .filter(task => task.dueDate)
-            .map(task => ({
-                id: task.id,
-                title: task.title,
-                start: new Date(task.dueDate),
-                end: new Date(task.dueDate),
-                allDay: true,
-                resource: {
-                    status: task.status,
-                    priority: task.priority,
-                },
-            }));
-    }, [tasks]);
+    // Chỉ hiển thị khi view là 'calendar'
+    if (currentView !== 'calendar') {
+        return null;
+    }
 
-    // Custom event styling
-    const eventStyleGetter = (event) => {
-        const priority = event.resource?.priority || 'Medium';
-        const status = event.resource?.status || 'Todo';
-        const colors = showPriority ? PRIORITY_COLORS[priority] : STATUS_COLORS[status];
+    // Get calendar days
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-        return {
-            style: {
-                backgroundColor: colors.bg,
-                borderLeft: `3px solid ${colors.border}`,
-                color: colors.text || '#374151',
-                borderRadius: '4px',
-                fontSize: '12px',
-                padding: '2px 6px',
-            },
-        };
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const handleDayClick = (date) => {
+        setSelectedDate(date);
+        if (!isSameMonth(date, currentMonth)) {
+            setCurrentMonth(date);
+        }
     };
 
-    // Custom components
-    const components = {
-        event: ({ event }) => (
-            <div className="truncate text-xs font-medium">
-                {event.title}
-            </div>
-        ),
+    const handleMonthChange = (direction) => {
+        if (direction === 'prev') {
+            setCurrentMonth(subMonths(currentMonth, 1));
+        } else {
+            setCurrentMonth(addMonths(currentMonth, 1));
+        }
     };
 
     if (loading) {
         return (
-            <div style={style} className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div style={style} className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sage-600"></div>
             </div>
         );
     }
 
+    // Chỉ hiển thị khi view được chọn là 'calendar'
+    const shouldShow = currentView === 'calendar';
+    
     return (
-        <div style={style} className="task-calendar">
-            <style>{`
-                .task-calendar .rbc-calendar {
-                    font-family: inherit;
-                }
-                .task-calendar .rbc-header {
-                    padding: 8px 4px;
-                    font-weight: 600;
-                    font-size: 12px;
-                    color: #6b7280;
-                    text-transform: uppercase;
-                    border-bottom: 1px solid #e5e7eb;
-                }
-                .task-calendar .rbc-today {
-                    background-color: #eef2ff;
-                }
-                .task-calendar .rbc-off-range-bg {
-                    background-color: #f9fafb;
-                }
-                .task-calendar .rbc-date-cell {
-                    padding: 4px 8px;
-                    font-size: 13px;
-                }
-                .task-calendar .rbc-toolbar {
-                    margin-bottom: 16px;
-                    gap: 8px;
-                }
-                .task-calendar .rbc-toolbar button {
-                    padding: 6px 12px;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    font-weight: 500;
-                    border: 1px solid #e5e7eb;
-                    background: white;
-                    color: #374151;
-                    cursor: pointer;
-                    transition: all 0.15s;
-                }
-                .task-calendar .rbc-toolbar button:hover {
-                    background: #f3f4f6;
-                }
-                .task-calendar .rbc-toolbar button.rbc-active {
-                    background: #6366f1;
-                    color: white;
-                    border-color: #6366f1;
-                }
-                .task-calendar .rbc-event {
-                    padding: 2px 4px;
-                }
-                .task-calendar .rbc-show-more {
-                    color: #6366f1;
-                    font-size: 11px;
-                    font-weight: 500;
-                }
-            `}</style>
-            <Calendar
-                localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: '100%', minHeight: '400px' }}
-                view={currentView}
-                onView={setCurrentView}
-                date={currentDate}
-                onNavigate={setCurrentDate}
-                eventPropGetter={eventStyleGetter}
-                components={components}
-                views={['month', 'week', 'day']}
-                popup
-                selectable={false}
-            />
+        <div style={{ ...style, display: shouldShow ? 'block' : 'none' }} className="bg-white rounded-lg border border-neutral-200 p-4">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-neutral-800">
+                    {format(currentMonth, 'MMMM yyyy')}
+                </h3>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => handleMonthChange('prev')}
+                        className="p-1 rounded hover:bg-neutral-100 transition-colors"
+                        disabled={!isPreview}
+                    >
+                        <FiChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => handleMonthChange('next')}
+                        className="p-1 rounded hover:bg-neutral-100 transition-colors"
+                        disabled={!isPreview}
+                    >
+                        <FiChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1">
+                {/* Week day headers */}
+                {weekDays.map(day => (
+                    <div key={day} className="text-center text-xs font-semibold text-neutral-600 py-2">
+                        {day}
+                    </div>
+                ))}
+
+                {/* Calendar days */}
+                {calendarDays.map(day => (
+                    <CalendarDay
+                        key={day.toISOString()}
+                        date={day}
+                        currentMonth={currentMonth}
+                        events={tasks}
+                        onDayClick={handleDayClick}
+                        isPreview={isPreview}
+                    />
+                ))}
+            </div>
         </div>
     );
 }

@@ -8,6 +8,7 @@ export { default as TaskCalendarRender } from './TaskCalendarRender';
 
 export {
     ViewSwitcherRender,
+    ViewSidebarRender,
     FilterBarRender,
     SearchBoxRender,
     SortDropdownRender,

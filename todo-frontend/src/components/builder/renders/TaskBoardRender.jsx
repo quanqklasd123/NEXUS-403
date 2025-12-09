@@ -30,6 +30,7 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentView, setCurrentView] = useState('board'); // Track current view from view switcher (mặc định là 'board' để tránh trắng màn hình)
 
     // Apply filters and search
     useEffect(() => {
@@ -44,46 +45,49 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
     }, [allTasks, filters, searchQuery]);
 
     useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                setLoading(true);
-                const data = await apiService.getAllMyItems();
-                const items = Array.isArray(data) ? data : [];
-                const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
-                setAllTasks(filtered);
-            } catch (error) {
-                console.error('Failed to fetch tasks:', error);
-                setAllTasks([]);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchTasks();
 
         const handleTaskUpdate = () => fetchTasks();
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
         
+        // Listen for view change event
+        const handleViewChange = (e) => {
+            const view = e.detail?.view || 'table';
+            setCurrentView(view);
+        };
+        
         window.addEventListener('tasks-updated', handleTaskUpdate);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
+        window.addEventListener('view-change', handleViewChange);
         
         return () => {
             window.removeEventListener('tasks-updated', handleTaskUpdate);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
+            window.removeEventListener('view-change', handleViewChange);
         };
     }, [todoListId]);
 
     const handleDragEnd = async (result) => {
-        if (!result.destination || isPreview || !allowDrag) return;
+        if (!result.destination || !isPreview || !allowDrag) return;
 
         const { draggableId, destination } = result;
         const taskId = parseInt(draggableId);
-        const newStatus = destination.droppableId;
+        const columnName = destination.droppableId;
+        
+        // Map column names to status values
+        const statusMap = {
+            'Todo': 0,
+            'InProgress': 1,
+            'Done': 2,
+        };
+        const newStatus = statusMap[columnName] !== undefined ? statusMap[columnName] : parseInt(columnName);
 
         // Optimistic update
-        setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+        const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
+        setTasks(updatedTasks);
 
         try {
             await apiService.updateItemStatus(taskId, newStatus);
@@ -91,13 +95,34 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
         } catch (error) {
             console.error('Failed to update task status:', error);
             // Revert on error
-            const data = await apiService.getAllMyItems();
-            setTasks(todoListId ? data.filter(t => t.todoListId === todoListId) : data);
+            fetchTasks();
         }
     };
 
-    const getTasksByColumn = (columnStatus) => {
-        return tasks.filter(task => task.status === columnStatus);
+    const fetchTasks = async () => {
+        try {
+            setLoading(true);
+            const response = await apiService.getAllMyItems();
+            const items = Array.isArray(response.data) ? response.data : [];
+            const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
+            setAllTasks(filtered);
+        } catch (error) {
+            console.error('Failed to fetch tasks:', error);
+            setAllTasks([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getTasksByColumn = (columnName) => {
+        // Map column names to status values
+        const statusMap = {
+            'Todo': 0,
+            'InProgress': 1,
+            'Done': 2,
+        };
+        const statusValue = statusMap[columnName] !== undefined ? statusMap[columnName] : columnName;
+        return tasks.filter(task => task.status === statusValue);
     };
 
     if (loading) {
@@ -108,8 +133,11 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
         );
     }
 
+    // Chỉ hiển thị khi view được chọn là 'board'
+    const shouldShow = currentView === 'board';
+    
     return (
-        <div style={style}>
+        <div style={{ ...style, display: shouldShow ? 'block' : 'none' }}>
             <DragDropContext onDragEnd={handleDragEnd}>
                 <div className="flex gap-4 h-full overflow-x-auto pb-4">
                     {columns.map(column => {

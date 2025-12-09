@@ -61,6 +61,7 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
     const [editForm, setEditForm] = useState({});
     const [filters, setFilters] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentView, setCurrentView] = useState('table'); // Track current view from view switcher (mặc định là 'table' để tránh trắng màn hình)
 
     // Apply filters and search
     useEffect(() => {
@@ -139,15 +140,21 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
         const handleTaskUpdate = () => fetchTasks();
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
+        const handleViewChange = (e) => {
+            const view = e.detail?.view || 'table';
+            setCurrentView(view);
+        };
         
         window.addEventListener('tasks-updated', handleTaskUpdate);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
+        window.addEventListener('view-change', handleViewChange);
         
         return () => {
             window.removeEventListener('tasks-updated', handleTaskUpdate);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
+            window.removeEventListener('view-change', handleViewChange);
         };
     }, [todoListId]);
 
@@ -262,8 +269,11 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
         );
     }
 
+    // Chỉ hiển thị khi view được chọn là 'table'
+    const shouldShow = currentView === 'table';
+    
     return (
-        <div style={style} className="overflow-auto">
+        <div style={{ ...style, display: shouldShow ? 'block' : 'none' }} className="overflow-auto">
             <table className="w-full border-collapse">
                 {showHeader && (
                     <thead>

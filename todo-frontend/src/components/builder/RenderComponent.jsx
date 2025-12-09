@@ -1,6 +1,7 @@
 // src/components/builder/RenderComponent.jsx
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { 
     FiX, FiImage, FiPieChart, FiUpload, FiCalendar
 } from 'react-icons/fi';
@@ -14,12 +15,60 @@ import {
     TaskBoardRender,
     TaskCalendarRender,
     ViewSwitcherRender,
+    ViewSidebarRender,
     FilterBarRender,
     SearchBoxRender,
     SortDropdownRender,
     AddTaskButtonRender,
     DatabaseTitleRender,
 } from './renders';
+
+// Helper component để wrap children trong DraggableComponent
+const DraggableChildComponent = ({ child, items, isSelected, onClick, isPreview, navigate, context }) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: child.id,
+        disabled: isPreview,
+        data: {
+            type: 'component',
+            item: child
+        }
+    });
+
+    const childStyle = child.style || {};
+    const wrapperStyle = {
+        width: childStyle.width || '100%',
+        minHeight: childStyle.minHeight || '50px',
+        transform: CSS.Translate.toString(transform),
+        zIndex: isDragging ? 1000 : (isSelected ? 100 : 1),
+        opacity: isDragging ? 0.8 : 1,
+        transition: isDragging ? 'none' : 'box-shadow 0.2s',
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={wrapperStyle}
+            {...(isPreview ? {} : { ...attributes, ...listeners })}
+            onClick={(e) => {
+                e.stopPropagation();
+                if (!isPreview && !isDragging) {
+                    onClick(child.id);
+                }
+            }}
+            className={isDragging ? 'shadow-2xl' : ''}
+        >
+            <RenderComponent 
+                item={child} 
+                items={items}
+                isSelected={isSelected} 
+                onClick={onClick} 
+                isPreview={isPreview} 
+                navigate={navigate}
+                context={context}
+            />
+        </div>
+    );
+};
 
 const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = false, navigate = null, context = {} }) => {
     // Make container/row/grid droppable (hooks must be called before any early returns)
@@ -105,13 +154,13 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                     return (
                         <div style={contentStyle} {...containerProps}>
                             {childItems.map(child => (
-                                <RenderComponent 
-                                    key={child.id} 
-                                    item={child} 
+                                <DraggableChildComponent
+                                    key={child.id}
+                                    child={child}
                                     items={items}
-                                    isSelected={child.id === isSelected} 
-                                    onClick={onClick} 
-                                    isPreview={isPreview} 
+                                    isSelected={child.id === isSelected}
+                                    onClick={onClick}
+                                    isPreview={isPreview}
                                     navigate={navigate}
                                     context={context}
                                 />
@@ -130,13 +179,13 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                     return (
                         <div style={contentStyle} className={rowClassName} ref={isDroppableType ? setDroppableRef : undefined}>
                             {childItems.map(child => (
-                                <RenderComponent 
-                                    key={child.id} 
-                                    item={child} 
+                                <DraggableChildComponent
+                                    key={child.id}
+                                    child={child}
                                     items={items}
-                                    isSelected={child.id === isSelected} 
-                                    onClick={onClick} 
-                                    isPreview={isPreview} 
+                                    isSelected={child.id === isSelected}
+                                    onClick={onClick}
+                                    isPreview={isPreview}
                                     navigate={navigate}
                                     context={context}
                                 />
@@ -155,13 +204,13 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                     return (
                         <div style={contentStyle} className={gridClassName} ref={isDroppableType ? setDroppableRef : undefined}>
                             {childItems.map(child => (
-                                <RenderComponent 
-                                    key={child.id} 
-                                    item={child} 
+                                <DraggableChildComponent
+                                    key={child.id}
+                                    child={child}
                                     items={items}
-                                    isSelected={child.id === isSelected} 
-                                    onClick={onClick} 
-                                    isPreview={isPreview} 
+                                    isSelected={child.id === isSelected}
+                                    onClick={onClick}
+                                    isPreview={isPreview}
                                     navigate={navigate}
                                     context={context}
                                 />
@@ -413,6 +462,9 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
             case 'viewSwitcher':
                 return <ViewSwitcherRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
             
+            case 'viewSidebar':
+                return <ViewSidebarRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
             case 'filterBar':
                 return <FilterBarRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
             
@@ -436,7 +488,6 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
     const layoutComponents = ['container', 'card', 'row', 'grid', 'image', 'chart', 'tabs', 'modal', 'statCard', 'dataTable', 'listView'];
     const formComponents = ['button', 'input', 'select', 'checkbox', 'text', 'datePicker', 'richText', 'fileUpload', 'switch'];
     const dataComponents = ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'];
-    const controlComponents = ['viewSwitcher', 'filterBar', 'searchBox', 'addTaskButton', 'databaseTitle'];
     
     // Border giống nhau trong cả preview và non-preview mode
     const getBorder = () => {

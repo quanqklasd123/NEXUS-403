@@ -132,8 +132,11 @@ function AppBuilderPage() {
 
     // Handle drag and drop
     const handleDragEnd = (event) => {
-        const { active, over, delta } = event;
-        if (!over) return;
+        const { active, over } = event;
+        if (!over) {
+            // Nếu thả ra ngoài, không làm gì cả
+            return;
+        }
         
         const toolData = active.data.current;
         const activeId = active.id;
@@ -149,13 +152,13 @@ function AppBuilderPage() {
                 parentId = null;
                 order = canvasItems.filter(item => !item.parentId).length;
             } else if (over.id.startsWith('comp-')) {
-                // Thêm vào container
+                // Thêm vào container/row/grid
                 const parentItem = canvasItems.find(i => i.id === over.id);
                 if (parentItem && (parentItem.type === 'container' || parentItem.type === 'row' || parentItem.type === 'grid')) {
                     parentId = parentItem.id;
                     order = (parentItem.children || []).length;
                 } else {
-                    // Nếu không phải container, thêm vào root
+                    // Nếu không phải container/row/grid, thêm vào root
                     parentId = null;
                     order = canvasItems.filter(item => !item.parentId).length;
                 }
@@ -189,6 +192,7 @@ function AppBuilderPage() {
             };
 
             setCanvasItems((prev) => {
+                // Đảm bảo không mất component nào
                 const newItems = [...prev, newItem];
                 
                 // Cập nhật children của parent nếu có
@@ -202,57 +206,264 @@ function AppBuilderPage() {
                     }
                 }
                 
+                // Debug: Kiểm tra số lượng items (có thể comment lại sau)
+                // console.log('Added new item:', { newItemId: newItem.id, totalItems: newItems.length, parentId });
+                
                 // Lưu history sau khi thêm component
                 saveToHistory(newItems);
                 return newItems;
             });
         } 
-        // Nếu đang di chuyển component trên canvas (không có toolData)
-        else if (active.id.startsWith('comp-') && over.id === 'canvas-area' && delta) {
-            const itemId = active.id;
-            const item = canvasItems.find(i => i.id === itemId);
-            
-            if (item && !item.parentId) {
-                // Lấy vị trí ban đầu từ active.rect và cộng với delta
-                const canvasElement = document.getElementById('canvas-area');
-                if (canvasElement && active.rect) {
-                    const canvasRect = canvasElement.getBoundingClientRect();
-                    const initialX = active.rect.left - canvasRect.left;
-                    const initialY = active.rect.top - canvasRect.top;
-                    
-                    const newPosition = {
-                        x: Math.max(0, initialX + delta.x),
-                        y: Math.max(0, initialY + delta.y)
-                    };
-                    
-                    setCanvasItems((prev) => {
-                        const newItems = prev.map(i => 
-                            i.id === itemId 
-                                ? { ...i, position: newPosition }
-                                : i
-                        );
-                        saveToHistory(newItems);
-                        return newItems;
-                    });
-                } else {
-                    // Fallback: sử dụng position hiện tại + delta
-                    const currentPosition = item.position || { x: 0, y: 0 };
-                    const newPosition = {
-                        x: Math.max(0, currentPosition.x + delta.x),
-                        y: Math.max(0, currentPosition.y + delta.y)
-                    };
-                    
-                    setCanvasItems((prev) => {
-                        const newItems = prev.map(i => 
-                            i.id === itemId 
-                                ? { ...i, position: newPosition }
-                                : i
-                        );
-                        saveToHistory(newItems);
-                        return newItems;
-                    });
+        // Nếu đang di chuyển component trong canvas (không có toolData)
+        else if (active.id.startsWith('comp-')) {
+            setCanvasItems((prev) => {
+                const activeItem = prev.find(i => i.id === active.id);
+                if (!activeItem) {
+                    console.warn('Cannot find activeItem:', { activeId: active.id });
+                    return prev;
                 }
-            }
+
+                // Deep copy để đảm bảo không mất reference
+                const newItems = prev.map(item => ({
+                    ...item,
+                    metadata: item.metadata ? { ...item.metadata } : undefined,
+                    props: item.props ? { ...item.props } : undefined,
+                    style: item.style ? { ...item.style } : undefined,
+                    children: item.children ? [...item.children] : [],
+                    position: null // Không dùng position nữa, dùng flow layout
+                }));
+
+                // Validation: Đảm bảo số lượng items không thay đổi
+                if (newItems.length !== prev.length) {
+                    console.error('ERROR: Số lượng items thay đổi!', { 
+                        before: prev.length, 
+                        after: newItems.length
+                    });
+                    return prev;
+                }
+
+                // Trường hợp 1: Di chuyển component về root (canvas-area)
+                if (over.id === 'canvas-area') {
+                    // Xóa khỏi parent cũ nếu có
+                    if (activeItem.parentId) {
+                        const oldParentIndex = newItems.findIndex(i => i.id === activeItem.parentId);
+                        if (oldParentIndex !== -1) {
+                            newItems[oldParentIndex] = {
+                                ...newItems[oldParentIndex],
+                                children: (newItems[oldParentIndex].children || []).filter(id => id !== active.id)
+                            };
+                        }
+                    }
+
+                    // Tính order mới (thêm vào cuối root items)
+                    const rootItems = newItems.filter(item => !item.parentId);
+                    const newOrder = rootItems.length;
+
+                    // Cập nhật activeItem
+                    const activeIndex = newItems.findIndex(i => i.id === active.id);
+                    if (activeIndex !== -1) {
+                        newItems[activeIndex] = {
+                            ...newItems[activeIndex],
+                            parentId: null,
+                            order: newOrder
+                        };
+                    }
+
+                    saveToHistory(newItems);
+                    return newItems;
+                }
+                // Trường hợp 2: Di chuyển component vào component khác
+                else if (over.id.startsWith('comp-')) {
+                    const overItem = newItems.find(i => i.id === over.id);
+                    if (!overItem) {
+                        console.warn('Cannot find overItem:', { overId: over.id });
+                        return prev;
+                    }
+
+                    // Trường hợp 2a: Kéo vào container/row/grid
+                    if (overItem.type === 'container' || overItem.type === 'row' || overItem.type === 'grid') {
+                        // Không cho phép kéo component vào chính nó hoặc vào children của nó
+                        const isDescendant = (itemId, ancestorId) => {
+                            const item = newItems.find(i => i.id === itemId);
+                            if (!item || !item.parentId) return false;
+                            if (item.parentId === ancestorId) return true;
+                            return isDescendant(item.parentId, ancestorId);
+                        };
+
+                        if (active.id === over.id || isDescendant(over.id, active.id)) {
+                            console.warn('Cannot move component into itself or its descendant');
+                            return prev;
+                        }
+
+                        const newParentId = overItem.id;
+                        const newOrder = (overItem.children || []).length;
+
+                        // Xóa khỏi parent cũ nếu có
+                        if (activeItem.parentId) {
+                            const oldParentIndex = newItems.findIndex(i => i.id === activeItem.parentId);
+                            if (oldParentIndex !== -1) {
+                                newItems[oldParentIndex] = {
+                                    ...newItems[oldParentIndex],
+                                    children: (newItems[oldParentIndex].children || []).filter(id => id !== active.id)
+                                };
+                            }
+                        }
+
+                        // Thêm vào parent mới
+                        const newParentIndex = newItems.findIndex(i => i.id === newParentId);
+                        if (newParentIndex !== -1) {
+                            newItems[newParentIndex] = {
+                                ...newItems[newParentIndex],
+                                children: [...(newItems[newParentIndex].children || []), active.id]
+                            };
+                        }
+
+                        // Cập nhật activeItem
+                        const activeIndex = newItems.findIndex(i => i.id === active.id);
+                        if (activeIndex !== -1) {
+                            newItems[activeIndex] = {
+                                ...newItems[activeIndex],
+                                parentId: newParentId,
+                                order: newOrder
+                            };
+                        }
+
+                        saveToHistory(newItems);
+                        return newItems;
+                    }
+                    // Trường hợp 2b: Reorder trong cùng parent (root hoặc container)
+                    else {
+                        // Nếu cả hai đều ở root level
+                        if (!activeItem.parentId && !overItem.parentId) {
+                            const rootItems = newItems.filter(item => !item.parentId).sort((a, b) => (a.order || 0) - (b.order || 0));
+                            const activeIndex = rootItems.findIndex(c => c.id === active.id);
+                            const overIndex = rootItems.findIndex(c => c.id === over.id);
+
+                            if (activeIndex === -1 || overIndex === -1) {
+                                console.warn('Cannot find active or over in root items');
+                                return prev;
+                            }
+
+                            // Reorder root items
+                            const newRootItems = [...rootItems];
+                            const [removed] = newRootItems.splice(activeIndex, 1);
+                            newRootItems.splice(overIndex, 0, removed);
+
+                            // Cập nhật order của tất cả root items
+                            newRootItems.forEach((item, index) => {
+                                const itemIndex = newItems.findIndex(i => i.id === item.id);
+                                if (itemIndex !== -1) {
+                                    newItems[itemIndex] = {
+                                        ...newItems[itemIndex],
+                                        order: index
+                                    };
+                                }
+                            });
+
+                            saveToHistory(newItems);
+                            return newItems;
+                        }
+                        // Nếu cả hai đều có cùng parent (trong container)
+                        else if (activeItem.parentId === overItem.parentId && activeItem.parentId) {
+                            const parentId = activeItem.parentId;
+                            const parent = newItems.find(i => i.id === parentId);
+                            if (!parent || !parent.children) {
+                                console.warn('Parent not found or has no children:', { parentId });
+                                return prev;
+                            }
+
+                            const children = parent.children.map(id => newItems.find(i => i.id === id)).filter(Boolean);
+                            const activeIndex = children.findIndex(c => c.id === active.id);
+                            const overIndex = children.findIndex(c => c.id === over.id);
+
+                            if (activeIndex === -1 || overIndex === -1) {
+                                console.warn('Cannot find active or over in children:', { activeIndex, overIndex });
+                                return prev;
+                            }
+
+                            // Reorder
+                            const newChildren = [...children];
+                            const [removed] = newChildren.splice(activeIndex, 1);
+                            newChildren.splice(overIndex, 0, removed);
+
+                            // Cập nhật order của tất cả children
+                            newChildren.forEach((child, index) => {
+                                const childIndex = newItems.findIndex(i => i.id === child.id);
+                                if (childIndex !== -1) {
+                                    newItems[childIndex] = {
+                                        ...newItems[childIndex],
+                                        order: index
+                                    };
+                                }
+                            });
+
+                            // Cập nhật parent's children array
+                            const parentIndex = newItems.findIndex(i => i.id === parentId);
+                            if (parentIndex !== -1) {
+                                newItems[parentIndex] = {
+                                    ...newItems[parentIndex],
+                                    children: newChildren.map(c => c.id)
+                                };
+                            }
+
+                            saveToHistory(newItems);
+                            return newItems;
+                        }
+                        // Trường hợp 2c: Di chuyển từ container này sang container khác (sibling)
+                        else if (activeItem.parentId && overItem.parentId && activeItem.parentId !== overItem.parentId) {
+                            const newParentId = overItem.parentId;
+                            const newParent = newItems.find(i => i.id === newParentId);
+                            
+                            if (!newParent || (newParent.type !== 'container' && newParent.type !== 'row' && newParent.type !== 'grid')) {
+                                console.warn('New parent is not a container/row/grid');
+                                return prev;
+                            }
+
+                            const newOrder = (newParent.children || []).length;
+
+                            // Xóa khỏi parent cũ
+                            const oldParentIndex = newItems.findIndex(i => i.id === activeItem.parentId);
+                            if (oldParentIndex !== -1) {
+                                newItems[oldParentIndex] = {
+                                    ...newItems[oldParentIndex],
+                                    children: (newItems[oldParentIndex].children || []).filter(id => id !== active.id)
+                                };
+                            }
+
+                            // Thêm vào parent mới
+                            const newParentIndex = newItems.findIndex(i => i.id === newParentId);
+                            if (newParentIndex !== -1) {
+                                newItems[newParentIndex] = {
+                                    ...newItems[newParentIndex],
+                                    children: [...(newItems[newParentIndex].children || []), active.id]
+                                };
+                            }
+
+                            // Cập nhật activeItem
+                            const activeIndex = newItems.findIndex(i => i.id === active.id);
+                            if (activeIndex !== -1) {
+                                newItems[activeIndex] = {
+                                    ...newItems[activeIndex],
+                                    parentId: newParentId,
+                                    order: newOrder
+                                };
+                            }
+
+                            saveToHistory(newItems);
+                            return newItems;
+                        }
+                    }
+                }
+
+                // Nếu không match bất kỳ điều kiện nào, giữ nguyên
+                console.warn('No matching drag condition:', { 
+                    activeId: active.id, 
+                    overId: over.id,
+                    activeParentId: activeItem?.parentId,
+                    overType: newItems.find(i => i.id === over.id)?.type
+                });
+                return prev;
+            });
         }
         // Không tự động chọn component khi kéo vào - chỉ chọn khi click vào component
     };

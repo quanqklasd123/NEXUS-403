@@ -24,6 +24,33 @@ apiClient.interceptors.request.use(
     }
 );
 
+// Response interceptor - Xử lý lỗi 401 (Unauthorized) toàn cục
+apiClient.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        if (error.response) {
+            const status = error.response.status;
+            
+            // Nếu là lỗi 401 (Unauthorized) - Token không hợp lệ hoặc đã hết hạn
+            if (status === 401) {
+                // Xóa token khỏi localStorage
+                localStorage.removeItem('authToken');
+                
+                // Chỉ redirect nếu không phải đang ở trang login hoặc register
+                const currentPath = window.location.pathname;
+                if (currentPath !== '/login' && currentPath !== '/register') {
+                    // Redirect về trang login
+                    window.location.href = '/login';
+                }
+            }
+        }
+        
+        return Promise.reject(error);
+    }
+);
+
 /**
  * EventHandler - Xử lý các sự kiện của component trong Preview mode
  * @param {Object} eventConfig - Cấu hình event { type: 'navigate'|'notification'|'api'|'modal'|'variable', config: {...} }

@@ -51,6 +51,7 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentView, setCurrentView] = useState('list'); // Track current view from view switcher (mặc định là 'list' để tránh trắng màn hình)
 
     // Apply filters and search
     useEffect(() => {
@@ -93,15 +94,21 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
         const handleTaskUpdate = () => fetchTasks();
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
+        const handleViewChange = (e) => {
+            const view = e.detail?.view || 'table';
+            setCurrentView(view);
+        };
         
         window.addEventListener('tasks-updated', handleTaskUpdate);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
+        window.addEventListener('view-change', handleViewChange);
         
         return () => {
             window.removeEventListener('tasks-updated', handleTaskUpdate);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
+            window.removeEventListener('view-change', handleViewChange);
         };
     }, [todoListId]);
 
@@ -219,8 +226,11 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
         );
     }
 
+    // Chỉ hiển thị khi view được chọn là 'list'
+    const shouldShow = currentView === 'list';
+    
     return (
-        <div style={style} className="overflow-auto">
+        <div style={{ ...style, display: shouldShow ? 'block' : 'none' }} className="overflow-auto">
             {tasks.length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-500">No tasks found</div>
             ) : (

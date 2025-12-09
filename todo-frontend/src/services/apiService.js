@@ -32,7 +32,39 @@ apiClient.interceptors.request.use(
     }
 );
 
-// 3. Tạo các hàm gọi API tiện lợi
+// 3. Response Interceptor - Xử lý lỗi 401 (Unauthorized) toàn cục
+// Khi nhận được lỗi 401, tự động xóa token và redirect về trang login
+apiClient.interceptors.response.use(
+    (response) => {
+        // Nếu response thành công, trả về bình thường
+        return response;
+    },
+    (error) => {
+        // Xử lý lỗi response
+        if (error.response) {
+            const status = error.response.status;
+            
+            // Nếu là lỗi 401 (Unauthorized) - Token không hợp lệ hoặc đã hết hạn
+            if (status === 401) {
+                // Xóa token khỏi localStorage
+                localStorage.removeItem('authToken');
+                
+                // Chỉ redirect nếu không phải đang ở trang login hoặc register
+                // Tránh redirect loop
+                const currentPath = window.location.pathname;
+                if (currentPath !== '/login' && currentPath !== '/register') {
+                    // Redirect về trang login
+                    window.location.href = '/login';
+                }
+            }
+        }
+        
+        // Trả về error để component có thể xử lý nếu cần
+        return Promise.reject(error);
+    }
+);
+
+// 4. Tạo các hàm gọi API tiện lợi
 // Chúng ta sẽ dùng "apiClient" thay vì "axios"
 const apiService = {
     // --- Auth ---
@@ -93,11 +125,6 @@ const apiService = {
     suggestPriority: (title) => {
         // BE của chúng ta cần { "title": "..." }
         return apiClient.post('/ai/suggest-priority', { title });
-    },
-
-    // --- Dashboard ---
-    getDashboardStats: () => {
-        return apiClient.get('/dashboard/stats');
     },
 
     // --- Dashboard ---

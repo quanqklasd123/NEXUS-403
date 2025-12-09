@@ -14,16 +14,155 @@ const VIEW_ICONS = {
     calendar: FiCalendar,
 };
 
-// ========== VIEW SWITCHER ==========
+const VIEW_LABELS = {
+    table: 'Table',
+    list: 'List',
+    board: 'Kanban',
+    calendar: 'Calendar',
+};
+
+// ========== VIEW SIDEBAR ==========
+export function ViewSidebarRender({ props = {}, style }) {
+    const { 
+        views = ['table', 'list', 'board', 'calendar'], 
+        defaultView = 'table',
+        position = 'left',
+        collapsed = false
+    } = props || {};
+    const [activeView, setActiveView] = useState(defaultView);
+    const [isCollapsed, setIsCollapsed] = useState(collapsed);
+
+    // Dispatch event ngay khi mount để các component khác biết view mặc định
+    useEffect(() => {
+        // Set active view ngay lập tức
+        setActiveView(defaultView);
+        
+        // Dispatch event ngay lập tức và sau một chút để đảm bảo các component khác đã mount
+        window.dispatchEvent(new CustomEvent('view-change', { detail: { view: defaultView } }));
+        
+        // Dispatch lại sau một chút để đảm bảo các component khác đã mount và có thể listen
+        const timer = setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('view-change', { detail: { view: defaultView } }));
+        }, 100);
+        
+        return () => clearTimeout(timer);
+    }, [defaultView]);
+
+    const handleViewChange = (view) => {
+        setActiveView(view);
+        // Dispatch event cả khi preview và không preview để các component khác có thể listen
+        window.dispatchEvent(new CustomEvent('view-change', { detail: { view } }));
+    };
+
+    const sidebarStyle = {
+        ...style,
+        position: 'fixed',
+        left: position === 'left' ? 0 : 'auto',
+        right: position === 'right' ? 0 : 'auto',
+        top: 0,
+        height: '100vh',
+        zIndex: 1000,
+        backgroundColor: '#ffffff',
+        borderRight: position === 'left' ? '1px solid #e2e8f0' : 'none',
+        borderLeft: position === 'right' ? '1px solid #e2e8f0' : 'none',
+        boxShadow: position === 'left' ? '2px 0 8px rgba(0, 0, 0, 0.1)' : '-2px 0 8px rgba(0, 0, 0, 0.1)',
+        transition: 'width 0.3s ease, transform 0.3s ease',
+        width: isCollapsed ? '60px' : '240px',
+        padding: isCollapsed ? '16px 8px' : '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        overflowY: 'auto',
+    };
+
+    return (
+        <div style={sidebarStyle} className="view-sidebar">
+            {/* Header */}
+            {!isCollapsed && (
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        Views
+                    </h3>
+                </div>
+            )}
+
+            {/* View Tabs */}
+            <div className="flex flex-col gap-2">
+                {views.map(view => {
+                    const Icon = VIEW_ICONS[view] || FiTable;
+                    const label = VIEW_LABELS[view] || view;
+                    const isActive = activeView === view;
+                    
+                    return (
+                        <button
+                            key={view}
+                            onClick={() => handleViewChange(view)}
+                            className={`
+                                flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+                                ${isActive 
+                                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm' 
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
+                                }
+                            `}
+                            title={isCollapsed ? label : undefined}
+                        >
+                            <Icon size={20} className="shrink-0" />
+                            {!isCollapsed && (
+                                <span className="text-sm font-medium">{label}</span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Collapse Toggle */}
+            <div className="mt-auto pt-4 border-t border-gray-200">
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                    title={isCollapsed ? 'Expand' : 'Collapse'}
+                >
+                    {isCollapsed ? (
+                        <FiChevronDown size={18} className="transform -rotate-90" />
+                    ) : (
+                        <>
+                            <FiChevronDown size={18} className="transform rotate-90" />
+                            <span className="text-xs">Collapse</span>
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ========== VIEW SWITCHER (DEPRECATED - Giữ lại để tương thích) ==========
 export function ViewSwitcherRender({ props = {}, style, isPreview = false }) {
     const { views = ['table', 'list', 'board', 'calendar'], defaultView = 'table' } = props || {};
     const [activeView, setActiveView] = useState(defaultView);
 
+    // Dispatch event ngay khi mount để các component khác biết view mặc định
+    useEffect(() => {
+        if (isPreview) {
+            window.dispatchEvent(new CustomEvent('view-change', { detail: { view: defaultView } }));
+        }
+    }, [defaultView, isPreview]);
+
+    // Dispatch event ngay khi mount để các component khác biết view mặc định
+    useEffect(() => {
+        // Dispatch event ngay khi mount (cả preview và builder mode)
+        // Sử dụng setTimeout để đảm bảo các component khác đã mount và có thể listen
+        const timer = setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('view-change', { detail: { view: defaultView } }));
+        }, 100);
+        
+        return () => clearTimeout(timer);
+    }, [defaultView]);
+
     const handleViewChange = (view) => {
         setActiveView(view);
-        if (!isPreview) {
-            window.dispatchEvent(new CustomEvent('view-change', { detail: { view } }));
-        }
+        // Dispatch event cả khi preview và không preview để các component khác có thể listen
+        window.dispatchEvent(new CustomEvent('view-change', { detail: { view } }));
     };
 
     return (
