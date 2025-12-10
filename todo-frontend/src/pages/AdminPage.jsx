@@ -1,7 +1,6 @@
 // src/pages/AdminPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '../components/PageHeader';
 import apiService from '../services/apiService';
 import { isAdmin } from '../utils/jwtUtils';
 import { FiUsers, FiPackage, FiLock, FiUnlock, FiTrash2, FiSearch, FiShield } from 'react-icons/fi';
@@ -159,7 +158,7 @@ function AdminPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <PageHeader title="Admin Area" />
+            {/* Header đã được thêm vào App.jsx - không cần thêm ở đây nữa */}
 
             {/* Tabs */}
             <div className="flex gap-2 border-b border-neutral-200">

@@ -16,6 +16,7 @@ import AppRuntimePage from './pages/AppRuntimePage'; // <-- App Runtime Page
 import SettingsPage from './pages/SettingsPage';
 import MyAppPage from './pages/MyAppPage'; // <-- My App Page
 import AdminPage from './pages/AdminPage'; // <-- Admin Page
+import PageHeader from './components/PageHeader'; // <-- PageHeader component
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 
 
@@ -90,6 +91,8 @@ function AppContent() {
                 {/* Phần nội dung có "padding" (giống "content-wrapper") */}
 
                 <div className="p-6 md:p-10">
+                    {/* Header với profile user - hiển thị trên tất cả các page đã authenticated */}
+                    {isAuthenticated && <PageHeader />}
 
                     {/* Hiển thị loading khi đang kiểm tra authentication */}
                     {isLoading ? (

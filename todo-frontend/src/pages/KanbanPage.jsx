@@ -1,7 +1,6 @@
 // src/pages/KanbanPage.jsx
 
 import React, { useState, useEffect } from 'react';
-import PageHeader from '../components/PageHeader';
 import apiService from '../services/apiService';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { FiLink } from 'react-icons/fi'; // Icon để link về Project
@@ -163,8 +162,7 @@ function KanbanPage() {
 
     return (
         <div className="bg-transparent p-0">
-            {/* Header */}
-            <PageHeader title="Global Kanban Board" />
+            {/* Header đã được thêm vào App.jsx - không cần thêm ở đây nữa */}
 
             {/* (Xóa Dropdown chọn Project (List) - vì đây là view "tổng thể") */}
 

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import PageHeader from '../components/PageHeader'; // Header chung của chúng ta
 import apiService from '../services/apiService';
 import { FiSearch, FiFilter, FiDownload, FiStar, FiSettings, FiCheck } from 'react-icons/fi';
 
@@ -112,12 +111,7 @@ function MarketplacePage() {
 
     return (
         <div className="flex flex-col gap-8">
-            {/* Dùng PageHeader chung để đồng bộ giao diện */}
-            <PageHeader 
-                title="Marketplace" 
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm} // Kích hoạt ô tìm kiếm trên Header
-            />
+            {/* Header đã được thêm vào App.jsx - không cần thêm ở đây nữa */}
 
             {/* Featured Banner (Giữ nguyên tĩnh cho đẹp) */}
             <section className="bg-gradient-to-r from-sage-50 to-peach-50 rounded-2xl p-8 border border-sage-100 relative overflow-hidden">

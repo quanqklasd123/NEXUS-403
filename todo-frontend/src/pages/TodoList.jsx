@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import apiService from '../services/apiService'; 
 import { Link, useNavigate } from 'react-router-dom'; 
 import { FiEdit2, FiTrash2, FiCheck, FiX } from 'react-icons/fi';
-import PageHeader from '../components/PageHeader'; // Import Header (Mới)
 import Stats from '../components/Stats';       // Import Stats (Mới)
 
 function TodoList() {
@@ -114,12 +113,7 @@ function TodoList() {
         // Bỏ shadow và border, để nó hòa vào nền chính
         <div className="bg-transparent p-0">
             
-            {/* 2. Header (Tiêu đề "NEXUS", Tìm kiếm, Avatar) */}
-            <PageHeader 
-                title="NEXUS Dashboard" 
-                searchTerm={searchTerm} 
-                onSearchChange={setSearchTerm} 
-            />
+            {/* Header đã được thêm vào App.jsx - không cần thêm ở đây nữa */}
 
             {/* 3. Component "Stats" (Thống kê) */}
             {/* Chúng ta truyền "allItems" vào để nó tính toán */}

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiService from '../services/apiService'; 
 import useDebounce from '../hooks/useDebounce'; 
-import PageHeader from '../components/PageHeader'; // Import Header (Mới)
 import Stats from '../components/Stats';       // Import Stats (Mới)
 // Import icon (chúng ta sẽ dùng cho nút Sửa/Xóa)
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
@@ -183,9 +182,7 @@ function ListDetailPage() {
         // Tái sử dụng style của TodoList: nền trong suốt, p-0
         <div className="bg-transparent p-0">
 
-            {/* 2. Header (Tiêu đề, Tìm kiếm, Avatar) */}
-            {/* Chúng ta sẽ kích hoạt Tìm kiếm ở đây sau */}
-            <PageHeader title={list.name} /> 
+            {/* Header đã được thêm vào App.jsx - không cần thêm ở đây nữa */} 
 
             {/* 3. Component "Stats" (Thống kê) */}
             <Stats items={list.items} />
