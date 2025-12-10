@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace TodoApi.Models
 {
@@ -8,47 +8,51 @@ namespace TodoApi.Models
     /// </summary>
     public class UserApp
     {
-        public long Id { get; set; }
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
-        [Required]
-        [StringLength(255)]
+        [BsonElement("name")]
         public string Name { get; set; } = "Untitled App";
 
-        [StringLength(50)]
+        [BsonElement("icon")]
         public string Icon { get; set; } = "📱";
 
-        [StringLength(500)]
+        [BsonElement("description")]
         public string? Description { get; set; }
 
         /// <summary>
         /// JSON config storing all components and their properties
         /// </summary>
+        [BsonElement("config")]
         public string? Config { get; set; }
 
         /// <summary>
         /// Source of the app: 'created' (from App Builder) or 'downloaded' (from Marketplace)
         /// </summary>
-        [Required]
-        [StringLength(20)]
+        [BsonElement("source")]
         public string Source { get; set; } = "created";
 
         /// <summary>
         /// If downloaded, the original Marketplace app ID
         /// </summary>
-        public long? MarketplaceAppId { get; set; }
+        [BsonElement("marketplaceAppId")]
+        public string? MarketplaceAppId { get; set; }
 
         /// <summary>
         /// If downloaded, the original author's name
         /// </summary>
-        [StringLength(255)]
+        [BsonElement("originalAuthor")]
         public string? OriginalAuthor { get; set; }
 
+        [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        [BsonElement("updatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // --- Relationship with User ---
-        [ForeignKey("AppUser")]
+        [BsonElement("appUserId")]
         public string AppUserId { get; set; } = null!;
-        public AppUser AppUser { get; set; } = null!;
     }
 }

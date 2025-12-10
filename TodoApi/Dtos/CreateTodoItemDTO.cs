@@ -19,7 +19,7 @@ namespace TodoApi.Dtos
 
         // Đây là thứ duy nhất ta cần để tạo quan hệ
         [Required] 
-        public long TodoListId { get; set; }
+        public string TodoListId { get; set; } = string.Empty;
 
         // Lưu ý: KHÔNG có 'Id' và KHÔNG có 'TodoList' object
     }

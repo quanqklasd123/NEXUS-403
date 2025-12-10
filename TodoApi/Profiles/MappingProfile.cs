@@ -16,9 +16,8 @@ namespace TodoApi.Profiles
             CreateMap<CreateTodoListDTO, TodoList>(); // POST
 
             // 2. Ánh xạ cho Item
-            CreateMap<TodoItem, TodoItemDTO>()
-            .ForMember(dest => dest.TodoListName, 
-                       opt => opt.MapFrom(src => src.TodoList.Name)); // GET
+            // Note: TodoListName sẽ được set thủ công trong controllers vì MongoDB không có navigation properties
+            CreateMap<TodoItem, TodoItemDTO>(); // GET
             CreateMap<CreateTodoItemDTO, TodoItem>(); // POST
 
             // 3. Ánh xạ cho PUT (Cập nhật)

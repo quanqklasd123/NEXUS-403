@@ -2,68 +2,71 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TodoApi.Models;
-using TodoApi.AI;
+using TodoApi.Models.MongoIdentity;
 using TodoApi.Data;
+using MongoDB.Driver;
 
 namespace TodoApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // --- ĐÂY LÀ PHÉP THUẬT ---
-    // Chỉ những ai có Role "Admin" trong Token mới được vào Controller này
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminOnly")]
     public class AdminController : ControllerBase
     {
-        private readonly UserManager<AppUser> _userManager;
-        private readonly AiModelService _aiModelService;
-        private readonly TodoContext _context;
+        private readonly UserManager<Models.MongoIdentity.AppUser> _userManager;
+        private readonly MongoDbContext _mongoContext;
         
-        public AdminController(UserManager<AppUser> userManager, AiModelService aiModelService, TodoContext context)
+        public AdminController(UserManager<Models.MongoIdentity.AppUser> userManager, MongoDbContext mongoContext)
         {
             _userManager = userManager;
-            _aiModelService = aiModelService;
-            _context = context;
+            _mongoContext = mongoContext;
         }
 
         // GET: api/admin/users
         [HttpGet("users")]
         public async Task<IActionResult> GetUsers()
         {
-            // Lấy tất cả user từ CSDL
-            var users = await _userManager.Users.ToListAsync();
-
-            // "Map" thủ công sang một đối tượng an toàn
-            // (Tuyệt đối không trả về PasswordHash!)
-            var usersDto = users.Select(user => new
+            try
             {
-                Id = user.Id,
-                UserName = user.UserName,
-                Email = user.Email,
-                IsLocked = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow,
-                LockoutEnd = user.LockoutEnd,
-                LockoutEnabled = user.LockoutEnabled,
-                Roles = _userManager.GetRolesAsync(user).Result.ToList()
-            }).ToList();
+                // Debug: Kiểm tra claims của user hiện tại
+                var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                    ?? User.FindFirst("sub")?.Value;
+                var currentUserRoles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+                
+                // Log để debug (có thể xóa sau)
+                Console.WriteLine($"Current User ID: {currentUserId}");
+                Console.WriteLine($"Current User Roles from token: {string.Join(", ", currentUserRoles)}");
+                
+                // Lấy tất cả user từ MongoDB trực tiếp (vì UserManager.Users có thể không hoạt động với custom store)
+                var usersList = await _mongoContext.Users.Find(_ => true).ToListAsync();
 
-            return Ok(usersDto);
-        }
-        
-        // --- THÊM API MỚI ĐỂ HUẤN LUYỆN ---
-        // GET: api/admin/train-ai
-        [HttpGet("train-ai")]
-        public IActionResult TrainAiModel()
-        {
-            var result = _aiModelService.TrainAndSaveModel();
+                // "Map" thủ công sang một đối tượng an toàn
+                // (Tuyệt đối không trả về PasswordHash!)
+                var usersDto = new List<object>();
+                foreach (var user in usersList)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    usersDto.Add(new
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        Email = user.Email,
+                        IsLocked = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow,
+                        LockoutEnd = user.LockoutEnd,
+                        LockoutEnabled = user.LockoutEnabled,
+                        Roles = roles.ToList()
+                    });
+                }
 
-            if (result)
-            {
-                return Ok("Huấn luyện mô hình AI thành công! File 'model.zip' đã được tạo.");
+                return Ok(usersDto);
             }
-            else
+            catch (Exception ex)
             {
-                return StatusCode(500, "Huấn luyện AI thất bại. Kiểm tra log.");
+                // Log lỗi chi tiết
+                Console.WriteLine($"Error in GetUsers: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new { message = "Error loading users", error = ex.Message });
             }
         }
 
@@ -72,40 +75,48 @@ namespace TodoApi.Controllers
         [HttpGet("marketplace-apps")]
         public async Task<IActionResult> GetMarketplaceApps()
         {
-            var publishedProjects = await _context.Projects
-                .Where(p => p.IsPublished)
-                .Include(p => p.AppUser)
-                .OrderByDescending(p => p.CreatedAt)
-                .Select(p => new
+            var filter = Builders<Project>.Filter.Eq(p => p.IsPublished, true);
+            var sort = Builders<Project>.Sort.Descending(p => p.CreatedAt);
+            var publishedProjects = await _mongoContext.Projects
+                .Find(filter)
+                .Sort(sort)
+                .ToListAsync();
+
+            // Get user info from Identity (SQL Server)
+            var projectsDto = new List<object>();
+            foreach (var p in publishedProjects)
+            {
+                var user = await _userManager.FindByIdAsync(p.AppUserId);
+                projectsDto.Add(new
                 {
                     Id = p.Id,
                     Name = p.Name,
                     Description = p.Description,
                     CreatedAt = p.CreatedAt,
                     AuthorId = p.AppUserId,
-                    AuthorName = p.AppUser.UserName,
-                    AuthorEmail = p.AppUser.Email
-                })
-                .ToListAsync();
+                    AuthorName = user?.UserName ?? "Unknown",
+                    AuthorEmail = user?.Email ?? "Unknown"
+                });
+            }
 
-            return Ok(publishedProjects);
+            return Ok(projectsDto);
         }
 
         // DELETE: api/admin/marketplace-apps/{id}
         [HttpDelete("marketplace-apps/{id}")]
-        public async Task<IActionResult> DeleteMarketplaceApp(long id)
+        public async Task<IActionResult> DeleteMarketplaceApp(string id)
         {
-            var project = await _context.Projects
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsPublished);
+            var filter = Builders<Project>.Filter.And(
+                Builders<Project>.Filter.Eq(p => p.Id, id),
+                Builders<Project>.Filter.Eq(p => p.IsPublished, true)
+            );
 
-            if (project == null)
+            var result = await _mongoContext.Projects.DeleteOneAsync(filter);
+
+            if (result.DeletedCount == 0)
             {
                 return NotFound("App không tồn tại hoặc chưa được publish.");
             }
-
-            // Xóa project (hoặc chỉ set IsPublished = false nếu muốn giữ lại)
-            _context.Projects.Remove(project);
-            await _context.SaveChangesAsync();
 
             return Ok(new { message = "Đã xóa app khỏi marketplace thành công." });
         }
@@ -156,6 +167,48 @@ namespace TodoApi.Controllers
             return BadRequest(new { message = "Không thể mở khóa user.", errors = result.Errors });
         }
 
+        // POST: api/admin/fix-roles - Fix roles case cho tất cả users
+        [HttpPost("fix-roles")]
+        public async Task<IActionResult> FixRolesCase()
+        {
+            // Lấy users trực tiếp từ MongoDB
+            var usersList = await _mongoContext.Users.Find(_ => true).ToListAsync();
+            int fixedCount = 0;
+
+            foreach (var user in usersList)
+            {
+                var roles = user.Roles.ToList();
+                bool needsUpdate = false;
+
+                // Fix roles case
+                for (int i = 0; i < roles.Count; i++)
+                {
+                    var role = roles[i];
+                    string fixedRole = role?.ToUpperInvariant() switch
+                    {
+                        "ADMIN" => "Admin",
+                        "USER" => "User",
+                        _ => role
+                    };
+
+                    if (role != fixedRole)
+                    {
+                        roles[i] = fixedRole;
+                        needsUpdate = true;
+                    }
+                }
+
+                if (needsUpdate)
+                {
+                    user.Roles = roles;
+                    await _userManager.UpdateAsync(user);
+                    fixedCount++;
+                }
+            }
+
+            return Ok(new { message = $"Đã sửa roles cho {fixedCount} users", fixedCount });
+        }
+
         // DELETE: api/admin/users/{id}
         [HttpDelete("users/{id}")]
         public async Task<IActionResult> DeleteUser(string id)
@@ -168,7 +221,7 @@ namespace TodoApi.Controllers
 
             // Kiểm tra xem user có phải Admin không (không cho xóa Admin)
             var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Contains("Admin"))
+            if (roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase) || r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)))
             {
                 return BadRequest(new { message = "Không thể xóa tài khoản Admin." });
             }

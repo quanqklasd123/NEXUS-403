@@ -39,13 +39,13 @@ namespace TodoApi.Dtos
     // DTO for response
     public class UserAppDTO
     {
-        public long Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = "";
         public string Icon { get; set; } = "📱";
         public string? Description { get; set; }
         public string? Config { get; set; }
         public string Source { get; set; } = "created";
-        public long? MarketplaceAppId { get; set; }
+        public string? MarketplaceAppId { get; set; }
         public string? OriginalAuthor { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

@@ -113,7 +113,7 @@ function LoginPage({ onLoginSuccess }) {
                 <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}
-                    useOneTap
+                    useOneTap={false}
                 />
             </div>
 

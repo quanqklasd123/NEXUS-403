@@ -1,30 +1,33 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace TodoApi.Models
 {
     public class Project
     {
-        public long Id { get; set; }
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
-        [Required]
-        [StringLength(100)]
+        [BsonElement("name")]
         public string Name { get; set; }
 
-        [StringLength(500)]
+        [BsonElement("description")]
         public string? Description { get; set; }
 
         // Đây là nơi lưu toàn bộ trạng thái Canvas (các nút, ô nhập liệu...)
         // Chúng ta lưu dưới dạng chuỗi JSON
+        [BsonElement("jsonData")]
         public string? JsonData { get; set; } 
 
+        [BsonElement("isPublished")]
         public bool IsPublished { get; set; } = false;
 
+        [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // --- Quan hệ với User ---
-        [ForeignKey("AppUser")]
+        [BsonElement("appUserId")]
         public string AppUserId { get; set; }
-        public AppUser AppUser { get; set; }
     }
 }

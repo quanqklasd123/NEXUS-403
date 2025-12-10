@@ -735,7 +735,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                 status: convertStatusToInt(newTask.status),
                 priority: convertPriorityToInt(newTask.priority),
                 dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
-                todoListId: parseInt(newTask.categoryId)
+                todoListId: newTask.categoryId // MongoDB dùng string, không parse int
             });
             setNewTask({ title: '', status: defaultStatus, priority: defaultPriority, dueDate: null, categoryId: null });
             setIsAdding(false);

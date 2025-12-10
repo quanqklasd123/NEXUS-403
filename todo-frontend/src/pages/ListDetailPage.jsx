@@ -86,14 +86,18 @@ function ListDetailPage() {
         try {
             const newItemData = { 
                 title: newItemTitle, 
-                todoListId: parseInt(id),
+                todoListId: id, // MongoDB dùng string, không parse int
                 priority: parseInt(newItemPriority),
-                dueDate: newItemDueDate ? newItemDueDate : null 
+                dueDate: newItemDueDate ? newItemDueDate : null,
+                status: 0 // Default status: To Do
             };
             const response = await apiService.createTodoItem(newItemData);
             setList(prevList => ({ ...prevList, items: [...prevList.items, response.data] }));
             setNewItemTitle(''); setNewItemPriority(1); setNewItemDueDate('');
-        } catch (error) { alert('Không thể tạo công việc mới.'); }
+        } catch (error) { 
+            console.error('Lỗi tạo task:', error);
+            alert(`Không thể tạo công việc mới: ${error.response?.data?.message || error.message || 'Lỗi không xác định'}`); 
+        }
     };
     const handleToggleDone = async (itemToToggle) => {
         try {
@@ -104,7 +108,7 @@ function ListDetailPage() {
             const updateDto = {
                 ...itemToToggle,
                 status: newStatus,
-                todoListId: parseInt(id)
+                todoListId: id // MongoDB dùng string, không parse int
             };
 
             // Gọi API cập nhật item

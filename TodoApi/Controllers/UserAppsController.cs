@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TodoApi.Data;
 using TodoApi.Dtos;
 using TodoApi.Models;
+using MongoDB.Driver;
 
 namespace TodoApi.Controllers
 {
@@ -13,11 +13,11 @@ namespace TodoApi.Controllers
     [Authorize]
     public class UserAppsController : ControllerBase
     {
-        private readonly TodoContext _context;
+        private readonly MongoDbContext _mongoContext;
 
-        public UserAppsController(TodoContext context)
+        public UserAppsController(MongoDbContext mongoContext)
         {
-            _context = context;
+            _mongoContext = mongoContext;
         }
 
         // Helper to get current user ID
@@ -35,48 +35,65 @@ namespace TodoApi.Controllers
         {
             var userId = GetCurrentUserId();
 
-            var query = _context.UserApps.Where(a => a.AppUserId == userId);
+            var baseFilter = Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId);
+            FilterDefinition<UserApp>? filterDef = null;
 
             // Apply filter
             if (filter == "created")
             {
-                query = query.Where(a => a.Source == "created");
+                filterDef = Builders<UserApp>.Filter.And(
+                    baseFilter,
+                    Builders<UserApp>.Filter.Eq(a => a.Source, "created")
+                );
             }
             else if (filter == "downloaded")
             {
-                query = query.Where(a => a.Source == "downloaded");
+                filterDef = Builders<UserApp>.Filter.And(
+                    baseFilter,
+                    Builders<UserApp>.Filter.Eq(a => a.Source, "downloaded")
+                );
+            }
+            else
+            {
+                filterDef = baseFilter;
             }
 
-            var apps = await query
-                .OrderByDescending(a => a.UpdatedAt)
-                .Select(a => new UserAppDTO
-                {
-                    Id = a.Id,
-                    Name = a.Name,
-                    Icon = a.Icon,
-                    Description = a.Description,
-                    Config = a.Config,
-                    Source = a.Source,
-                    MarketplaceAppId = a.MarketplaceAppId,
-                    OriginalAuthor = a.OriginalAuthor,
-                    CreatedAt = a.CreatedAt,
-                    UpdatedAt = a.UpdatedAt
-                })
+            var apps = await _mongoContext.UserApps
+                .Find(filterDef)
+                .SortByDescending(a => a.UpdatedAt)
                 .ToListAsync();
 
-            return Ok(apps);
+            var appDtos = apps.Select(a => new UserAppDTO
+            {
+                Id = a.Id,
+                Name = a.Name,
+                Icon = a.Icon,
+                Description = a.Description,
+                Config = a.Config,
+                Source = a.Source,
+                MarketplaceAppId = a.MarketplaceAppId,
+                OriginalAuthor = a.OriginalAuthor,
+                CreatedAt = a.CreatedAt,
+                UpdatedAt = a.UpdatedAt
+            }).ToList();
+
+            return Ok(appDtos);
         }
 
         /// <summary>
         /// GET: api/userapps/{id} - Get a single app
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserAppDTO>> GetUserApp(long id)
+        public async Task<ActionResult<UserAppDTO>> GetUserApp(string id)
         {
             var userId = GetCurrentUserId();
 
-            var app = await _context.UserApps
-                .FirstOrDefaultAsync(a => a.Id == id && a.AppUserId == userId);
+            var filter = Builders<UserApp>.Filter.And(
+                Builders<UserApp>.Filter.Eq(a => a.Id, id),
+                Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId)
+            );
+
+            var app = await _mongoContext.UserApps.Find(filter).FirstOrDefaultAsync();
 
             if (app == null)
             {
@@ -118,8 +135,7 @@ namespace TodoApi.Controllers
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.UserApps.Add(app);
-            await _context.SaveChangesAsync();
+            await _mongoContext.UserApps.InsertOneAsync(app);
 
             return CreatedAtAction(nameof(GetUserApp), new { id = app.Id }, new UserAppDTO
             {
@@ -154,8 +170,7 @@ namespace TodoApi.Controllers
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.UserApps.Add(app);
-            await _context.SaveChangesAsync();
+            await _mongoContext.UserApps.InsertOneAsync(app);
 
             return CreatedAtAction(nameof(GetUserApp), new { id = app.Id }, new UserAppDTO
             {
@@ -174,12 +189,16 @@ namespace TodoApi.Controllers
         /// PUT: api/userapps/{id} - Update an existing app (only for source='created')
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUserApp(long id, UpdateUserAppDTO updateDto)
+        public async Task<IActionResult> UpdateUserApp(string id, UpdateUserAppDTO updateDto)
         {
             var userId = GetCurrentUserId();
 
-            var app = await _context.UserApps
-                .FirstOrDefaultAsync(a => a.Id == id && a.AppUserId == userId);
+            var filter = Builders<UserApp>.Filter.And(
+                Builders<UserApp>.Filter.Eq(a => a.Id, id),
+                Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId)
+            );
+
+            var app = await _mongoContext.UserApps.Find(filter).FirstOrDefaultAsync();
 
             if (app == null)
             {
@@ -192,30 +211,33 @@ namespace TodoApi.Controllers
                 return BadRequest(new { message = "Cannot edit downloaded apps" });
             }
 
-            // Update fields
+            // Build update
+            var update = Builders<UserApp>.Update.Set(a => a.UpdatedAt, DateTime.UtcNow);
+            
             if (!string.IsNullOrEmpty(updateDto.Name))
-                app.Name = updateDto.Name;
+                update = update.Set(a => a.Name, updateDto.Name);
             if (!string.IsNullOrEmpty(updateDto.Icon))
-                app.Icon = updateDto.Icon;
+                update = update.Set(a => a.Icon, updateDto.Icon);
             if (updateDto.Description != null)
-                app.Description = updateDto.Description;
+                update = update.Set(a => a.Description, updateDto.Description);
             if (updateDto.Config != null)
-                app.Config = updateDto.Config;
+                update = update.Set(a => a.Config, updateDto.Config);
 
-            app.UpdatedAt = DateTime.UtcNow;
+            await _mongoContext.UserApps.UpdateOneAsync(filter, update);
 
-            await _context.SaveChangesAsync();
+            // Reload để lấy dữ liệu mới nhất
+            var updatedApp = await _mongoContext.UserApps.Find(filter).FirstOrDefaultAsync();
 
             return Ok(new UserAppDTO
             {
-                Id = app.Id,
-                Name = app.Name,
-                Icon = app.Icon,
-                Description = app.Description,
-                Config = app.Config,
-                Source = app.Source,
-                CreatedAt = app.CreatedAt,
-                UpdatedAt = app.UpdatedAt
+                Id = updatedApp!.Id,
+                Name = updatedApp.Name,
+                Icon = updatedApp.Icon,
+                Description = updatedApp.Description,
+                Config = updatedApp.Config,
+                Source = updatedApp.Source,
+                CreatedAt = updatedApp.CreatedAt,
+                UpdatedAt = updatedApp.UpdatedAt
             });
         }
 
@@ -223,20 +245,21 @@ namespace TodoApi.Controllers
         /// DELETE: api/userapps/{id} - Delete an app
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUserApp(long id)
+        public async Task<IActionResult> DeleteUserApp(string id)
         {
             var userId = GetCurrentUserId();
 
-            var app = await _context.UserApps
-                .FirstOrDefaultAsync(a => a.Id == id && a.AppUserId == userId);
+            var filter = Builders<UserApp>.Filter.And(
+                Builders<UserApp>.Filter.Eq(a => a.Id, id),
+                Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId)
+            );
 
-            if (app == null)
+            var result = await _mongoContext.UserApps.DeleteOneAsync(filter);
+
+            if (result.DeletedCount == 0)
             {
                 return NotFound(new { message = "App not found" });
             }
-
-            _context.UserApps.Remove(app);
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -245,14 +268,16 @@ namespace TodoApi.Controllers
         /// POST: api/userapps/download/{marketplaceAppId} - Download an app from Marketplace
         /// </summary>
         [HttpPost("download/{marketplaceAppId}")]
-        public async Task<ActionResult<UserAppDTO>> DownloadFromMarketplace(long marketplaceAppId)
+        public async Task<ActionResult<UserAppDTO>> DownloadFromMarketplace(string marketplaceAppId)
         {
             var userId = GetCurrentUserId();
 
             // Find the marketplace app (published project)
-            var marketplaceApp = await _context.Projects
-                .Include(p => p.AppUser)
-                .FirstOrDefaultAsync(p => p.Id == marketplaceAppId && p.IsPublished);
+            var projectFilter = Builders<Project>.Filter.And(
+                Builders<Project>.Filter.Eq(p => p.Id, marketplaceAppId),
+                Builders<Project>.Filter.Eq(p => p.IsPublished, true)
+            );
+            var marketplaceApp = await _mongoContext.Projects.Find(projectFilter).FirstOrDefaultAsync();
 
             if (marketplaceApp == null)
             {
@@ -260,15 +285,19 @@ namespace TodoApi.Controllers
             }
 
             // Check if user already downloaded this app
-            var existingDownload = await _context.UserApps
-                .FirstOrDefaultAsync(a => a.AppUserId == userId && a.MarketplaceAppId == marketplaceAppId);
+            var downloadFilter = Builders<UserApp>.Filter.And(
+                Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId),
+                Builders<UserApp>.Filter.Eq(a => a.MarketplaceAppId, marketplaceAppId)
+            );
+            var existingDownload = await _mongoContext.UserApps.Find(downloadFilter).FirstOrDefaultAsync();
 
             if (existingDownload != null)
             {
                 return BadRequest(new { message = "You have already downloaded this app" });
             }
 
-            // Create a copy for the user
+            // Get author name from Identity (vẫn dùng SQL Server cho Identity)
+            // Tạm thời dùng "Unknown" vì không có navigation property
             var userApp = new UserApp
             {
                 Name = marketplaceApp.Name,
@@ -277,14 +306,13 @@ namespace TodoApi.Controllers
                 Config = marketplaceApp.JsonData,
                 Source = "downloaded",
                 MarketplaceAppId = marketplaceAppId,
-                OriginalAuthor = marketplaceApp.AppUser?.UserName ?? "Unknown",
+                OriginalAuthor = "Unknown", // TODO: Get from Identity if needed
                 AppUserId = userId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.UserApps.Add(userApp);
-            await _context.SaveChangesAsync();
+            await _mongoContext.UserApps.InsertOneAsync(userApp);
 
             return CreatedAtAction(nameof(GetUserApp), new { id = userApp.Id }, new UserAppDTO
             {
