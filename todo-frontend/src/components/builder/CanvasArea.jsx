@@ -1,10 +1,22 @@
 // src/components/builder/CanvasArea.jsx
 import React from 'react';
-import { useDroppable, useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
+import { useDroppable } from '@dnd-kit/core';
 import RenderComponent from './RenderComponent';
+import DraggableResizable from './DraggableResizable';
+import { GRID_SIZE } from './gridConstants';
 
-const CanvasArea = ({ items, selectedId, onSelectItem, isPreview = false, navigate = null, searchQuery = '', filterTag = 'all', context = {} }) => {
+const CanvasArea = ({ 
+    items, 
+    selectedId, 
+    onSelectItem, 
+    isPreview = false, 
+    navigate = null, 
+    searchQuery = '', 
+    filterTag = 'all', 
+    context = {},
+    onPositionChange,
+    onSizeChange
+}) => {
     const { setNodeRef, isOver } = useDroppable({ id: 'canvas-area' });
     const handleCanvasClick = isPreview ? undefined : () => onSelectItem(null);
     
@@ -42,8 +54,9 @@ const CanvasArea = ({ items, selectedId, onSelectItem, isPreview = false, naviga
                     linear-gradient(to right, #e5e7eb 1px, transparent 1px),
                     linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)
                 `,
-                backgroundSize: '20px 20px',
-                backgroundPosition: '0 0'
+                backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+                backgroundPosition: '0 0',
+                position: 'relative'
             }}
         >
             {rootItems.length === 0 && !isOver && !isPreview && (
@@ -59,10 +72,17 @@ const CanvasArea = ({ items, selectedId, onSelectItem, isPreview = false, naviga
                     </div>
                 </div>
             )}
-            {/* Flow Layout - Components xếp theo thứ tự */}
-            <div className="w-full min-h-full p-4 flex flex-col gap-3"> 
+            {/* Absolute positioned components with snap to grid */}
+            <div 
+                className="w-full min-h-full p-4 relative" 
+                style={{ minHeight: '100vh', position: 'relative' }}
+                onDragOver={(e) => {
+                    // Allow drop from toolbox
+                    e.preventDefault();
+                }}
+            > 
                 {rootItems.map((item) => (
-                    <DraggableComponent
+                    <DraggableResizable
                         key={item.id}
                         item={item}
                         items={items}
@@ -71,60 +91,11 @@ const CanvasArea = ({ items, selectedId, onSelectItem, isPreview = false, naviga
                         isPreview={isPreview}
                         navigate={navigate}
                         context={context}
+                        onPositionChange={onPositionChange}
+                        onSizeChange={onSizeChange}
                     />
                 ))}
             </div>
-        </div>
-    );
-};
-
-// Draggable Component Wrapper
-const DraggableComponent = ({ item, items, isSelected, onClick, isPreview, navigate, context }) => {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: item.id,
-        disabled: isPreview,
-        data: {
-            type: 'component',
-            item: item
-        }
-    });
-
-    const itemStyle = item.style || {};
-    
-    // Style cho wrapper - dùng flow layout thay vì absolute positioning
-    const wrapperStyle = {
-        width: itemStyle.width || '100%',
-        minHeight: itemStyle.minHeight || '50px',
-        transform: CSS.Translate.toString(transform),
-        zIndex: isDragging ? 1000 : (isSelected ? 100 : 1),
-        opacity: isDragging ? 0.8 : 1,
-        transition: isDragging ? 'none' : 'box-shadow 0.2s',
-    };
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={wrapperStyle}
-            {...(isPreview ? {} : { ...attributes, ...listeners })}
-            onClick={(e) => {
-                e.stopPropagation();
-                if (!isPreview && !isDragging) {
-                    onClick(item.id);
-                }
-            }}
-            className={`
-                ${isDragging ? 'shadow-2xl' : ''}
-            `}
-        >
-            <RenderComponent 
-                item={item} 
-                items={items}
-                isSelected={isSelected} 
-                onClick={onClick} 
-                isPreview={isPreview} 
-                navigate={navigate}
-                context={context}
-            />
         </div>
     );
 };

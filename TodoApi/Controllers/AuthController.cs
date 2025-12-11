@@ -8,6 +8,7 @@ using System.Text;
 using TodoApi.Dtos;
 using TodoApi.Models.MongoIdentity;
 using System.Threading.Tasks;
+using Google.Apis.Auth;
 
 namespace TodoApi.Controllers
 {
@@ -129,6 +130,138 @@ namespace TodoApi.Controllers
 
             // Nếu sai, trả về lỗi "Unauthorized"
             return Unauthorized(new { message = "Invalid email or password" });
+        }
+
+        // POST: api/auth/google-login
+        [HttpPost]
+        [Route("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDTO googleDto)
+        {
+            try
+            {
+                // 1. Verify Google token
+                var clientId = _configuration["GoogleAuth:ClientId"];
+                if (string.IsNullOrEmpty(clientId))
+                {
+                    return BadRequest(new { message = "Google Client ID not configured" });
+                }
+
+                var settings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new[] { clientId }
+                };
+
+                GoogleJsonWebSignature.Payload payload;
+                try
+                {
+                    payload = await GoogleJsonWebSignature.ValidateAsync(googleDto.IdToken, settings);
+                }
+                catch (InvalidJwtException ex)
+                {
+                    return Unauthorized(new { message = "Invalid Google token", details = ex.Message });
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { message = "Error validating Google token", error = ex.Message });
+                }
+
+                // Kiểm tra email từ payload
+                if (string.IsNullOrEmpty(payload.Email))
+                {
+                    return BadRequest(new { message = "Google token does not contain email" });
+                }
+
+                // 2. Tìm hoặc tạo user
+                var user = await _userManager.FindByEmailAsync(payload.Email);
+                
+                if (user == null)
+                {
+                    // Tạo user mới nếu chưa tồn tại
+                    // Tạo UserName từ email (phần trước @) hoặc từ name
+                    var baseUserName = payload.Email?.Split('@')[0] ?? payload.Name?.Replace(" ", "") ?? "user";
+                    // Loại bỏ các ký tự đặc biệt không hợp lệ cho username
+                    baseUserName = System.Text.RegularExpressions.Regex.Replace(baseUserName ?? "", @"[^a-zA-Z0-9_]", "");
+                    if (string.IsNullOrEmpty(baseUserName))
+                    {
+                        baseUserName = "user";
+                    }
+                    
+                    var userName = baseUserName;
+                    var userNameCounter = 1;
+                    
+                    // Đảm bảo UserName là unique - thử tìm user với normalized name
+                    var normalizedUserName = userName.ToUpperInvariant();
+                    var existingUserByName = await _userManager.FindByNameAsync(normalizedUserName);
+                    while (existingUserByName != null && userNameCounter < 100)
+                    {
+                        userName = $"{baseUserName}{userNameCounter}";
+                        normalizedUserName = userName.ToUpperInvariant();
+                        existingUserByName = await _userManager.FindByNameAsync(normalizedUserName);
+                        userNameCounter++;
+                    }
+                    
+                    // Tạo password ngẫu nhiên mạnh (sẽ không bao giờ dùng để login)
+                    // Password phải đáp ứng yêu cầu: ít nhất 6 ký tự, có chữ hoa, chữ thường, số, ký tự đặc biệt
+                    var randomPassword = Guid.NewGuid().ToString().Replace("-", "") + "!@#$%^&*()ABCDEFG123456789";
+                    
+                    user = new AppUser
+                    {
+                        Email = payload.Email,
+                        UserName = userName,
+                        NormalizedUserName = normalizedUserName,
+                        NormalizedEmail = payload.Email.ToUpperInvariant(),
+                        SecurityStamp = Guid.NewGuid().ToString(),
+                        EmailConfirmed = true, // Google đã verify email
+                        ConcurrencyStamp = Guid.NewGuid().ToString()
+                    };
+
+                    var createResult = await _userManager.CreateAsync(user, randomPassword);
+                    if (!createResult.Succeeded)
+                    {
+                        // Trả về chi tiết lỗi để debug
+                        var errorMessages = createResult.Errors.Select(e => $"{e.Code}: {e.Description}").ToList();
+                        Console.WriteLine($"Failed to create user: {string.Join(", ", errorMessages)}");
+                        Console.WriteLine($"Email: {payload.Email}, UserName: {userName}");
+                        return BadRequest(new { 
+                            message = "Failed to create user", 
+                            errors = errorMessages,
+                            details = createResult.Errors.Select(e => new { e.Code, e.Description }).ToList()
+                        });
+                    }
+
+                    // Gán role "User" cho user mới
+                    await _userManager.AddToRoleAsync(user, "User");
+                }
+                else
+                {
+                    // Kiểm tra xem user có bị khóa không
+                    if (user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                    {
+                        return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
+                    }
+                }
+
+                // 3. Tạo JWT token
+                var tokenString = await GenerateJwtToken(user);
+
+                return Ok(new AuthResponseDTO
+                {
+                    UserId = user.Id,
+                    Email = user.Email,
+                    Token = tokenString
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log chi tiết lỗi để debug
+                Console.WriteLine($"Google login error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = "Error processing Google login", error = ex.Message, details = ex.StackTrace });
+            }
         }
 
         // GET: api/auth/me - Lấy thông tin user hiện tại và roles

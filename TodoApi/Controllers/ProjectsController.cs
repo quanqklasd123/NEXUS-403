@@ -249,7 +249,9 @@ namespace TodoApi.Controllers
             var update = Builders<Project>.Update
                 .Set(p => p.Name, publishDto.Name)
                 .Set(p => p.Description, publishDto.Description)
-                .Set(p => p.IsPublished, true);
+                .Set(p => p.IsPublished, true)
+                .Set(p => p.Category, publishDto.Category)
+                .Set(p => p.Price, publishDto.Price);
 
             await _mongoContext.Projects.UpdateOneAsync(filter, update);
 

@@ -453,19 +453,42 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
     }, [isOpen]);
 
     return (
-        <div style={style} className="relative">
-            <button
-                ref={buttonRef}
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        <>
+            <div 
+                style={{
+                    ...style,
+                    position: 'relative',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    width: 'fit-content',
+                    height: 'fit-content'
+                }} 
+                className="sort-dropdown-container"
             >
-                <FiArrowDown size={14} />
-                {label}: {SORT_FIELD_LABELS[currentSort.field] || currentSort.field}
-                <span className="text-xs text-gray-500">
-                    ({currentSort.order === 'asc' ? '↑' : '↓'})
-                </span>
-                <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
+                <button
+                    ref={buttonRef}
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    <FiArrowDown size={14} />
+                    {label}: {SORT_FIELD_LABELS[currentSort.field] || currentSort.field}
+                    <span className="text-xs text-gray-500">
+                        ({currentSort.order === 'asc' ? '↑' : '↓'})
+                    </span>
+                    <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Quick toggle order button */}
+                {currentSort.field && (
+                    <button
+                        onClick={toggleOrder}
+                        className="ml-2 p-1.5 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
+                        title={`Toggle ${currentSort.order === 'asc' ? 'Descending' : 'Ascending'}`}
+                    >
+                        {currentSort.order === 'asc' ? '↓' : '↑'}
+                    </button>
+                )}
+            </div>
 
             {isOpen && createPortal(
                 <div 
@@ -516,18 +539,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
                 </div>,
                 document.body
             )}
-
-            {/* Quick toggle order button */}
-            {currentSort.field && (
-                <button
-                    onClick={toggleOrder}
-                    className="ml-2 p-1.5 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
-                    title={`Toggle ${currentSort.order === 'asc' ? 'Descending' : 'Ascending'}`}
-                >
-                    {currentSort.order === 'asc' ? '↓' : '↑'}
-                </button>
-            )}
-        </div>
+        </>
     );
 }
 

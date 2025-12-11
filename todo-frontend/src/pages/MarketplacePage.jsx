@@ -1,13 +1,220 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import apiService from '../services/apiService';
-import { FiSearch, FiFilter, FiDownload, FiStar, FiSettings, FiCheck } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiDownload, FiStar, FiSettings, FiCheck, FiX, FiPlus, FiEye } from 'react-icons/fi';
 
-// Helper Icons (Giữ nguyên)
-const FiUsersIcon = () => <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/></svg>;
+// --- MODAL XEM APP DETAIL (READ-ONLY) ---
+const AppDetailModal = ({ app, isOpen, onClose }) => {
+    if (!isOpen || !app) return null;
 
-// --- COMPONENT APP CARD (Đã nâng cấp logic) ---
-const AppCard = ({ app, onInstall }) => {
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div 
+                className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="sticky top-0 bg-white border-b border-neutral-200 p-6 flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-neutral-800">{app.name}</h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                    >
+                        <FiX className="w-5 h-5 text-neutral-600" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-6">
+                    {/* Description */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-neutral-700 mb-2">Description</h3>
+                        <p className="text-neutral-600">{app.description || 'No description available'}</p>
+                    </div>
+
+                    {/* Category & Price */}
+                    <div className="flex gap-4">
+                        <div>
+                            <h3 className="text-sm font-semibold text-neutral-700 mb-2">Category</h3>
+                            <span className="inline-block px-3 py-1 bg-sage-100 text-sage-700 rounded-lg text-sm font-medium">
+                                {app.category || 'Uncategorized'}
+                            </span>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-neutral-700 mb-2">Price</h3>
+                            <span className={`inline-block px-3 py-1 rounded-lg text-sm font-medium ${
+                                app.price ? 'bg-warning/10 text-warning' : 'bg-sage-100 text-sage-700'
+                            }`}>
+                                {app.price || 'Free'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Author */}
+                    {app.author && (
+                        <div>
+                            <h3 className="text-sm font-semibold text-neutral-700 mb-2">Author</h3>
+                            <p className="text-neutral-600">{app.author}</p>
+                        </div>
+                    )}
+
+                    {/* Note: Read-only */}
+                    <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
+                        <p className="text-sm text-neutral-600">
+                            <strong>Note:</strong> This is a read-only preview. Install this app to your workspace to edit and customize it.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-white border-t border-neutral-200 p-6 flex items-center justify-end gap-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+                    >
+                        Close
+                    </button>
+                    {!app.isInstalled && (
+                        <button
+                            onClick={() => {
+                                // Handle install from modal
+                                onClose();
+                            }}
+                            className="px-4 py-2 bg-sage-600 text-white rounded-lg hover:bg-sage-700 transition-colors"
+                        >
+                            Install App
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- MODAL TẠO CATEGORY ---
+const CreateCategoryModal = ({ isOpen, onClose, onCreate }) => {
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [color, setColor] = useState('sage');
+    const [loading, setLoading] = useState(false);
+
+    const colors = [
+        { value: 'sage', label: 'Sage', class: 'bg-sage-500' },
+        { value: 'peach', label: 'Peach', class: 'bg-peach-500' },
+        { value: 'butter', label: 'Butter', class: 'bg-butter-500' },
+        { value: 'neutral', label: 'Neutral', class: 'bg-neutral-500' },
+    ];
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!name.trim()) {
+            alert('Please enter a category name');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await apiService.createCategory({
+                name: name.trim(),
+                description: description.trim() || null,
+                color: color
+            });
+            onCreate();
+            setName('');
+            setDescription('');
+            setColor('sage');
+            onClose();
+        } catch (error) {
+            console.error('Error creating category:', error);
+            alert(error.response?.data?.message || 'Error creating category');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div 
+                className="bg-white rounded-2xl max-w-md w-full shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="p-6 border-b border-neutral-200">
+                    <h2 className="text-xl font-bold text-neutral-800">Create New Category</h2>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
+                            Category Name *
+                        </label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:border-sage-400 outline-none"
+                            placeholder="e.g., E-commerce, Dashboard"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
+                            Description
+                        </label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:border-sage-400 outline-none"
+                            rows="3"
+                            placeholder="Optional description"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
+                            Color
+                        </label>
+                        <div className="flex gap-2">
+                            {colors.map((c) => (
+                                <button
+                                    key={c.value}
+                                    type="button"
+                                    onClick={() => setColor(c.value)}
+                                    className={`w-10 h-10 rounded-lg ${c.class} ${
+                                        color === c.value ? 'ring-2 ring-offset-2 ring-sage-600' : ''
+                                    }`}
+                                    title={c.label}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !name.trim()}
+                            className="flex-1 px-4 py-2 bg-sage-600 text-white rounded-lg hover:bg-sage-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? 'Creating...' : 'Create'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// --- COMPONENT APP CARD ---
+const AppCard = ({ app, onInstall, onView }) => {
     const colorClasses = {
         'sage': 'from-sage-400 to-sage-600 bg-gradient-to-br',
         'peach': 'from-peach-400 to-peach-600 bg-gradient-to-br',
@@ -16,7 +223,7 @@ const AppCard = ({ app, onInstall }) => {
     };
     
     return (
-        <div className={`bg-white border border-neutral-200 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer ${app.isInstalled ? 'border-success/50 bg-success/5' : ''}`}>
+        <div className={`bg-white border border-neutral-200 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all ${app.isInstalled ? 'border-success/50 bg-success/5' : ''}`}>
             {/* Icon */}
             <div className={`w-12 h-12 ${colorClasses[app.color] || 'bg-neutral-400'} rounded-xl mx-auto mb-3 flex items-center justify-center shadow-sm`}>
                 <FiSettings className="w-6 h-6 text-white" />
@@ -29,28 +236,37 @@ const AppCard = ({ app, onInstall }) => {
             {/* Category Tag */}
             <div className="mb-3">
                 <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">
-                    {app.category}
+                    {app.category || 'Uncategorized'}
                 </span>
             </div>
 
-            {/* Footer: Price & Action */}
+            {/* Footer: Price & Actions */}
             <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
                 <span className={`text-xs font-medium px-2 py-1 rounded ${app.price ? 'bg-warning/10 text-warning' : 'bg-sage-100 text-sage-700'}`}>
                     {app.price || 'Free'}
                 </span>
                 
-                {app.isInstalled ? (
-                    <button disabled className="flex items-center gap-1 text-xs font-bold text-success">
-                        <FiCheck /> Installed
-                    </button>
-                ) : (
-                    <button 
-                        onClick={() => onInstall(app.id)}
-                        className="text-xs font-bold text-sage-600 hover:text-sage-800 hover:underline"
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => onView(app)}
+                        className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+                        title="View details"
                     >
-                        Install
+                        <FiEye className="w-4 h-4" />
                     </button>
-                )}
+                    {app.isInstalled ? (
+                        <button disabled className="flex items-center gap-1 text-xs font-bold text-success">
+                            <FiCheck /> Installed
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => onInstall(app.id)}
+                            className="text-xs font-bold text-sage-600 hover:text-sage-800 hover:underline"
+                        >
+                            Install
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -59,61 +275,78 @@ const AppCard = ({ app, onInstall }) => {
 // --- TRANG CHÍNH ---
 function MarketplacePage() {
     const [apps, setApps] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
+    const [selectedApp, setSelectedApp] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
     const location = useLocation();
     
-    // 1. Tải dữ liệu từ API khi vào trang hoặc khi location thay đổi (refresh khi navigate từ trang khác)
+    // Load categories và apps
     useEffect(() => {
-        const fetchApps = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await apiService.getMarketplaceApps();
-                setApps(response.data);
+                const [categoriesRes, appsRes] = await Promise.all([
+                    apiService.getCategories(),
+                    apiService.getMarketplaceApps(selectedCategory)
+                ]);
+                setCategories(categoriesRes.data || []);
+                setApps(appsRes.data || []);
             } catch (error) {
                 console.error("Lỗi tải Marketplace:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchApps();
-    }, [location.pathname, location.key]); // Refresh khi pathname hoặc location key thay đổi (đảm bảo refresh mỗi khi navigate đến trang này)
+        fetchData();
+    }, [location.pathname, location.key, selectedCategory]);
 
-    // 2. Xử lý cài đặt App
+    // Xử lý cài đặt App
     const handleInstall = async (appId) => {
         try {
-            // Gọi API
             await apiService.installApp(appId);
-            // Cập nhật UI ngay lập tức (Optimistic update)
             setApps(prevApps => prevApps.map(app => 
                 app.id === appId ? { ...app, isInstalled: true } : app
             ));
-            alert("Cài đặt thành công!");
+            alert("Cài đặt thành công! Bạn có thể chỉnh sửa app trong 'My Apps'.");
         } catch (error) {
             console.error("Lỗi khi cài đặt app:", error);
-            alert("Lỗi khi cài đặt app.");
+            alert(error.response?.data?.message || "Lỗi khi cài đặt app.");
         }
     };
 
-    // 3. Logic Lọc & Tìm kiếm (Client-side)
+    // Xem app detail
+    const handleViewApp = (app) => {
+        setSelectedApp(app);
+        setIsDetailModalOpen(true);
+    };
+
+    // Tạo category mới
+    const handleCategoryCreated = () => {
+        // Reload categories
+        apiService.getCategories().then(res => {
+            setCategories(res.data || []);
+        });
+    };
+
+    // Logic Lọc & Tìm kiếm (Client-side cho search)
     const filteredApps = apps.filter(app => {
-        const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              app.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === "All" || app.category === selectedCategory;
-        
-        return matchesSearch && matchesCategory;
+        const matchesSearch = app.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              app.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch;
     });
 
-    const categories = ["All", "Template", "Module", "Component", "Automation"];
+    // Build category list: "All" + categories from API
+    const categoryList = ["All", ...categories.map(c => c.name)];
 
     if (loading) return <div className="p-10 text-center text-neutral-500">Đang tải chợ ứng dụng...</div>;
 
     return (
         <div className="flex flex-col gap-8">
-            {/* Header đã được thêm vào App.jsx - không cần thêm ở đây nữa */}
-
-            {/* Featured Banner (Giữ nguyên tĩnh cho đẹp) */}
+            {/* Featured Banner */}
             <section className="bg-gradient-to-r from-sage-50 to-peach-50 rounded-2xl p-8 border border-sage-100 relative overflow-hidden">
                 <div className="relative z-10">
                     <span className="px-3 py-1 bg-white text-sage-700 text-xs font-bold rounded-full mb-4 inline-block shadow-sm">NEW ARRIVAL</span>
@@ -123,31 +356,52 @@ function MarketplacePage() {
                         Try Beta Access
                     </button>
                 </div>
-                {/* Decorative circle */}
                 <div className="absolute -right-10 -top-10 w-64 h-64 bg-sage-200 rounded-full opacity-20 blur-3xl"></div>
             </section>
 
             {/* Main Content Area */}
             <section>
-                {/* Toolbar: Category Filter */}
-                <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2">
-                    <div className="flex gap-2">
-                        {categories.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setSelectedCategory(cat)}
-                                className={`px-4 py-2 text-sm font-medium rounded-xl transition-all whitespace-nowrap
-                                    ${selectedCategory === cat 
-                                        ? 'bg-sage-600 text-white shadow-md' 
-                                        : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
-                                    }`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
+                {/* Toolbar: Search, Category Filter, Create Category */}
+                <div className="flex flex-col gap-4 mb-6">
+                    {/* Search Bar */}
+                    <div className="relative">
+                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search apps..."
+                            className="w-full pl-10 pr-4 py-2.5 border border-neutral-200 rounded-xl focus:border-sage-400 outline-none"
+                        />
                     </div>
-                    <div className="text-sm text-neutral-400 font-medium hidden md:block">
-                        {filteredApps.length} apps found
+
+                    {/* Category Filter */}
+                    <div className="flex items-center justify-between gap-4 overflow-x-auto pb-2">
+                        <div className="flex gap-2 flex-1">
+                            {categoryList.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setSelectedCategory(cat)}
+                                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-all whitespace-nowrap
+                                        ${selectedCategory === cat 
+                                            ? 'bg-sage-600 text-white shadow-md' 
+                                            : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setIsCreateCategoryModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-all whitespace-nowrap"
+                        >
+                            <FiPlus className="w-4 h-4" />
+                            <span className="text-sm font-medium">New Category</span>
+                        </button>
+                        <div className="text-sm text-neutral-400 font-medium hidden md:block whitespace-nowrap">
+                            {filteredApps.length} apps found
+                        </div>
                     </div>
                 </div>
 
@@ -155,7 +409,12 @@ function MarketplacePage() {
                 {filteredApps.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredApps.map(app => (
-                            <AppCard key={app.id} app={app} onInstall={handleInstall} />
+                            <AppCard 
+                                key={app.id} 
+                                app={app} 
+                                onInstall={handleInstall}
+                                onView={handleViewApp}
+                            />
                         ))}
                     </div>
                 ) : (
@@ -164,6 +423,21 @@ function MarketplacePage() {
                     </div>
                 )}
             </section>
+
+            {/* Modals */}
+            <AppDetailModal
+                app={selectedApp}
+                isOpen={isDetailModalOpen}
+                onClose={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedApp(null);
+                }}
+            />
+            <CreateCategoryModal
+                isOpen={isCreateCategoryModalOpen}
+                onClose={() => setIsCreateCategoryModalOpen(false)}
+                onCreate={handleCategoryCreated}
+            />
         </div>
     );
 }

@@ -2,14 +2,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-    FiHome,
-    FiCheckSquare,
-    FiTrello,
-    FiCalendar,
     FiMenu,
     FiX,
     FiShoppingBag,
-    FiCpu,
     FiLayers,
     FiGrid,
 } from 'react-icons/fi';
@@ -74,19 +69,6 @@ function Sidebar({ isOpen = true, onToggle }) {
                     <span>My Apps</span>
                 </NavLink>
 
-                <NavLink to="/tasks" className={getLinkClass}>
-                    <FiCheckSquare className="w-5 h-5 mr-3" />
-                    <span>My Tasks</span>
-                </NavLink>
-
-                <NavLink to="/kanban" className={getLinkClass}>
-                    <FiTrello className="w-5 h-5 mr-3" />
-                    <span>Kanban</span>
-                </NavLink>
-                <NavLink to="/calendar" className={getLinkClass}>
-                    <FiCalendar className="w-5 h-5 mr-3" />
-                    <span>Calendar</span>
-                </NavLink>
                 <NavLink to="/marketplace" className={getLinkClass}>
                     <FiShoppingBag className="w-5 h-5 mr-3" />
                     <span>Marketplace</span>

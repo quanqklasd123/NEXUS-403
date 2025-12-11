@@ -130,6 +130,52 @@ function AppBuilderPage() {
         })
     );
 
+    // Handle position change (from DraggableResizable)
+    const handlePositionChange = useCallback((itemId, x, y) => {
+        setCanvasItems((prev) => {
+            const newItems = prev.map(item => {
+                if (item.id === itemId) {
+                    return {
+                        ...item,
+                        position: { x, y },
+                        style: {
+                            ...item.style,
+                            left: `${x}px`,
+                            top: `${y}px`
+                        }
+                    };
+                }
+                return item;
+            });
+            saveToHistory(newItems);
+            return newItems;
+        });
+    }, [saveToHistory]);
+
+    // Handle size change (from DraggableResizable)
+    const handleSizeChange = useCallback((itemId, width, height, x, y) => {
+        setCanvasItems((prev) => {
+            const newItems = prev.map(item => {
+                if (item.id === itemId) {
+                    return {
+                        ...item,
+                        position: { x, y },
+                        style: {
+                            ...item.style,
+                            width: `${width}px`,
+                            height: `${height}px`,
+                            left: `${x}px`,
+                            top: `${y}px`
+                        }
+                    };
+                }
+                return item;
+            });
+            saveToHistory(newItems);
+            return newItems;
+        });
+    }, [saveToHistory]);
+
     // Handle drag and drop
     const handleDragEnd = (event) => {
         const { active, over } = event;
@@ -146,11 +192,20 @@ function AppBuilderPage() {
             // Xác định parentId và order
             let parentId = null;
             let order = 0;
+            let initialPosition = { x: 20, y: 20 }; // Default position with padding
 
             if (over.id === 'canvas-area') {
                 // Thêm vào root level với vị trí tự do
                 parentId = null;
                 order = canvasItems.filter(item => !item.parentId).length;
+                // Calculate initial position based on drop location
+                if (event.over && event.over.rect) {
+                    const rect = event.over.rect;
+                    initialPosition = {
+                        x: Math.max(20, Math.round((event.activatorEvent?.clientX || 0) - rect.left) / 20) * 20,
+                        y: Math.max(20, Math.round((event.activatorEvent?.clientY || 0) - rect.top) / 20) * 20
+                    };
+                }
             } else if (over.id.startsWith('comp-')) {
                 // Thêm vào container/row/grid
                 const parentItem = canvasItems.find(i => i.id === over.id);
@@ -162,6 +217,70 @@ function AppBuilderPage() {
                     parentId = null;
                     order = canvasItems.filter(item => !item.parentId).length;
                 }
+            }
+
+            // Helper function to calculate appropriate size for control components
+            const getControlComponentSize = (type, defaultStyle) => {
+                const controlSizes = {
+                    'button': { width: 120, height: 40 },
+                    'checkbox': { width: 150, height: 30 },
+                    'switch': { width: 100, height: 30 },
+                    'addTaskButton': { width: 140, height: 40 },
+                    'viewSwitcher': { width: 200, height: 40 },
+                    'filterBar': { width: 250, height: 40 },
+                    'sortDropdown': { width: 150, height: 40 },
+                    'searchBox': { width: 250, height: 40 },
+                    'databaseTitle': { width: 300, height: 50 },
+                    'input': { width: 250, height: 40 },
+                    'select': { width: 250, height: 40 },
+                    'datePicker': { width: 250, height: 40 },
+                };
+                
+                if (controlSizes[type]) {
+                    return controlSizes[type];
+                }
+                
+                // For other components with 'auto' width/height
+                if (defaultStyle?.width === 'auto' || defaultStyle?.height === 'auto') {
+                    return { width: 150, height: 40 };
+                }
+                
+                return { width: 400, height: 200 };
+            };
+            
+            const defaultWidth = toolData.defaultStyle?.width || 400;
+            const defaultHeight = toolData.defaultStyle?.height || 200;
+            
+            let width, height;
+            
+            // Check if it's a control component with 'auto' size
+            if (defaultWidth === 'auto' || defaultHeight === 'auto') {
+                const controlSize = getControlComponentSize(toolData.type, toolData.defaultStyle);
+                width = controlSize.width;
+                height = controlSize.height;
+            } else if (typeof defaultWidth === 'string') {
+                // Parse string values like "250px" or "100%"
+                if (defaultWidth.includes('px')) {
+                    width = parseInt(defaultWidth) || 400;
+                } else if (defaultWidth === '100%') {
+                    width = 400; // Default width for 100% components
+                } else {
+                    width = 400;
+                }
+            } else {
+                width = defaultWidth;
+            }
+            
+            if (typeof defaultHeight === 'string') {
+                if (defaultHeight.includes('px')) {
+                    height = parseInt(defaultHeight) || 200;
+                } else if (defaultHeight === 'auto') {
+                    height = 40; // Default height for auto components
+                } else {
+                    height = 200;
+                }
+            } else {
+                height = defaultHeight;
             }
 
             const newItem = { 
@@ -179,15 +298,17 @@ function AppBuilderPage() {
                 parentId: parentId,
                 children: [],
                 order: order,
-                position: null, // Không cần position nữa, dùng flow layout
+                position: initialPosition,
                 props: { 
                     ...(toolData.defaultProps || {}),
                     events: (toolData.defaultProps?.events || {})
                 },
                 style: { 
                     ...(toolData.defaultStyle || {}),
-                    width: toolData.defaultStyle?.width || '100%',
-                    height: toolData.defaultStyle?.height || 'auto'
+                    width: `${width}px`,
+                    height: `${height}px`,
+                    left: `${initialPosition.x}px`,
+                    top: `${initialPosition.y}px`
                 }
             };
 
@@ -670,6 +791,8 @@ function AppBuilderPage() {
                                 onSelectItem={setSelectedId} 
                                 isPreview={isPreviewMode} 
                                 navigate={navigate}
+                                onPositionChange={handlePositionChange}
+                                onSizeChange={handleSizeChange}
                                 searchQuery={searchQuery}
                                 filterTag={filterTag}
                                 context={appState}

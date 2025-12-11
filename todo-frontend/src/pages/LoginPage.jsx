@@ -5,8 +5,6 @@ import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 
 function LoginPage({ onLoginSuccess }) {
-    // (TOÀN BỘ LOGIC STATE VÀ HÀM CỦA BẠN GIỮ NGUYÊN)
-    // ...
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
@@ -43,7 +41,7 @@ function LoginPage({ onLoginSuccess }) {
             onLoginSuccess();
         } catch (error) {
             console.error('Lỗi xác thực Google với BE:', error);
-            setMessage('Xác thực Google thất bại. Vui lòng thử lại.');
+            setMessage(error.response?.data?.message || 'Xác thực Google thất bại. Vui lòng thử lại.');
         }
     };
 
@@ -51,7 +49,6 @@ function LoginPage({ onLoginSuccess }) {
         console.error('Đăng nhập Google thất bại');
         setMessage('Không thể đăng nhập với Google.');
     };
-    // (Kết thúc Logic)
 
     // --- TÁI CẤU TRÚC TOÀN BỘ JSX BẰNG THEME MỚI (SAGE/PEACH) ---
     return (
@@ -108,7 +105,7 @@ function LoginPage({ onLoginSuccess }) {
                 <div className="flex-grow border-t border-neutral-200"></div>
             </div>
             
-            {/* 4. Nút Google (style cho nó nằm giữa) */}
+            {/* Nút Google */}
             <div className="flex justify-center">
                 <GoogleLogin
                     onSuccess={handleGoogleSuccess}

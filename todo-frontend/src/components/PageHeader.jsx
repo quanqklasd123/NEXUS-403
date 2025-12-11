@@ -9,9 +9,6 @@ import apiService from '../services/apiService';
 const getPageTitle = (pathname) => {
     const titleMap = {
         '/': 'My Apps',
-        '/tasks': 'My Tasks',
-        '/kanban': 'Kanban Board',
-        '/calendar': 'Calendar',
         '/marketplace': 'Marketplace',
         '/app-builder': 'App Builder',
         '/settings': 'Settings',
@@ -24,9 +21,6 @@ const getPageTitle = (pathname) => {
     }
 
     // Check for dynamic routes
-    if (pathname.startsWith('/tasks/')) {
-        return 'Task Details';
-    }
     if (pathname.startsWith('/app-builder/')) {
         return 'App Builder';
     }

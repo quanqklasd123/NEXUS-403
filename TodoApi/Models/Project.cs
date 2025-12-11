@@ -29,5 +29,12 @@ namespace TodoApi.Models
         // --- Quan hệ với User ---
         [BsonElement("appUserId")]
         public string AppUserId { get; set; }
+
+        // --- Marketplace fields ---
+        [BsonElement("category")]
+        public string? Category { get; set; } // Category name
+
+        [BsonElement("price")]
+        public string? Price { get; set; } // null = Free
     }
 }

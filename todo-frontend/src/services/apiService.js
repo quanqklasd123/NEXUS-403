@@ -81,6 +81,10 @@ const apiService = {
         return apiClient.get('/auth/me');
     },
 
+    googleLogin: (idToken) => {
+        return apiClient.post('/auth/google-login', { idToken });
+    },
+
     // --- TodoLists ---
     getTodoLists: () => {
         return apiClient.get('/todolists');
@@ -140,8 +144,15 @@ const apiService = {
         return apiClient.get('/todoitems/my-all');
     },
 
-    getMarketplaceApps: () => {
-        return apiClient.get('/marketplace/apps');
+    getMarketplaceApps: (category) => {
+        const url = category && category !== 'All' 
+            ? `/marketplace/apps?category=${encodeURIComponent(category)}`
+            : '/marketplace/apps';
+        return apiClient.get(url);
+    },
+
+    getMarketplaceAppDetail: (id) => {
+        return apiClient.get(`/marketplace/apps/${id}`);
     },
 
     installApp: (id) => {
@@ -151,6 +162,15 @@ const apiService = {
     // HÀM MỚI: Lấy các component đã cài để dùng trong Builder
     getMyInstalledComponents: () => {
         return apiClient.get('/marketplace/my-components');
+    },
+
+    // Category APIs
+    getCategories: () => {
+        return apiClient.get('/marketplace/categories');
+    },
+
+    createCategory: (data) => {
+        return apiClient.post('/marketplace/categories', data);
     },
 
 

@@ -488,6 +488,7 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
     const layoutComponents = ['container', 'card', 'row', 'grid', 'image', 'chart', 'tabs', 'modal', 'statCard', 'dataTable', 'listView'];
     const formComponents = ['button', 'input', 'select', 'checkbox', 'text', 'datePicker', 'richText', 'fileUpload', 'switch'];
     const dataComponents = ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'];
+    const controlComponents = ['viewSwitcher', 'filterBar', 'searchBox', 'sortDropdown', 'addTaskButton', 'databaseTitle'];
     
     // Border giống nhau trong cả preview và non-preview mode
     const getBorder = () => {
@@ -508,6 +509,11 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
     // Không có onClick trong cả hai mode để giao diện giống nhau
     const handleClick = undefined;
     const hoverClass = '';
+
+    // Control components - no wrapper, return content directly
+    if (controlComponents.includes(item.type)) {
+        return content();
+    }
 
     // Với input/button... style nằm trong contentStyle
     if (formComponents.includes(item.type)) {

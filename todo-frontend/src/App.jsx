@@ -1,14 +1,10 @@
 // src/App.jsx
-import KanbanPage from './pages/KanbanPage'
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 // --- 1. IMPORT CÁC TRANG VÀ COMPONENT ---
 import LoginPage from './pages/LoginPage';
-import TodoList from './pages/TodoList'; // (Đây là trang "My Tasks" cũ)
-import ListDetailPage from './pages/ListDetailPage';
 import RegisterPage from './pages/RegisterPage';
 import Sidebar from './components/Sidebar'; // <-- IMPORT SIDEBAR MỚI (Xanh rêu)
-import CalendarPage from './pages/CalendarPage';
 import MarketplacePage from './pages/MarketplacePage'; // <-- Thêm
 import AppBuilderPage from './pages/AppBuilderPage';
 import AppBuilderListPage from './pages/AppBuilderListPage'; // <-- App Builder Projects List
@@ -125,9 +121,6 @@ function AppContent() {
 
                                 <Route path="/" element={<Navigate to="/login" replace />} />
 
-                                <Route path="/kanban" element={<KanbanPage />} />
-                                {/* <Route path="/calendar" element={...} /> */}
-
                             </>
 
                         ) : (
@@ -136,17 +129,6 @@ function AppContent() {
                             <>
                                 {/* TRANG CHỦ "/" BÂY GIỜ LÀ MY APPS */}
                                 <Route path="/" element={<MyAppPage />} />
-
-                                {/* Trang "/tasks" VẪN LÀ TodoList */}
-                                <Route path="/tasks" element={<TodoList />} />
-
-                                {/* Trang chi tiết (đổi 'list' thành 'tasks') */}
-                                <Route path="/tasks/:id" element={<ListDetailPage />} />
-
-                                {/* THÊM ROUTE MỚI CHO KANBAN */}
-                                <Route path="/kanban" element={<KanbanPage />} />
-                                {/* <Route path="/calendar" element={...} /> */}
-                                <Route path="/calendar" element={<CalendarPage />} />
 
                                 {/* Tuyến đường cho Marketplace */}
                                 <Route path="/marketplace" element={<MarketplacePage />} />
@@ -164,10 +146,6 @@ function AppContent() {
 
                                 {/* Tuyến đường cho Admin Area */}
                                 <Route path="/admin" element={<AdminPage />} />
-
-                                {/* (Các link "giả" từ Sidebar) */}
-                                {/* <Route path="/kanban" element={...} /> */}
-                                {/* <Route path="/calendar" element={...} /> */}
 
                                 {/* (Các link "bảo vệ" giữ nguyên) */}
                                 <Route path="/login" element={<Navigate to="/" replace />} />
