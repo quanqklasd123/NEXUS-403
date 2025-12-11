@@ -5,11 +5,11 @@ import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom';
 // --- IMPORT CSS FILE ---
 import './index.css'
-// --- 1. IMPORT PROVIDER CỦA GOOGLE ---
+// --- IMPORT GOOGLE OAUTH PROVIDER ---
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-// --- 2. LẤY CLIENT ID CỦA BẠN ---
-const GOOGLE_CLIENT_ID = "1010300950363-kqkr35p43a655gtt6lrn70gsijock5lh.apps.googleusercontent.com";
+// Google Client ID
+const GOOGLE_CLIENT_ID = "381319007299-vj3d380tr885dlbmdjo1t8f7emoo1hs7.apps.googleusercontent.com";
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

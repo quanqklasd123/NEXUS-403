@@ -1,13 +1,14 @@
 // Program.cs
-using Microsoft.AspNetCore.Authentication.JwtBearer; // Thêm
-using Microsoft.AspNetCore.Identity; // Thêm
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens; // Thêm
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Text; // Thêm
+using System.Security.Claims;
+using System.Text;
+using System.Linq;
 using TodoApi.Data;
 using TodoApi.Models;
-using TodoApi.AI;
+using MongoDB.Driver;
 
 // --- ĐẶT TÊN POLICY Ở ĐÂY ĐỂ DÙNG LẠI ---
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
@@ -24,33 +25,108 @@ builder.Services.AddCors(options =>
                       {
                           // Cho phép các nguồn gốc này
                           policy.WithOrigins("http://localhost:3000", // Cổng mặc định của React
-                                           "http://localhost:5173") // Cổng mặc định của Vue/Vite
+                                           "http://localhost:5173", // Cổng mặc định của Vite
+                                           "http://localhost:5174") // Cổng Vite khi 5173 bị chiếm
                                 .AllowAnyHeader()   // Cho phép mọi header
-                                .AllowAnyMethod();  // Cho phép mọi phương thức (GET, POST, PUT...)
+                                .AllowAnyMethod()   // Cho phép mọi phương thức (GET, POST, PUT...)
+                                .AllowCredentials(); // Cho phép gửi credentials (cookies, headers)
                       });
 });
 // ===================================
 
-// 1. Thêm Services
-builder.Services.AddControllers();
+// 1. Thêm Services với JSON options để tự động map camelCase
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Cho phép tự động map giữa camelCase (frontend) và PascalCase (backend)
+        // ASP.NET Core mặc định sẽ tự động map, nhưng cấu hình rõ ràng để đảm bảo
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
-// 2. Cấu hình DbContext (Giữ nguyên)
-var connectionString = configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<TodoContext>(opt =>
-    opt.UseSqlServer(connectionString));
+// 2. Cấu hình MongoDB
+var mongoConnectionString = configuration.GetConnectionString("MongoDbConnection");
+var mongoDatabaseName = configuration.GetConnectionString("MongoDbDatabaseName") ?? "NexusDb";
+
+if (string.IsNullOrEmpty(mongoConnectionString))
+{
+    throw new InvalidOperationException("MongoDbConnection string is not configured");
+}
+
+// Đảm bảo connection string có TLS options
+if (!mongoConnectionString.Contains("tls=") && !mongoConnectionString.Contains("ssl="))
+{
+    // Thêm TLS options nếu chưa có
+    var separator = mongoConnectionString.Contains("?") ? "&" : "?";
+    mongoConnectionString = $"{mongoConnectionString}{separator}tls=true";
+}
+
+// Tạo MongoDB client settings với TLS
+var mongoClientSettings = MongoDB.Driver.MongoClientSettings.FromConnectionString(mongoConnectionString);
+mongoClientSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
+mongoClientSettings.ConnectTimeout = TimeSpan.FromSeconds(10);
+mongoClientSettings.SocketTimeout = TimeSpan.FromSeconds(10);
+
+// Tạo MongoDB client với error handling
+try
+{
+    var mongoClient = new MongoDB.Driver.MongoClient(mongoClientSettings);
+    builder.Services.AddSingleton<MongoDB.Driver.IMongoClient>(mongoClient);
+    builder.Services.AddScoped<MongoDbContext>(sp =>
+    {
+        var client = sp.GetRequiredService<MongoDB.Driver.IMongoClient>();
+        return new MongoDbContext(client, mongoDatabaseName);
+    });
+    
+    // Test connection synchronously để catch lỗi sớm
+    try
+    {
+        var testClient = new MongoDB.Driver.MongoClient(mongoClientSettings);
+        var database = testClient.GetDatabase(mongoDatabaseName);
+        var collections = await database.ListCollectionNamesAsync();
+        await collections.FirstOrDefaultAsync();
+        Console.WriteLine($"✓ MongoDB connected successfully to database: {mongoDatabaseName}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"✗ MongoDB connection test error: {ex.Message}");
+        Console.WriteLine($"  Connection string: {mongoConnectionString.Substring(0, Math.Min(50, mongoConnectionString.Length))}...");
+        Console.WriteLine($"  Full error: {ex}");
+        // Không throw để app vẫn có thể start, nhưng sẽ log lỗi
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"MongoDB client creation error: {ex.Message}");
+    throw;
+}
+
+// 2b. Đã chuyển hoàn toàn sang MongoDB - không còn dùng SQL Server/TodoContext
+// TodoContext đã được thay thế bằng MongoDbContext cho tất cả business data
+// Identity cũng đã chuyển sang MongoDB với custom stores
 
 // 3. Cấu hình AutoMapper (Giữ nguyên)
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// Đăng ký AiModelService để có thể "tiêm" nó vào Controller
-builder.Services.AddSingleton<AiModelService>();
+// AI và Google Calendar services đã được xóa để làm sạch dự án
 
 // --- BẮT ĐẦU CẤU HÌNH IDENTITY & JWT ---
 
-// 4. Thêm Identity
-builder.Services.AddIdentity<AppUser, IdentityRole>()
-    .AddEntityFrameworkStores<TodoContext>()
+// 4. Thêm Identity với MongoDB (thay vì SQL Server)
+builder.Services.AddIdentity<TodoApi.Models.MongoIdentity.AppUser, TodoApi.Models.MongoIdentity.IdentityRole>()
     .AddDefaultTokenProviders();
+
+// Đăng ký custom MongoDB stores
+builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IUserStore<TodoApi.Models.MongoIdentity.AppUser>>(sp =>
+{
+    var mongoContext = sp.GetRequiredService<MongoDbContext>();
+    return new TodoApi.Data.MongoIdentity.MongoUserStore(mongoContext.Database);
+});
+
+builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IRoleStore<TodoApi.Models.MongoIdentity.IdentityRole>>(sp =>
+{
+    var mongoContext = sp.GetRequiredService<MongoDbContext>();
+    return new TodoApi.Data.MongoIdentity.MongoRoleStore(mongoContext.Database);
+});
 
 // 5. Thêm Xác thực (Authentication) và cấu hình JWT
 builder.Services.AddAuthentication(options =>
@@ -69,11 +145,49 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = configuration["JwtConfig:Audience"],
         ValidIssuer = configuration["JwtConfig:Issuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Secret"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Secret"])),
+        // Cấu hình để đọc role claims từ token
+        RoleClaimType = ClaimTypes.Role,
+        NameClaimType = ClaimTypes.Name
     };
 });
 
-builder.Services.AddSingleton<AiPredictionService>();
+// 6. Thêm Authorization để hỗ trợ role-based access control
+builder.Services.AddAuthorization(options =>
+{
+    // Sử dụng case-insensitive role matching - chỉ kiểm tra claims từ JWT token
+    options.AddPolicy("AdminOnly", policy => 
+        policy.RequireAssertion(context => 
+        {
+            var roleClaims = context.User.Claims
+                .Where(c => c.Type == ClaimTypes.Role || c.Type == "role")
+                .Select(c => c.Value)
+                .ToList();
+            
+            // Kiểm tra case-insensitive
+            return roleClaims.Any(role => 
+                role.Equals("Admin", StringComparison.OrdinalIgnoreCase) || 
+                role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase));
+        }));
+    
+    options.AddPolicy("UserOrAdmin", policy => 
+        policy.RequireAssertion(context => 
+        {
+            var roleClaims = context.User.Claims
+                .Where(c => c.Type == ClaimTypes.Role || c.Type == "role")
+                .Select(c => c.Value)
+                .ToList();
+            
+            // Kiểm tra case-insensitive
+            return roleClaims.Any(role => 
+                role.Equals("User", StringComparison.OrdinalIgnoreCase) || 
+                role.Equals("USER", StringComparison.OrdinalIgnoreCase) ||
+                role.Equals("Admin", StringComparison.OrdinalIgnoreCase) || 
+                role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase));
+        }));
+});
+
+// AiPredictionService đã được xóa
 
 // --- KẾT THÚC CẤU HÌNH ---
 
@@ -124,15 +238,10 @@ app.UseHttpsRedirection();
 
 app.UseCors(MyAllowSpecificOrigins); // <-- THÊM DÒNG NÀY
 
-app.UseAuthentication();
-app.UseAuthorization();
-// ========================================
-
-// --- THÊM 2 DÒNG NÀY ---
-// (QUAN TRỌNG: Phải nằm TRƯỚC UseAuthorization)
+// (QUAN TRỌNG: Phải nằm SAU UseCors và TRƯỚC MapControllers)
 app.UseAuthentication(); // Bật "Xác thực"
 app.UseAuthorization();  // Bật "Quyền"
-// --- KẾT THÚC THÊM ---
+// ========================================
 
 await SeedRoles(app);
 
@@ -144,8 +253,8 @@ async Task SeedRoles(WebApplication app)
     // 1. Tạo một "scope" (phạm vi) dịch vụ để lấy các service
     using (var scope = app.Services.CreateScope())
     {
-        // 2. Lấy RoleManager từ service provider
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        // 2. Lấy RoleManager từ service provider (sử dụng custom IdentityRole cho MongoDB)
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<TodoApi.Models.MongoIdentity.IdentityRole>>();
 
         // 3. Danh sách các role bạn muốn tạo
         string[] roleNames = { "Admin", "User" };
@@ -157,7 +266,12 @@ async Task SeedRoles(WebApplication app)
             if (!roleExists)
             {
                 // 5. Nếu chưa, tạo role mới
-                await roleManager.CreateAsync(new IdentityRole(roleName));
+                var role = new TodoApi.Models.MongoIdentity.IdentityRole
+                {
+                    Name = roleName,
+                    NormalizedName = roleName.ToUpper()
+                };
+                await roleManager.CreateAsync(role);
             }
         }
     }

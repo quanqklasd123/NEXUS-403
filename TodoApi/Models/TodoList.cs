@@ -1,27 +1,25 @@
 // Models/TodoList.cs
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace TodoApi.Models
 {
     public class TodoList
     {
-        public long Id { get; set; } // Khóa chính của List
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
-        [Required] // Bắt buộc phải có tên
-        [StringLength(100)]
+        [BsonElement("name")]
         public string Name { get; set; }
 
-        // --- Đây là phần quan trọng của "Quan hệ" ---
-        // Một List sẽ chứa một bộ sưu tập các Items
-        // Chúng ta khởi tạo nó luôn để tránh lỗi null
-        public ICollection<TodoItem> Items { get; set; } = new List<TodoItem>();
+        // --- MongoDB: Items có thể embedded hoặc reference
+        // Tạm thời dùng reference (lưu ObjectId của TodoItem)
+        [BsonElement("itemIds")]
+        public List<string> ItemIds { get; set; } = new List<string>();
         
         // 1. Khóa ngoại: Lưu ID của User sở hữu List này
-        [ForeignKey("AppUser")]
+        [BsonElement("appUserId")]
         public string AppUserId { get; set; }
-
-        // 2. Thuộc tính điều hướng (Navigation property)
-        public AppUser AppUser { get; set; }
     }
 }

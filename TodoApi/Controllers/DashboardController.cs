@@ -1,24 +1,25 @@
 // TodoApi/Controllers/DashboardController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using TodoApi.Data;
-using TodoApi.Dtos; // <-- Import DTO mới
+using TodoApi.Dtos;
+using TodoApi.Models;
+using MongoDB.Driver;
 
 namespace TodoApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // Chỉ người đã đăng nhập mới được xem
+    [Authorize]
     public class DashboardController : ControllerBase
     {
-        private readonly TodoContext _context;
+        private readonly MongoDbContext _mongoContext;
 
-        public DashboardController(TodoContext context)
+        public DashboardController(MongoDbContext mongoContext)
         {
-            _context = context;
+            _mongoContext = mongoContext;
         }
 
         // Hàm helper để lấy UserId (giống các controller khác)
@@ -34,21 +35,25 @@ namespace TodoApi.Controllers
             var userId = GetCurrentUserId();
 
             // 1. Đếm tổng số List (thuộc về user này)
-            var totalLists = await _context.TodoLists
-                .Where(list => list.AppUserId == userId)
-                .CountAsync();
+            var listFilter = Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId);
+            var totalLists = (int)await _mongoContext.TodoLists.CountDocumentsAsync(listFilter);
 
-            // 2. Đếm tổng số Task (chỉ trong các List thuộc về user này)
-            var totalTasks = await _context.TodoItems
-                .Where(item => item.TodoList.AppUserId == userId)
-                .CountAsync();
+            // 2. Lấy tất cả listIds của user
+            var userLists = await _mongoContext.TodoLists.Find(listFilter).ToListAsync();
+            var listIds = userLists.Select(l => l.Id).ToList();
 
-            // 3. Đếm số Task đã hoàn thành (tương tự)
-            var completedTasks = await _context.TodoItems
-                .Where(item => item.TodoList.AppUserId == userId && item.Status == 2) // Giả sử Status == 2 là "Đã hoàn thành"
-                .CountAsync();
+            // 3. Đếm tổng số Task (chỉ trong các List thuộc về user này)
+            var itemFilter = Builders<TodoItem>.Filter.In(item => item.TodoListId, listIds);
+            var totalTasks = (int)await _mongoContext.TodoItems.CountDocumentsAsync(itemFilter);
 
-            // 4. Tạo DTO kết quả và trả về
+            // 4. Đếm số Task đã hoàn thành (Status == 2)
+            var completedFilter = Builders<TodoItem>.Filter.And(
+                Builders<TodoItem>.Filter.In(item => item.TodoListId, listIds),
+                Builders<TodoItem>.Filter.Eq(item => item.Status, 2)
+            );
+            var completedTasks = (int)await _mongoContext.TodoItems.CountDocumentsAsync(completedFilter);
+
+            // 5. Tạo DTO kết quả và trả về
             var stats = new DashboardStatsDTO
             {
                 TotalLists = totalLists,

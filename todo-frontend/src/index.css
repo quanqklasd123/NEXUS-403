@@ -78,3 +78,16 @@
     font-family: var(--font-family-sans);
   }
 }
+
+/* Fix for react-rnd control components to fit content */
+.control-component-rnd {
+  width: fit-content !important;
+  height: fit-content !important;
+  display: inline-block !important;
+}
+
+.control-component-rnd > div {
+  width: fit-content !important;
+  height: fit-content !important;
+  display: inline-block !important;
+}

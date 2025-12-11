@@ -6,7 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using TodoApi.Dtos;
-using TodoApi.Models;
+using TodoApi.Models.MongoIdentity;
 using System.Threading.Tasks;
 using Google.Apis.Auth;
 
@@ -98,80 +98,6 @@ namespace TodoApi.Controllers
             return Ok(new { message = "Admin account created successfully!" });
         }
 
-        // --- API MỚI CHO ĐĂNG NHẬP BẰNG GOOGLE ---
-        // POST: api/auth/google-login
-        [HttpPost("google-login")]
-        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDTO request)
-        {
-            // 1. Lấy Client ID của bạn từ file appsettings.json
-            var googleClientId = _configuration["GoogleAuth:ClientId"];
-            if (string.IsNullOrEmpty(googleClientId))
-            {
-                return StatusCode(500, "Google ClientId chưa được cấu hình.");
-            }
-
-            // 2. Cấu hình để "đọc" token
-            var settings = new GoogleJsonWebSignature.ValidationSettings()
-            {
-                Audience = new[] { googleClientId }
-            };
-
-            GoogleJsonWebSignature.Payload payload;
-            try
-            {
-                // 3. (QUAN TRỌNG) Xác thực token với máy chủ của Google
-                // Bước này sẽ thất bại nếu token là giả mạo hoặc hết hạn
-                payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
-            }
-            catch (Exception ex)
-            {
-                return Unauthorized($"Xác thực Google thất bại: {ex.Message}");
-            }
-
-            // 4. (THÀNH CÔNG!) Token hợp lệ. Lấy thông tin user
-            var userEmail = payload.Email;
-            
-            // Tạo username hợp lệ từ email (chỉ lấy phần trước @, bỏ ký tự đặc biệt)
-            var userName = userEmail.Split('@')[0]; // Ví dụ: "tvquan2004@gmail.com" -> "tvquan2004"
-
-            // 5. Tìm user trong CSDL của BẠN
-            var user = await _userManager.FindByEmailAsync(userEmail);
-
-            // 6. Nếu user CHƯA TỒN TẠI -> Tự động tạo tài khoản mới
-            if (user == null)
-            {
-                user = new AppUser
-                {
-                    Email = userEmail,
-                    UserName = userName, // Dùng phần đầu email làm username (hợp lệ)
-                    EmailConfirmed = true // Google đã xác thực email này rồi
-                };
-
-                // Tạo user mới (không cần mật khẩu)
-                var result = await _userManager.CreateAsync(user);
-                if (!result.Succeeded)
-                {
-                    return StatusCode(500, $"Lỗi khi tạo user mới: {result.Errors.FirstOrDefault()?.Description}");
-                }
-
-                // Tự động gán vai trò "User"
-                await _userManager.AddToRoleAsync(user, "User");
-            }
-
-            // 7. (ĐÃ TỒN TẠI hoặc VỪA TẠO) -> Tạo JWT Token của BẠN
-            // (Đây chính là hàm 'GenerateJwtToken' mà bạn đã viết)
-            var ourJwtToken = await GenerateJwtToken(user);
-
-            // 8. Trả về Token của BẠN cho React
-            return Ok(new AuthResponseDTO
-            {
-                UserId = user.Id,
-                Email = user.Email,
-                Token = ourJwtToken
-            });
-        }
-
-
         // POST: api/auth/login
         [HttpPost]
         [Route("login")]
@@ -184,6 +110,12 @@ namespace TodoApi.Controllers
             // Kiểm tra user và mật khẩu
             if (user != null && await _userManager.CheckPasswordAsync(user, loginDto.Password))
             {
+                // Kiểm tra xem user có bị khóa không
+                if (user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                {
+                    return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
+                }
+
                 // Nếu đúng, tạo Token
                 var tokenString = await GenerateJwtToken(user); // (Giữ nguyên hàm GenerateJwtToken)
 
@@ -198,6 +130,169 @@ namespace TodoApi.Controllers
 
             // Nếu sai, trả về lỗi "Unauthorized"
             return Unauthorized(new { message = "Invalid email or password" });
+        }
+
+        // POST: api/auth/google-login
+        [HttpPost]
+        [Route("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDTO googleDto)
+        {
+            try
+            {
+                // 1. Verify Google token
+                var clientId = _configuration["GoogleAuth:ClientId"];
+                if (string.IsNullOrEmpty(clientId))
+                {
+                    return BadRequest(new { message = "Google Client ID not configured" });
+                }
+
+                var settings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new[] { clientId }
+                };
+
+                GoogleJsonWebSignature.Payload payload;
+                try
+                {
+                    payload = await GoogleJsonWebSignature.ValidateAsync(googleDto.IdToken, settings);
+                }
+                catch (InvalidJwtException ex)
+                {
+                    return Unauthorized(new { message = "Invalid Google token", details = ex.Message });
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { message = "Error validating Google token", error = ex.Message });
+                }
+
+                // Kiểm tra email từ payload
+                if (string.IsNullOrEmpty(payload.Email))
+                {
+                    return BadRequest(new { message = "Google token does not contain email" });
+                }
+
+                // 2. Tìm hoặc tạo user
+                var user = await _userManager.FindByEmailAsync(payload.Email);
+                
+                if (user == null)
+                {
+                    // Tạo user mới nếu chưa tồn tại
+                    // Tạo UserName từ email (phần trước @) hoặc từ name
+                    var baseUserName = payload.Email?.Split('@')[0] ?? payload.Name?.Replace(" ", "") ?? "user";
+                    // Loại bỏ các ký tự đặc biệt không hợp lệ cho username
+                    baseUserName = System.Text.RegularExpressions.Regex.Replace(baseUserName ?? "", @"[^a-zA-Z0-9_]", "");
+                    if (string.IsNullOrEmpty(baseUserName))
+                    {
+                        baseUserName = "user";
+                    }
+                    
+                    var userName = baseUserName;
+                    var userNameCounter = 1;
+                    
+                    // Đảm bảo UserName là unique - thử tìm user với normalized name
+                    var normalizedUserName = userName.ToUpperInvariant();
+                    var existingUserByName = await _userManager.FindByNameAsync(normalizedUserName);
+                    while (existingUserByName != null && userNameCounter < 100)
+                    {
+                        userName = $"{baseUserName}{userNameCounter}";
+                        normalizedUserName = userName.ToUpperInvariant();
+                        existingUserByName = await _userManager.FindByNameAsync(normalizedUserName);
+                        userNameCounter++;
+                    }
+                    
+                    // Tạo password ngẫu nhiên mạnh (sẽ không bao giờ dùng để login)
+                    // Password phải đáp ứng yêu cầu: ít nhất 6 ký tự, có chữ hoa, chữ thường, số, ký tự đặc biệt
+                    var randomPassword = Guid.NewGuid().ToString().Replace("-", "") + "!@#$%^&*()ABCDEFG123456789";
+                    
+                    user = new AppUser
+                    {
+                        Email = payload.Email,
+                        UserName = userName,
+                        NormalizedUserName = normalizedUserName,
+                        NormalizedEmail = payload.Email.ToUpperInvariant(),
+                        SecurityStamp = Guid.NewGuid().ToString(),
+                        EmailConfirmed = true, // Google đã verify email
+                        ConcurrencyStamp = Guid.NewGuid().ToString()
+                    };
+
+                    var createResult = await _userManager.CreateAsync(user, randomPassword);
+                    if (!createResult.Succeeded)
+                    {
+                        // Trả về chi tiết lỗi để debug
+                        var errorMessages = createResult.Errors.Select(e => $"{e.Code}: {e.Description}").ToList();
+                        Console.WriteLine($"Failed to create user: {string.Join(", ", errorMessages)}");
+                        Console.WriteLine($"Email: {payload.Email}, UserName: {userName}");
+                        return BadRequest(new { 
+                            message = "Failed to create user", 
+                            errors = errorMessages,
+                            details = createResult.Errors.Select(e => new { e.Code, e.Description }).ToList()
+                        });
+                    }
+
+                    // Gán role "User" cho user mới
+                    await _userManager.AddToRoleAsync(user, "User");
+                }
+                else
+                {
+                    // Kiểm tra xem user có bị khóa không
+                    if (user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                    {
+                        return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
+                    }
+                }
+
+                // 3. Tạo JWT token
+                var tokenString = await GenerateJwtToken(user);
+
+                return Ok(new AuthResponseDTO
+                {
+                    UserId = user.Id,
+                    Email = user.Email,
+                    Token = tokenString
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log chi tiết lỗi để debug
+                Console.WriteLine($"Google login error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = "Error processing Google login", error = ex.Message, details = ex.StackTrace });
+            }
+        }
+
+        // GET: api/auth/me - Lấy thông tin user hiện tại và roles
+        [HttpGet("me")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token" });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+
+            return Ok(new
+            {
+                UserId = user.Id,
+                Email = user.Email,
+                UserName = user.UserName,
+                Roles = roles,
+                Claims = claims,
+                IsAdmin = roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase) || r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase))
+            });
         }
 
         // --- Hàm Private để tạo Token ---
@@ -217,16 +312,18 @@ namespace TodoApi.Controllers
             var userRoles = await _userManager.GetRolesAsync(user);
 
             // 2. Định nghĩa các "Claims" - thông tin chứa trong Token
-            // Bắt đầu với các claims cũ
+            // Bắt đầu với các claims cơ bản
             var authClaims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty)
             };
 
             // 3. Thêm các Role vào claims
-            // (ClaimTypes.Role là một hằng số "role" tiêu chuẩn)
+            // Sử dụng ClaimTypes.Role để ASP.NET Core có thể đọc được
             foreach (var userRole in userRoles)
             {
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));

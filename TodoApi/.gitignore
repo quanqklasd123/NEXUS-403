@@ -8,8 +8,12 @@
 *.user
 *.suo
 
-# Bỏ qua file config nhạy cảm (nếu bạn có)
-# appsettings.Development.json 
+# Bỏ qua file config nhạy cảm
+appsettings.json
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json.example
+!appsettings.Development.json.example 
 
 # --- Quy tắc cho Node.js (todo-frontend) ---
 node_modules/
