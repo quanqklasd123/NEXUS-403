@@ -1,0 +1,23 @@
+{
+  "JwtConfig": {
+    "Secret": "YOUR_JWT_SECRET_KEY_HERE",
+    "Issuer": "http://localhost:5205", 
+    "Audience": "http://localhost:5205" 
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "FrontendUrl": "http://localhost:5173",
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "MongoDbConnection": "YOUR_MONGODB_CONNECTION_STRING_HERE",
+    "MongoDbDatabaseName": "NexusDb"
+  },
+  "GoogleAuth": {
+    "ClientId": "YOUR_GOOGLE_CLIENT_ID_HERE"
+  }
+}
+

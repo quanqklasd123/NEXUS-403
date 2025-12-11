@@ -25,7 +25,7 @@ http://localhost:5205/api/google-calendar/callback
 1. Mở [Google Cloud Console](https://console.cloud.google.com/)
 2. Chọn project của bạn
 3. Vào **APIs & Services** > **Credentials**
-4. Tìm OAuth 2.0 Client ID của bạn (Client ID: `381319007299-vj3d380tr885dlbmdjo1t8f7emoo1hs7`)
+4. Tìm OAuth 2.0 Client ID của bạn (Client ID: `YOUR_CLIENT_ID`)
 5. Click vào tên của OAuth client để chỉnh sửa
 6. Cuộn xuống phần **Authorized redirect URIs**
 7. Click **+ ADD URI**

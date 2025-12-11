@@ -12,7 +12,7 @@ Lỗi này xảy ra khi origin (URL) của frontend chưa được thêm vào Go
 3. Vào **APIs & Services** > **Credentials**
 
 ### Bước 2: Tìm OAuth 2.0 Client ID
-1. Tìm Client ID: `381319007299-vj3d380tr885dlbmdjo1t8f7emoo1hs7.apps.googleusercontent.com`
+1. Tìm Client ID của bạn (ví dụ: `YOUR_CLIENT_ID.apps.googleusercontent.com`)
 2. Click vào để chỉnh sửa
 
 ### Bước 3: Thêm Authorized JavaScript origins

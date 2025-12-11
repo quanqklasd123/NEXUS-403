@@ -36,7 +36,7 @@
 1. Mở MongoDB Compass
 2. Dán connection string vào:
    ```
-   mongodb+srv://tvquan2004_db_user:8y5tfMD5Aj6qVjwk@nexus-cluster.p8uzm5c.mongodb.net/?appName=nexus-cluster&tls=true&retryWrites=true&w=majority
+   mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/?appName=nexus-cluster&tls=true&retryWrites=true&w=majority
    ```
 3. Click **Connect**
 
