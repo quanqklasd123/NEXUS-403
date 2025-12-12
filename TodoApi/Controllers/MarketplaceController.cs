@@ -15,22 +15,11 @@ namespace TodoApi.Controllers
     {
         private readonly MongoDbContext _mongoContext;
 
-        // Thêm biến _apps để lưu danh sách app động (giả lập)
-        private static List<MarketplaceAppDTO> _apps = new List<MarketplaceAppDTO>();
-
         public MarketplaceController(MongoDbContext mongoContext)
         {
             _mongoContext = mongoContext;
         }
-        // 1. CẬP NHẬT DỮ LIỆU MẪU: Thêm nhiều "Component" nhỏ
-        private static readonly List<MarketplaceAppDTO> _staticComponents = new()
-        {
-             new() { Id = "101", Name = "DatePicker Pro", Description = "Advanced date picker", Category = "Component", Color = "blue", IsInstalled = false },
-             new() { Id = "102", Name = "Chart.js Widget", Description = "Beautiful charts", Category = "Component", Color = "purple", IsInstalled = true },
-             new() { Id = "103", Name = "Stripe Payment Btn", Description = "Secure payment button", Category = "Component", Color = "indigo", IsInstalled = false },
-             new() { Id = "104", Name = "Rich Text Editor", Description = "WYSIWYG editor", Category = "Component", Color = "pink", IsInstalled = false },
-             new() { Id = "105", Name = "User Avatar Stack", Description = "Display avatars", Category = "Component", Color = "orange", IsInstalled = true }
-        };
+           // NOTE: Static/fake components removed — marketplace will only return published Projects.
 
         [HttpGet("apps")]
         public async Task<IActionResult> GetApps([FromQuery] string? category = null)
@@ -83,20 +72,8 @@ namespace TodoApi.Controllers
                 Price = p.Price
             }).ToList();
 
-            // 4. Gộp với danh sách Component tĩnh (filter theo category nếu có)
-            var filteredStaticComponents = _staticComponents;
-            if (!string.IsNullOrEmpty(category) && category != "All")
-            {
-                filteredStaticComponents = _staticComponents
-                    .Where(c => c.Category == category)
-                    .ToList();
-            }
-
-            var finalAppList = new List<MarketplaceAppDTO>();
-            finalAppList.AddRange(marketplaceApps);
-            finalAppList.AddRange(filteredStaticComponents);
-
-            return Ok(finalAppList);
+            // Return only published projects (no static/fake apps)
+            return Ok(marketplaceApps);
         }
 
         // GET: api/marketplace/apps/{id} - Xem chi tiết app (read-only)
@@ -124,29 +101,25 @@ namespace TodoApi.Controllers
                     Rating = 0,
                     Color = "sage",
                     IsInstalled = false,
-                    Price = project.Price
+                    Price = project.Price,
+                    JsonData = project.JsonData // include the appbuilder JSON so preview can render
                 };
                 return Ok(appDto);
             }
 
-            // Nếu không tìm thấy trong projects, tìm trong static components
-            var staticComponent = _staticComponents.FirstOrDefault(c => c.Id == id);
-            if (staticComponent != null)
-            {
-                return Ok(staticComponent);
-            }
-
+            // If not found among published projects, return NotFound
             return NotFound(new { message = "App not found" });
         }
 
         // GET: api/marketplace/my-components (CHO TRANG APP BUILDER)
-        // API này chỉ trả về các "Component" đã được "Install"
+        // Return installed components for the current user.
+        // Previously this returned a set of static fake components; that behavior
+        // has been removed. For now return an empty list (the App Builder will
+        // use installed UserApps instead).
         [HttpGet("my-components")]
         public IActionResult GetMyInstalledComponents()
         {
-             // Vẫn trả về component tĩnh đã cài
-             var myComponents = _staticComponents.Where(a => a.IsInstalled).ToList();
-             return Ok(myComponents);
+            return Ok(new List<MarketplaceAppDTO>());
         }
 
         // POST: api/marketplace/install/{id} (Xử lý cài đặt - tạo UserApp từ marketplace app)
@@ -246,8 +219,7 @@ namespace TodoApi.Controllers
                 Price = string.IsNullOrEmpty(dto.Price) ? null : dto.Price
             };
 
-            // Thêm vào danh sách chợ
-            _apps.Add(newMarketplaceApp);
+            // Previously we kept a separate in-memory marketplace list; removed.
 
             return Ok(new { message = "Published successfully!", marketplaceId = projectId });
         }

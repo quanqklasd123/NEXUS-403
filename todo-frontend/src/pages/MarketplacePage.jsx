@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import apiService from '../services/apiService';
+import { isAdmin } from '../utils/jwtUtils';
 import { FiSearch, FiFilter, FiDownload, FiStar, FiSettings, FiCheck, FiX, FiPlus, FiEye } from 'react-icons/fi';
 
 // --- MODAL XEM APP DETAIL (READ-ONLY) ---
@@ -223,7 +224,7 @@ const AppCard = ({ app, onInstall, onView }) => {
     };
     
     return (
-        <div className={`bg-white border border-neutral-200 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all ${app.isInstalled ? 'border-success/50 bg-success/5' : ''}`}>
+        <div onClick={() => onView(app)} className={`bg-white border border-neutral-200 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all ${app.isInstalled ? 'border-success/50 bg-success/5' : ''}`}>
             {/* Icon */}
             <div className={`w-12 h-12 ${colorClasses[app.color] || 'bg-neutral-400'} rounded-xl mx-auto mb-3 flex items-center justify-center shadow-sm`}>
                 <FiSettings className="w-6 h-6 text-white" />
@@ -248,7 +249,7 @@ const AppCard = ({ app, onInstall, onView }) => {
                 
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => onView(app)}
+                        onClick={(e) => { e.stopPropagation(); onView(app); }}
                         className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
                         title="View details"
                     >
@@ -260,7 +261,7 @@ const AppCard = ({ app, onInstall, onView }) => {
                         </button>
                     ) : (
                         <button 
-                            onClick={() => onInstall(app.id)}
+                            onClick={(e) => { e.stopPropagation(); onInstall(app.id); }}
                             className="text-xs font-bold text-sage-600 hover:text-sage-800 hover:underline"
                         >
                             Install
@@ -283,6 +284,7 @@ function MarketplacePage() {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
     
     // Load categories và apps
     useEffect(() => {
@@ -318,10 +320,10 @@ function MarketplacePage() {
         }
     };
 
-    // Xem app detail
+    // Xem app preview (read-only)
     const handleViewApp = (app) => {
-        setSelectedApp(app);
-        setIsDetailModalOpen(true);
+        if (!app) return;
+        navigate(`/marketplace/preview/${app.id}`);
     };
 
     // Tạo category mới
@@ -331,6 +333,9 @@ function MarketplacePage() {
             setCategories(res.data || []);
         });
     };
+
+    // Kiểm tra quyền admin (tùy vào JWT trong localStorage)
+    const admin = isAdmin();
 
     // Logic Lọc & Tìm kiếm (Client-side cho search)
     const filteredApps = apps.filter(app => {
@@ -347,7 +352,7 @@ function MarketplacePage() {
     return (
         <div className="flex flex-col gap-8">
             {/* Featured Banner */}
-            <section className="bg-gradient-to-r from-sage-50 to-peach-50 rounded-2xl p-8 border border-sage-100 relative overflow-hidden">
+            <section className="bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-2xl p-8 border border-neutral-100 relative overflow-hidden">
                 <div className="relative z-10">
                     <span className="px-3 py-1 bg-white text-sage-700 text-xs font-bold rounded-full mb-4 inline-block shadow-sm">NEW ARRIVAL</span>
                     <h2 className="text-3xl font-bold text-neutral-800 mb-2">AI Agent Builder</h2>
@@ -392,13 +397,20 @@ function MarketplacePage() {
                                 </button>
                             ))}
                         </div>
-                        <button
-                            onClick={() => setIsCreateCategoryModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-all whitespace-nowrap"
-                        >
-                            <FiPlus className="w-4 h-4" />
-                            <span className="text-sm font-medium">New Category</span>
-                        </button>
+                        {admin ? (
+                            <button
+                                onClick={() => setIsCreateCategoryModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-all whitespace-nowrap"
+                            >
+                                <FiPlus className="w-4 h-4" />
+                                <span className="text-sm font-medium">New Category</span>
+                            </button>
+                        ) : (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-neutral-400 whitespace-nowrap">
+                                <FiPlus className="w-4 h-4" />
+                                <span className="text-sm">New Category</span>
+                            </div>
+                        )}
                         <div className="text-sm text-neutral-400 font-medium hidden md:block whitespace-nowrap">
                             {filteredApps.length} apps found
                         </div>
@@ -425,19 +437,14 @@ function MarketplacePage() {
             </section>
 
             {/* Modals */}
-            <AppDetailModal
-                app={selectedApp}
-                isOpen={isDetailModalOpen}
-                onClose={() => {
-                    setIsDetailModalOpen(false);
-                    setSelectedApp(null);
-                }}
-            />
-            <CreateCategoryModal
-                isOpen={isCreateCategoryModalOpen}
-                onClose={() => setIsCreateCategoryModalOpen(false)}
-                onCreate={handleCategoryCreated}
-            />
+            {/* App detail modal removed; preview handled by dedicated route */}
+            {admin && (
+                <CreateCategoryModal
+                    isOpen={isCreateCategoryModalOpen}
+                    onClose={() => setIsCreateCategoryModalOpen(false)}
+                    onCreate={handleCategoryCreated}
+                />
+            )}
         </div>
     );
 }
