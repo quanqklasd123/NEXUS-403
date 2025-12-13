@@ -165,8 +165,15 @@ export function ViewSwitcherRender({ props = {}, style, isPreview = false }) {
         window.dispatchEvent(new CustomEvent('view-change', { detail: { view } }));
     };
 
+    const viewSwitcherStyle = {
+        ...style,
+        overflow: 'hidden',
+        width: style.width || 'auto', // ViewSwitcher không nên có width: 100%
+        minWidth: style.minWidth || 'fit-content',
+    };
+
     return (
-        <div style={style} className="flex items-center">
+        <div style={viewSwitcherStyle} className="flex items-center overflow-hidden">
             {views.map(view => {
                 const Icon = VIEW_ICONS[view] || FiTable;
                 const isActive = activeView === view;
@@ -174,7 +181,7 @@ export function ViewSwitcherRender({ props = {}, style, isPreview = false }) {
                     <button
                         key={view}
                         onClick={() => handleViewChange(view)}
-                        className={`p-2 rounded-md transition-colors ${
+                        className={`p-2 rounded-md transition-colors flex-shrink-0 ${
                             isActive 
                                 ? 'bg-indigo-100 text-indigo-700' 
                                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
@@ -259,44 +266,52 @@ export function FilterBarRender({ props = {}, style, isPreview = false }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const filterBarStyle = {
+        ...style,
+        overflow: 'hidden',
+        position: 'relative',
+        width: style.width || 'auto', // FilterBar không nên có width: 100% mặc định
+        minWidth: style.minWidth || 'fit-content',
+    };
+
     return (
-        <div style={style} className="relative">
+        <div style={filterBarStyle} className="relative">
             <div className="flex items-center gap-2 flex-wrap">
                 {/* Filter Button */}
                 <button
                     ref={buttonRef}
                     onClick={() => setIsOpen(!isOpen)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors flex-shrink-0 ${
                         activeFilters.length > 0 
                             ? 'border-indigo-300 bg-indigo-50 text-indigo-700' 
                             : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                     }`}
                 >
-                    <FiFilter size={14} />
-                    Filter
+                    <FiFilter size={14} className="flex-shrink-0" />
+                    <span className="whitespace-nowrap">Filter</span>
                     {activeFilters.length > 0 && (
-                        <span className="bg-indigo-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        <span className="bg-indigo-600 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
                             {activeFilters.length}
                         </span>
                     )}
-                    <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <FiChevronDown size={14} className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Active Filter Tags */}
                 {activeFilters.map(({ field, value }) => (
                     <span 
                         key={field}
-                        className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700"
+                        className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700 flex-shrink-0 overflow-hidden"
                     >
-                        {field}: {value}
-                        <button onClick={() => clearFilter(field)} className="hover:text-red-500">
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]">{field}: {value}</span>
+                        <button onClick={() => clearFilter(field)} className="hover:text-red-500 flex-shrink-0">
                             <FiX size={12} />
                         </button>
                     </span>
                 ))}
 
                 {activeFilters.length > 0 && (
-                    <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500">
+                    <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500 whitespace-nowrap flex-shrink-0">
                         Clear all
                     </button>
                 )}
@@ -357,20 +372,34 @@ export function SearchBoxRender({ props = {}, style, isPreview = false }) {
         }
     };
 
+    // Đảm bảo wrapper có overflow handling
+    const wrapperStyle = {
+        ...style,
+        position: 'relative',
+        overflow: 'hidden', // Ngăn text overflow
+        minWidth: style.minWidth || '200px', // Đảm bảo có min width
+    };
+
     return (
-        <div style={style} className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+        <div style={wrapperStyle} className="relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={16} />
             <input
                 type="text"
                 value={query}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder={placeholder}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    paddingLeft: '36px', // Space for icon
+                    paddingRight: query ? '36px' : '16px', // Space for clear button if needed
+                }}
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent overflow-hidden text-ellipsis"
             />
             {query && (
                 <button
                     onClick={() => handleSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
                 >
                     <FiX size={14} />
                 </button>
@@ -452,30 +481,35 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const sortDropdownStyle = {
+        ...style,
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        width: style.width || 'fit-content', // Đảm bảo width là fit-content
+        height: style.height || 'fit-content',
+        overflow: 'hidden',
+    };
+
     return (
         <>
             <div 
-                style={{
-                    ...style,
-                    position: 'relative',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    width: 'fit-content',
-                    height: 'fit-content'
-                }} 
+                style={sortDropdownStyle} 
                 className="sort-dropdown-container"
             >
                 <button
                     ref={buttonRef}
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors overflow-hidden"
                 >
-                    <FiArrowDown size={14} />
-                    {label}: {SORT_FIELD_LABELS[currentSort.field] || currentSort.field}
-                    <span className="text-xs text-gray-500">
+                    <FiArrowDown size={14} className="flex-shrink-0" />
+                    <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                        {label}: {SORT_FIELD_LABELS[currentSort.field] || currentSort.field}
+                    </span>
+                    <span className="text-xs text-gray-500 flex-shrink-0">
                         ({currentSort.order === 'asc' ? '↑' : '↓'})
                     </span>
-                    <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <FiChevronDown size={14} className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Quick toggle order button */}
@@ -1031,14 +1065,21 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
         );
     }
 
+    const buttonStyle = {
+        ...style,
+        overflow: 'hidden',
+        width: style.width || 'auto', // Đảm bảo width là auto nếu không được set
+        minWidth: style.minWidth || 'fit-content', // Đảm bảo có min width phù hợp
+    };
+
     return (
         <button
-            style={style}
+            style={buttonStyle}
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity overflow-hidden whitespace-nowrap"
         >
-            <FiPlus size={16} />
-            {label}
+            <FiPlus size={16} className="flex-shrink-0" />
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
         </button>
     );
 }
@@ -1056,17 +1097,23 @@ export function DatabaseTitleRender({ props = {}, style, isPreview = false }) {
         }
     };
 
+    const titleStyle = {
+        ...style,
+        overflow: 'hidden',
+    };
+
     if (isEditing && editable) {
         return (
-            <div style={style} className="flex items-center gap-2">
-                <span className="text-2xl">{icon}</span>
+            <div style={titleStyle} className="flex items-center gap-2 overflow-hidden">
+                <span className="text-2xl flex-shrink-0">{icon}</span>
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     onBlur={handleSave}
                     onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                    className="flex-1 bg-transparent border-b-2 border-indigo-500 focus:outline-none text-2xl font-bold text-gray-800"
+                    style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    className="flex-1 bg-transparent border-b-2 border-indigo-500 focus:outline-none text-2xl font-bold text-gray-800 min-w-0"
                     autoFocus
                 />
             </div>
@@ -1074,13 +1121,13 @@ export function DatabaseTitleRender({ props = {}, style, isPreview = false }) {
     }
 
     return (
-        <div 
-            style={style} 
+        <div
+            style={titleStyle} 
             onClick={() => editable && setIsEditing(true)}
-            className={editable ? 'cursor-pointer hover:opacity-80' : ''}
+            className={`flex items-center gap-2 overflow-hidden ${editable ? 'cursor-pointer hover:opacity-80' : ''}`}
         >
-            <span className="text-2xl mr-2">{icon}</span>
-            {title}
+            <span className="text-2xl flex-shrink-0">{icon}</span>
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">{title}</span>
         </div>
     );
 }

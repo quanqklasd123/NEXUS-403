@@ -1,7 +1,7 @@
 // src/pages/AppRuntimePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FiArrowLeft, FiEdit3, FiMaximize2, FiMinimize2, FiHome } from 'react-icons/fi';
+import { FiArrowLeft, FiMaximize2, FiMinimize2, FiHome } from 'react-icons/fi';
 import apiService from '../services/apiService';
 import RenderComponent from '../components/builder/RenderComponent';
 
@@ -154,12 +154,6 @@ const AppRuntimePage = () => {
                         >
                             Quay lại
                         </button>
-                        <button
-                            onClick={() => navigate(`/app-builder/${projectId}`)}
-                            className="px-4 py-2 bg-neutral-800 text-white rounded-lg hover:bg-black"
-                        >
-                            Edit App
-                        </button>
                     </div>
                 </div>
             </div>
@@ -207,15 +201,6 @@ const AppRuntimePage = () => {
                         >
                             <FiHome className="w-5 h-5 text-neutral-600" />
                         </Link>
-
-                        {/* Edit */}
-                        <button
-                            onClick={() => navigate(`/app-builder/${projectId}`)}
-                            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                            title="Edit in App Builder"
-                        >
-                            <FiEdit3 className="w-5 h-5 text-neutral-600" />
-                        </button>
 
                         {/* Fullscreen */}
                         <button

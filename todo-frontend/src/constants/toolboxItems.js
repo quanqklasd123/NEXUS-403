@@ -1,280 +1,544 @@
 // src/constants/toolboxItems.js
 import { 
-    FiBox, FiLayout, FiType, FiImage, FiUploadCloud,
-    FiGrid, FiCreditCard, FiPieChart, FiMinus, FiCheckSquare, FiList,
-    FiCalendar, FiFileText, FiUpload, FiToggleRight, FiTable, FiList as FiListView,
-    FiBarChart2, FiLayers, FiMaximize2, FiColumns, FiFilter, FiSearch, FiPlus,
-    FiDatabase, FiSliders, FiArrowDown, FiMenu
+    FiLayout, FiGrid, FiType, FiImage, FiCreditCard,
+    FiBox, FiCheckSquare, FiList, FiCalendar, FiTable,
+    FiColumns, FiPlus, FiDatabase, FiMinus, FiToggleLeft,
+    FiFilter, FiSearch, FiArrowDown, FiRefreshCw
 } from 'react-icons/fi';
 
+/**
+ * Toolbox Items - Components cần thiết để tạo Todo List App
+ * Được tổ chức theo categories: Layout, Display, Form, Data, Control
+ * 
+ * Mỗi tool có:
+ * - type: unique identifier
+ * - label: tên hiển thị
+ * - icon: React icon component
+ * - category: phân loại
+ * - description: mô tả ngắn
+ * - defaultProps: props mặc định
+ * - defaultStyle: style mặc định
+ */
 export const TOOLS = [
-    // === LAYOUT & STRUCTURE ===
-    { type: 'container', label: 'Container', icon: FiLayout, category: 'Layout', defaultProps: { label: 'Container', events: {} }, defaultStyle: { width: '100%', height: '150px', backgroundColor: '#f8fafc', padding: '20px', margin: '0px', border: '1px dashed #cbd5e1' } },
-    { type: 'row', label: 'Row (Flex)', icon: FiGrid, category: 'Layout', defaultProps: { label: 'Row' }, defaultStyle: { width: '100%', height: 'auto', display: 'flex', gap: '10px', padding: '10px', border: '1px dashed #94a3b8' } },
-    { type: 'grid', label: 'Grid (Columns)', icon: FiGrid, category: 'Layout', defaultProps: { label: 'Grid', columns: '3' }, defaultStyle: { width: '100%', height: 'auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', padding: '10px', border: '1px dashed #94a3b8' } },
-    { type: 'divider', label: 'Divider', icon: FiMinus, category: 'Layout', defaultProps: { label: '' }, defaultStyle: { width: '100%', height: '1px', backgroundColor: '#e2e8f0', margin: '10px 0' } },
-    { type: 'tabs', label: 'Tabs', icon: FiLayers, category: 'Layout', defaultProps: { label: 'Tabs', tabs: ['Tab 1', 'Tab 2', 'Tab 3'] }, defaultStyle: { width: '100%', height: 'auto', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px' } },
-    { type: 'modal', label: 'Modal / Popup', icon: FiMaximize2, category: 'Layout', defaultProps: { label: 'Modal', title: 'Modal Title' }, defaultStyle: { width: '100%', height: 'auto', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } },
-    
-    // === DISPLAY ===
-    { type: 'card', label: 'Card', icon: FiCreditCard, category: 'Display', defaultProps: { label: 'Card Content', events: {} }, defaultStyle: { width: '300px', height: '200px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '20px', border: '1px solid #e2e8f0'} },
-    { type: 'chart', label: 'Chart (Mock)', icon: FiPieChart, category: 'Display', defaultProps: { label: 'Sales Chart' }, defaultStyle: { width: '100%', height: '200px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#166534'} },
-    { type: 'image', label: 'Image', icon: FiImage, category: 'Display', defaultProps: { label: 'Image' }, defaultStyle: { width: '100%', height: '200px', backgroundColor: '#e2e8f0', margin: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
-    { type: 'text', label: 'Text Block', icon: FiType, category: 'Display', defaultProps: { label: 'Lorem ipsum dolor sit amet.' }, defaultStyle: { width: '100%', height: 'auto', color: '#333333', padding: '5px', margin: '5px 0', fontSize: '16px' } },
-    { type: 'statCard', label: 'Statistic Card', icon: FiBarChart2, category: 'Display', defaultProps: { label: 'Statistic', value: '0', title: 'Total' }, defaultStyle: { width: '200px', height: 'auto', backgroundColor: '#ffffff', borderRadius: '12px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' } },
-    { type: 'dataTable', label: 'Data Table', icon: FiTable, category: 'Display', defaultProps: { label: 'Data Table', columns: ['Column 1', 'Column 2', 'Column 3'] }, defaultStyle: { width: '100%', height: 'auto', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' } },
-    { type: 'listView', label: 'List View', icon: FiListView, category: 'Display', defaultProps: { label: 'List View', items: ['Item 1', 'Item 2', 'Item 3'] }, defaultStyle: { width: '100%', height: 'auto', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px' } },
-    
-    // === FORM & INPUT ===
-    { type: 'button', label: 'Button', icon: FiBox, category: 'Form', defaultProps: { label: 'Click Me', events: {} }, defaultStyle: { width: 'auto', height: 'auto', backgroundColor: '#2563eb', color: '#ffffff', padding: '10px 20px', margin: '5px', borderRadius: '8px', border: 'none', cursor: 'pointer' } },
-    { type: 'input', label: 'Input Field', icon: FiType, category: 'Form', defaultProps: { label: 'Input', placeholder: 'Enter text...', events: {} }, defaultStyle: { width: '100%', height: 'auto', padding: '10px', margin: '5px 0', backgroundColor: '#ffffff', color: '#333333', border: '1px solid #e2e8f0', borderRadius: '8px' } },
-    { type: 'checkbox', label: 'Checkbox', icon: FiCheckSquare, category: 'Form', defaultProps: { label: 'Check me', events: {} }, defaultStyle: { width: 'auto', height: 'auto', margin: '5px', display: 'flex', alignItems: 'center', gap: '8px', color: '#333333' } },
-    { type: 'select', label: 'Select / Dropdown', icon: FiList, category: 'Form', defaultProps: { label: 'Select Option', events: {} }, defaultStyle: { width: '100%', height: 'auto', padding: '10px', margin: '5px 0', backgroundColor: '#ffffff', color: '#333333', border: '1px solid #e2e8f0', borderRadius: '8px' } },
-    { type: 'datePicker', label: 'Date Picker', icon: FiCalendar, category: 'Form', defaultProps: { label: 'Select Date', placeholder: 'Pick a date', events: {} }, defaultStyle: { width: '100%', height: 'auto', padding: '10px', margin: '5px 0', backgroundColor: '#ffffff', color: '#333333', border: '1px solid #e2e8f0', borderRadius: '8px' } },
-    { type: 'richText', label: 'Rich Text Editor', icon: FiFileText, category: 'Form', defaultProps: { label: 'Rich Text', placeholder: 'Enter formatted text...', events: {} }, defaultStyle: { width: '100%', height: '150px', padding: '10px', margin: '5px 0', backgroundColor: '#ffffff', color: '#333333', border: '1px solid #e2e8f0', borderRadius: '8px', minHeight: '150px' } },
-    { type: 'fileUpload', label: 'File Upload', icon: FiUpload, category: 'Form', defaultProps: { label: 'Upload File', placeholder: 'Choose file...', events: {} }, defaultStyle: { width: '100%', height: 'auto', padding: '20px', margin: '5px 0', backgroundColor: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' } },
-    { type: 'switch', label: 'Switch / Toggle', icon: FiToggleRight, category: 'Form', defaultProps: { label: 'Toggle', checked: false, events: {} }, defaultStyle: { width: 'auto', height: 'auto', margin: '5px', display: 'flex', alignItems: 'center', gap: '8px', color: '#333333' } },
+    // ========== LAYOUT ==========
+    {
+        type: 'container',
+        label: 'Container',
+        icon: FiLayout,
+        category: 'Layout',
+        description: 'Container để nhóm các components',
+        defaultProps: {
+            label: 'Container',
+            events: {}
+        },
+        defaultStyle: {
+            width: '100%',
+            height: '200px',
+            backgroundColor: '#f8fafc',
+            padding: '20px',
+            border: '1px dashed #cbd5e1',
+            borderRadius: '8px'
+        }
+    },
+    {
+        type: 'row',
+        label: 'Row',
+        icon: FiGrid,
+        category: 'Layout',
+        description: 'Flex row để sắp xếp components ngang',
+        defaultProps: {
+            label: 'Row'
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            display: 'flex',
+            gap: '10px',
+            padding: '10px',
+            border: '1px dashed #94a3b8',
+            borderRadius: '8px'
+        }
+    },
+    {
+        type: 'divider',
+        label: 'Divider',
+        icon: FiMinus,
+        category: 'Layout',
+        description: 'Đường phân cách',
+        defaultProps: {
+            label: ''
+        },
+        defaultStyle: {
+            width: '100%',
+            height: '1px',
+            backgroundColor: '#e2e8f0',
+            margin: '10px 0'
+        }
+    },
+    {
+        type: 'grid',
+        label: 'Grid',
+        icon: FiGrid,
+        category: 'Layout',
+        description: 'Grid layout để tạo lưới',
+        defaultProps: {
+            label: 'Grid',
+            columns: 3,
+            gap: '10px'
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '10px',
+            padding: '10px',
+            border: '1px dashed #94a3b8',
+            borderRadius: '8px'
+        }
+    },
 
-    // === DATA COMPONENTS (Notion-like) - Sử dụng dữ liệu từ API có sẵn ===
-    { 
-        type: 'taskTable', 
-        label: 'Task Table', 
-        icon: FiTable, 
+    // ========== DISPLAY ==========
+    {
+        type: 'text',
+        label: 'Text',
+        icon: FiType,
+        category: 'Display',
+        description: 'Text block',
+        defaultProps: {
+            label: 'Text content'
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            color: '#333333',
+            padding: '5px',
+            fontSize: '16px'
+        }
+    },
+    {
+        type: 'card',
+        label: 'Card',
+        icon: FiCreditCard,
+        category: 'Display',
+        description: 'Card container',
+        defaultProps: {
+            label: 'Card Content',
+            events: {}
+        },
+        defaultStyle: {
+            width: '300px',
+            height: '200px',
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            padding: '20px',
+            border: '1px solid #e2e8f0'
+        }
+    },
+    {
+        type: 'image',
+        label: 'Image',
+        icon: FiImage,
+        category: 'Display',
+        description: 'Image placeholder',
+        defaultProps: {
+            label: 'Image',
+            src: '',
+            alt: 'Image'
+        },
+        defaultStyle: {
+            width: '100%',
+            height: '200px',
+            backgroundColor: '#e2e8f0',
+            margin: '10px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '8px'
+        }
+    },
+
+    // ========== FORM ==========
+    {
+        type: 'button',
+        label: 'Button',
+        icon: FiBox,
+        category: 'Form',
+        description: 'Button component',
+        defaultProps: {
+            label: 'Button',
+            events: {}
+        },
+        defaultStyle: {
+            width: 'auto',
+            height: 'auto',
+            backgroundColor: '#2563eb',
+            color: '#ffffff',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: '500'
+        }
+    },
+    {
+        type: 'input',
+        label: 'Input',
+        icon: FiType,
+        category: 'Form',
+        description: 'Input field',
+        defaultProps: {
+            label: 'Input',
+            placeholder: 'Enter text...',
+            events: {}
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            padding: '10px',
+            backgroundColor: '#ffffff',
+            color: '#333333',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px'
+        }
+    },
+    {
+        type: 'checkbox',
+        label: 'Checkbox',
+        icon: FiCheckSquare,
+        category: 'Form',
+        description: 'Checkbox input',
+        defaultProps: {
+            label: 'Checkbox',
+            checked: false,
+            events: {}
+        },
+        defaultStyle: {
+            width: 'auto',
+            height: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#333333'
+        }
+    },
+    {
+        type: 'select',
+        label: 'Select',
+        icon: FiArrowDown,
+        category: 'Form',
+        description: 'Dropdown chọn',
+        defaultProps: {
+            label: 'Select option',
+            options: ['Option 1', 'Option 2', 'Option 3'],
+            placeholder: 'Chọn...',
+            events: {}
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            padding: '10px',
+            backgroundColor: '#ffffff',
+            color: '#333333',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px'
+        }
+    },
+    {
+        type: 'datePicker',
+        label: 'Date Picker',
+        icon: FiCalendar,
+        category: 'Form',
+        description: 'Chọn ngày',
+        defaultProps: {
+            label: 'Date Picker',
+            placeholder: 'Select Date',
+            events: {}
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            padding: '10px',
+            backgroundColor: '#ffffff',
+            color: '#333333',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px'
+        }
+    },
+
+    // ========== DATA (Todo List Components) ==========
+    {
+        type: 'database',
+        label: 'Database',
+        icon: FiDatabase,
         category: 'Data',
-        defaultProps: { 
+        description: 'Quản lý dữ liệu (CRUD operations)',
+        defaultProps: {
+            label: 'Database',
+            collectionName: 'items',
+            allowCreate: true,
+            allowEdit: true,
+            allowDelete: true,
+            showSearch: true,
+            showFilter: true,
+            showSort: true
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            minHeight: '400px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            padding: '16px'
+        }
+    },
+    {
+        type: 'viewSwitcher',
+        label: 'View Switcher',
+        icon: FiRefreshCw,
+        category: 'Data',
+        description: 'Chuyển đổi view (list/grid)',
+        defaultProps: {
+            label: 'View Switcher',
+            views: ['table', 'list', 'board', 'calendar'],
+            defaultView: 'table'
+        },
+        defaultStyle: {
+            width: 'auto',
+            height: 'auto',
+            padding: '4px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            display: 'flex',
+            gap: '4px'
+        }
+    },
+    {
+        type: 'filterBar',
+        label: 'Filter Bar',
+        icon: FiFilter,
+        category: 'Data',
+        description: 'Thanh lọc dữ liệu',
+        defaultProps: {
+            label: 'Filter Bar',
+            filters: ['status', 'priority', 'dueDate']
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            padding: '8px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center'
+        }
+    },
+    {
+        type: 'searchBox',
+        label: 'Search Box',
+        icon: FiSearch,
+        category: 'Data',
+        description: 'Tìm kiếm',
+        defaultProps: {
+            label: 'Search Box',
+            placeholder: 'Search...',
+            debounce: 300
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
+            padding: '10px',
+            backgroundColor: '#ffffff',
+            color: '#333333',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px'
+        }
+    },
+    {
+        type: 'sortDropdown',
+        label: 'Sort Dropdown',
+        icon: FiArrowDown,
+        category: 'Data',
+        description: 'Sắp xếp',
+        defaultProps: {
+            label: 'Sort Dropdown',
+            options: [
+                { value: 'title-asc', label: 'Title A-Z' },
+                { value: 'title-desc', label: 'Title Z-A' },
+                { value: 'date-asc', label: 'Date Oldest' },
+                { value: 'date-desc', label: 'Date Newest' }
+            ],
+            defaultSort: 'title-asc'
+        },
+        defaultStyle: {
+            width: 'auto',
+            height: 'auto',
+            padding: '8px 12px',
+            backgroundColor: '#ffffff',
+            color: '#333333',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px'
+        }
+    },
+    {
+        type: 'taskTable',
+        label: 'Task Table',
+        icon: FiTable,
+        category: 'Data',
+        description: 'Table view của tasks',
+        defaultProps: {
             label: 'Task Table',
             columns: ['title', 'status', 'priority', 'dueDate', 'category'],
             showHeader: true,
             allowEdit: true,
             allowDelete: true,
-            todoListId: null, // null = tất cả tasks
-        }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto', 
+            todoListId: null
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
             minHeight: '300px',
-            backgroundColor: '#ffffff', 
-            border: '1px solid #e2e8f0', 
-            borderRadius: '8px', 
-            overflow: 'hidden' 
-        } 
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            overflow: 'hidden'
+        }
     },
-    { 
-        type: 'taskList', 
-        label: 'Task List', 
-        icon: FiList, 
+    {
+        type: 'taskList',
+        label: 'Task List',
+        icon: FiList,
         category: 'Data',
-        defaultProps: { 
+        description: 'List view của tasks',
+        defaultProps: {
             label: 'Task List',
             showCheckbox: true,
             showPriority: true,
             showDueDate: true,
-            showCategory: true, // Hiển thị Category
+            showCategory: true,
             groupByStatus: false,
-            todoListId: null,
-        }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto', 
+            todoListId: null
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
             minHeight: '200px',
-            backgroundColor: '#ffffff', 
-            border: '1px solid #e2e8f0', 
-            borderRadius: '8px', 
-            padding: '0' 
-        } 
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            padding: '0'
+        }
     },
-    { 
-        type: 'taskBoard', 
-        label: 'Kanban Board', 
-        icon: FiColumns, 
+    {
+        type: 'taskBoard',
+        label: 'Kanban Board',
+        icon: FiColumns,
         category: 'Data',
-        defaultProps: { 
+        description: 'Kanban board view',
+        defaultProps: {
             label: 'Kanban Board',
             columns: ['Todo', 'InProgress', 'Done'],
             allowDrag: true,
             showPriority: true,
             showDueDate: true,
-            todoListId: null,
-        }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto', 
+            todoListId: null
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
             minHeight: '400px',
-            backgroundColor: '#f8fafc', 
-            border: '1px solid #e2e8f0', 
-            borderRadius: '8px', 
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
             padding: '16px',
             overflow: 'auto'
-        } 
+        }
     },
-    { 
-        type: 'taskCalendar', 
-        label: 'Task Calendar', 
-        icon: FiCalendar, 
+    {
+        type: 'taskCalendar',
+        label: 'Task Calendar',
+        icon: FiCalendar,
         category: 'Data',
-        defaultProps: { 
+        description: 'Calendar view của tasks',
+        defaultProps: {
             label: 'Task Calendar',
-            viewMode: 'month', // 'month', 'week', 'day'
+            viewMode: 'month',
             showPriority: true,
-            todoListId: null,
-        }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: '500px', 
-            backgroundColor: '#ffffff', 
-            border: '1px solid #e2e8f0', 
-            borderRadius: '8px', 
-            padding: '16px' 
-        } 
+            todoListId: null
+        },
+        defaultStyle: {
+            width: '100%',
+            height: '500px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            padding: '16px'
+        }
     },
 
-    // === CONTROL COMPONENTS (Notion-like) ===
-    { 
-        type: 'viewSidebar', 
-        label: 'View Sidebar', 
-        icon: FiMenu, 
+    // ========== CONTROL ==========
+    {
+        type: 'addTaskButton',
+        label: 'Add Task',
+        icon: FiPlus,
         category: 'Control',
-        defaultProps: { 
-            label: 'View Sidebar',
-            views: ['table', 'list', 'board', 'calendar'],
-            defaultView: 'table',
-            position: 'left', // 'left' or 'right'
-            collapsed: false,
-        }, 
-        defaultStyle: { 
-            position: 'fixed',
-            left: 0,
-            top: 0,
-            width: '240px',
-            height: '100vh',
-            backgroundColor: '#ffffff',
-            borderRight: '1px solid #e2e8f0',
-            boxShadow: '2px 0 8px rgba(0, 0, 0, 0.1)',
-            zIndex: 1000,
-            padding: '16px',
-        } 
-    },
-    { 
-        type: 'viewSwitcher', 
-        label: 'View Switcher', 
-        icon: FiLayers, 
-        category: 'Control',
-        defaultProps: { 
-            label: 'View Switcher',
-            views: ['table', 'list', 'board', 'calendar'],
-            defaultView: 'table',
-            targetComponentId: null, // ID của component Data để điều khiển
-        }, 
-        defaultStyle: { 
-            width: 'auto', 
-            height: 'auto', 
-            backgroundColor: '#f1f5f9', 
-            borderRadius: '8px', 
-            padding: '4px',
-            display: 'inline-flex',
-            gap: '4px'
-        } 
-    },
-    { 
-        type: 'filterBar', 
-        label: 'Filter Bar', 
-        icon: FiFilter, 
-        category: 'Control',
-        defaultProps: { 
-            label: 'Filter',
-            filterFields: ['status', 'priority', 'dueDate'],
-            targetComponentId: null,
-        }, 
-        defaultStyle: { 
-            width: 'auto', 
-            height: 'auto', 
-            backgroundColor: 'transparent', 
-            padding: '8px 12px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px'
-        } 
-    },
-    { 
-        type: 'searchBox', 
-        label: 'Search Box', 
-        icon: FiSearch, 
-        category: 'Control',
-        defaultProps: { 
-            label: 'Search',
-            placeholder: 'Search tasks...',
-            targetComponentId: null,
-        }, 
-        defaultStyle: { 
-            width: '250px', 
-            height: 'auto', 
-            backgroundColor: '#ffffff', 
-            padding: '8px 12px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px'
-        } 
-    },
-    { 
-        type: 'sortDropdown', 
-        label: 'Sort Dropdown', 
-        icon: FiArrowDown, 
-        category: 'Control',
-        defaultProps: { 
-            label: 'Sort by',
-            sortFields: ['title', 'status', 'priority', 'dueDate'],
-            defaultSort: { field: 'title', order: 'asc' },
-            targetComponentId: null,
-        }, 
-        defaultStyle: { 
-            width: 'auto', 
-            height: 'auto', 
-            backgroundColor: '#ffffff', 
-            padding: '8px 12px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px'
-        } 
-    },
-    { 
-        type: 'addTaskButton', 
-        label: 'Add Task Button', 
-        icon: FiPlus, 
-        category: 'Control',
-        defaultProps: { 
+        description: 'Button để thêm task mới',
+        defaultProps: {
             label: '+ New Task',
             defaultStatus: 'Todo',
-            defaultPriority: 'Medium',
-            // todoListId: null, // Không cần nữa - user sẽ chọn Category khi add task
-        }, 
-        defaultStyle: { 
-            width: 'auto', 
-            height: 'auto', 
-            backgroundColor: '#6366f1', 
+            defaultPriority: 'Medium'
+        },
+        defaultStyle: {
+            width: 'auto',
+            height: 'auto',
+            backgroundColor: '#6366f1',
             color: '#ffffff',
             padding: '8px 16px',
             borderRadius: '8px',
             border: 'none',
             cursor: 'pointer',
             fontWeight: '500'
-        } 
+        }
     },
-    { 
-        type: 'databaseTitle', 
-        label: 'Database Title', 
-        icon: FiDatabase, 
+    {
+        type: 'switch',
+        label: 'Switch',
+        icon: FiToggleLeft,
         category: 'Control',
-        defaultProps: { 
+        description: 'Công tắc bật/tắt',
+        defaultProps: {
+            label: 'Switch',
+            checked: false,
+            events: {}
+        },
+        defaultStyle: {
+            width: 'auto',
+            height: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#333333'
+        }
+    },
+    {
+        type: 'databaseTitle',
+        label: 'Title',
+        icon: FiDatabase,
+        category: 'Control',
+        description: 'Database/List title',
+        defaultProps: {
             label: 'My Tasks',
             editable: true,
-            icon: '📋',
-        }, 
-        defaultStyle: { 
-            width: '100%', 
-            height: 'auto', 
+            icon: '📋'
+        },
+        defaultStyle: {
+            width: '100%',
+            height: 'auto',
             fontSize: '24px',
             fontWeight: 'bold',
             color: '#1e293b',
@@ -282,11 +546,16 @@ export const TOOLS = [
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
-        } 
-    },
+        }
+    }
 ];
 
-// Helper: Lấy components theo category
+// Categories cho Toolbox UI - thứ tự hiển thị
+export const CATEGORIES = ['Layout', 'Display', 'Form', 'Data', 'Control'];
+
+/**
+ * Helper: Lấy tools theo category
+ */
 export const getToolsByCategory = () => {
     const categories = {};
     TOOLS.forEach(tool => {
@@ -297,6 +566,28 @@ export const getToolsByCategory = () => {
     return categories;
 };
 
-// Export categories cho Toolbox UI
-export const CATEGORIES = ['Layout', 'Display', 'Form', 'Data', 'Control'];
+/**
+ * Helper: Lấy tool theo type
+ */
+export const getToolByType = (type) => {
+    return TOOLS.find(tool => tool.type === type);
+};
 
+/**
+ * Helper: Kiểm tra xem component có phải là control component không
+ * (components nhỏ, fit-content)
+ */
+export const isControlComponent = (type) => {
+    const controlTypes = [
+        'button', 'checkbox', 'addTaskButton', 'databaseTitle',
+        'input', 'select', 'datePicker', 'switch'
+    ];
+    return controlTypes.includes(type);
+};
+
+/**
+ * Helper: Kiểm tra xem component có phải là layout component không
+ */
+export const isLayoutComponent = (type) => {
+    return ['container', 'row', 'grid'].includes(type);
+};

@@ -44,16 +44,19 @@ namespace TodoApi.Controllers
                 .Sort(sort)
                 .ToListAsync();
 
-            // 2. Lấy danh sách UserApps đã install để check IsInstalled
+            // 2. Lấy danh sách Projects đã install để check IsInstalled (check Projects với MarketplaceAppId)
             var installedAppIds = new HashSet<string>();
             if (!string.IsNullOrEmpty(userId))
             {
-                var userAppFilter = Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId);
-                var userApps = await _mongoContext.UserApps
-                    .Find(userAppFilter)
-                    .Project(a => a.MarketplaceAppId)
+                var installedProjectsFilter = Builders<Project>.Filter.And(
+                    Builders<Project>.Filter.Eq(p => p.AppUserId, userId),
+                    Builders<Project>.Filter.Ne(p => p.MarketplaceAppId, null)
+                );
+                var installedProjects = await _mongoContext.Projects
+                    .Find(installedProjectsFilter)
+                    .Project(p => p.MarketplaceAppId)
                     .ToListAsync();
-                installedAppIds = new HashSet<string>(userApps.Where(id => !string.IsNullOrEmpty(id)));
+                installedAppIds = new HashSet<string>(installedProjects.Where(id => !string.IsNullOrEmpty(id)));
             }
 
             // 3. Chuyển đổi Project -> MarketplaceAppDTO
@@ -80,35 +83,73 @@ namespace TodoApi.Controllers
         [HttpGet("apps/{id}")]
         public async Task<IActionResult> GetAppDetail(string id)
         {
-            // Tìm trong published projects
-            var projectFilter = Builders<Project>.Filter.And(
-                Builders<Project>.Filter.Eq(p => p.Id, id),
-                Builders<Project>.Filter.Eq(p => p.IsPublished, true)
-            );
-            var project = await _mongoContext.Projects.Find(projectFilter).FirstOrDefaultAsync();
-
-            if (project != null)
+            try
             {
-                var appDto = new MarketplaceAppDTO
+                // Validate input
+                if (string.IsNullOrEmpty(id))
                 {
-                    Id = project.Id,
-                    Name = project.Name,
-                    Description = project.Description ?? "No description",
-                    Category = project.Category ?? "Template",
-                    Author = project.AppUserId,
-                    Tags = new[] { "Community", project.Category ?? "Template" },
-                    Downloads = "0",
-                    Rating = 0,
-                    Color = "sage",
-                    IsInstalled = false,
-                    Price = project.Price,
-                    JsonData = project.JsonData // include the appbuilder JSON so preview can render
-                };
-                return Ok(appDto);
-            }
+                    return BadRequest(new { message = "App ID is required" });
+                }
 
-            // If not found among published projects, return NotFound
-            return NotFound(new { message = "App not found" });
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                // Tìm trong published projects
+                var projectFilter = Builders<Project>.Filter.And(
+                    Builders<Project>.Filter.Eq(p => p.Id, id),
+                    Builders<Project>.Filter.Eq(p => p.IsPublished, true)
+                );
+                
+                var project = await _mongoContext.Projects.Find(projectFilter).FirstOrDefaultAsync();
+
+                if (project != null)
+                {
+                    // Check xem user đã install chưa (check Projects với MarketplaceAppId)
+                    bool isInstalled = false;
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        var installedFilter = Builders<Project>.Filter.And(
+                            Builders<Project>.Filter.Eq(p => p.AppUserId, userId),
+                            Builders<Project>.Filter.Eq(p => p.MarketplaceAppId, id)
+                        );
+                        var installedProject = await _mongoContext.Projects.Find(installedFilter).FirstOrDefaultAsync();
+                        isInstalled = installedProject != null;
+                    }
+
+                    var appDto = new MarketplaceAppDTO
+                    {
+                        Id = project.Id,
+                        Name = project.Name,
+                        Description = project.Description ?? "No description",
+                        Category = project.Category ?? "Template",
+                        Author = project.AppUserId,
+                        Tags = new[] { "Community", project.Category ?? "Template" },
+                        Downloads = "0",
+                        Rating = 0,
+                        Color = "sage",
+                        IsInstalled = isInstalled,
+                        Price = project.Price,
+                        JsonData = project.JsonData // include the appbuilder JSON so preview can render
+                    };
+                    return Ok(appDto);
+                }
+
+                // If not found among published projects, return NotFound
+                return NotFound(new { message = "App not found" });
+            }
+            catch (MongoException mongoEx)
+            {
+                return StatusCode(500, new { 
+                    message = "Database error while retrieving app", 
+                    error = mongoEx.Message 
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    message = "Error retrieving app details", 
+                    error = ex.Message 
+                });
+            }
         }
 
         // GET: api/marketplace/my-components (CHO TRANG APP BUILDER)
@@ -122,7 +163,7 @@ namespace TodoApi.Controllers
             return Ok(new List<MarketplaceAppDTO>());
         }
 
-        // POST: api/marketplace/install/{id} (Xử lý cài đặt - tạo UserApp từ marketplace app)
+        // POST: api/marketplace/install/{id} (Xử lý cài đặt - tạo Project từ marketplace app)
         [HttpPost("install/{id}")]
         public async Task<IActionResult> InstallApp(string id)
         {
@@ -137,43 +178,44 @@ namespace TodoApi.Controllers
                 Builders<Project>.Filter.Eq(p => p.Id, id),
                 Builders<Project>.Filter.Eq(p => p.IsPublished, true)
             );
-            var project = await _mongoContext.Projects.Find(projectFilter).FirstOrDefaultAsync();
+            var marketplaceProject = await _mongoContext.Projects.Find(projectFilter).FirstOrDefaultAsync();
 
-            if (project == null)
+            if (marketplaceProject == null)
             {
                 return NotFound(new { message = "App not found in marketplace" });
             }
 
-            // 2. Kiểm tra xem user đã install chưa
-            var existingFilter = Builders<UserApp>.Filter.And(
-                Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId),
-                Builders<UserApp>.Filter.Eq(a => a.MarketplaceAppId, id)
+            // 2. Kiểm tra xem user đã install chưa (tìm Project với cùng MarketplaceAppId)
+            var existingFilter = Builders<Project>.Filter.And(
+                Builders<Project>.Filter.Eq(p => p.AppUserId, userId),
+                Builders<Project>.Filter.Eq(p => p.MarketplaceAppId, id)
             );
-            var existingApp = await _mongoContext.UserApps.Find(existingFilter).FirstOrDefaultAsync();
+            var existingProject = await _mongoContext.Projects.Find(existingFilter).FirstOrDefaultAsync();
 
-            if (existingApp != null)
+            if (existingProject != null)
             {
                 return BadRequest(new { message = "App already installed" });
             }
 
-            // 3. Tạo UserApp mới từ marketplace app
-            var userApp = new UserApp
+            // 3. Tạo Project mới từ marketplace app (copy cho user)
+            var newProject = new Project
             {
-                Name = project.Name,
-                Icon = "📱",
-                Description = project.Description,
-                Config = project.JsonData,
-                Source = "marketplace",
-                MarketplaceAppId = id,
-                OriginalAuthor = project.AppUserId,
-                AppUserId = userId,
+                Name = marketplaceProject.Name,
+                Description = marketplaceProject.Description,
+                JsonData = marketplaceProject.JsonData, // Copy toàn bộ cấu trúc app
+                AppUserId = userId, // User hiện tại là owner
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                IsPublished = false, // App đã install không tự động publish
+                Category = marketplaceProject.Category,
+                Price = marketplaceProject.Price,
+                MarketplaceAppId = id, // Lưu ID của app gốc từ marketplace
+                OriginalAuthor = marketplaceProject.AppUserId // Lưu author gốc
             };
 
-            await _mongoContext.UserApps.InsertOneAsync(userApp);
+            await _mongoContext.Projects.InsertOneAsync(newProject);
 
-            return Ok(new { message = $"Installed {project.Name} successfully", appId = userApp.Id });
+            return Ok(new { message = $"Installed {marketplaceProject.Name} successfully", projectId = newProject.Id });
         }
 
         // --- API MỚI: PUBLISH PROJECT LÊN MARKETPLACE ---

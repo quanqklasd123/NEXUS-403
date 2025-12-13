@@ -3,7 +3,10 @@ import React, { useState, useMemo } from 'react';
 import { TOOLS, CATEGORIES } from '../../constants/toolboxItems';
 import DraggableTool from './DraggableTool';
 
-const Toolbox = ({ canvasItems, searchQuery, setSearchQuery, filterTag, setFilterTag }) => {
+/**
+ * Toolbox - Component hiển thị danh sách tools có thể kéo vào canvas
+ */
+const Toolbox = () => {
     const [activeTab, setActiveTab] = useState('Layout');
     
     // Group tools by category
@@ -23,11 +26,11 @@ const Toolbox = ({ canvasItems, searchQuery, setSearchQuery, filterTag, setFilte
     return (
         <div className="w-full bg-white border-t border-neutral-200 flex items-center gap-2 px-3 py-2 z-10 h-16">
             {/* Category Tabs */}
-            <div className="flex border border-neutral-200 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="flex border border-neutral-200 rounded-lg overflow-hidden shrink-0">
                 {CATEGORIES.map((cat) => (
                     <button 
                         key={cat}
-                        className={`px-3 py-1 text-xs font-medium transition-colors border-l border-neutral-200 first:border-l-0 ${
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-neutral-200 first:border-l-0 ${
                             activeTab === cat 
                                 ? 'bg-sage-500 text-white' 
                                 : 'bg-white text-neutral-500 hover:bg-neutral-50'
@@ -40,11 +43,11 @@ const Toolbox = ({ canvasItems, searchQuery, setSearchQuery, filterTag, setFilte
             </div>
 
             {/* Divider */}
-            <div className="w-px h-8 bg-neutral-200 flex-shrink-0"></div>
+            <div className="w-px h-8 bg-neutral-200 shrink-0"></div>
             
             {/* Tools - Horizontal Scroll */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden">
-                <div className="flex gap-1.5 min-w-max">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
+                <div className="flex gap-2 min-w-max py-1">
                     {currentTools.length > 0 ? (
                         currentTools.map((tool) => (
                             <DraggableTool key={tool.type} tool={tool} />

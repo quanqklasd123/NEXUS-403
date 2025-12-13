@@ -1,19 +1,22 @@
-
 // src/utils/getCategoryByType.js
 
 /**
  * Xác định category của component dựa trên type
  * @param {string} type - Type của component
- * @returns {string} - Category: 'layout', 'form', 'display', hoặc 'other'
+ * @returns {string} - Category: 'Layout', 'Display', 'Form', 'Data', 'Control', hoặc 'Other'
  */
 export const getCategoryByType = (type) => {
-    const layoutTypes = ['container', 'row', 'grid', 'divider', 'tabs', 'modal'];
-    const formTypes = ['button', 'input', 'checkbox', 'select', 'datePicker', 'richText', 'fileUpload', 'switch'];
-    const displayTypes = ['card', 'chart', 'image', 'text', 'statCard', 'dataTable', 'listView'];
+    const layoutTypes = ['container', 'row', 'divider'];
+    const displayTypes = ['card', 'image', 'text'];
+    const formTypes = ['button', 'input', 'checkbox'];
+    const dataTypes = ['taskTable', 'taskList', 'taskBoard', 'taskCalendar'];
+    const controlTypes = ['addTaskButton', 'databaseTitle'];
     
-    if (layoutTypes.includes(type)) return 'layout';
-    if (formTypes.includes(type)) return 'form';
-    if (displayTypes.includes(type)) return 'display';
-    return 'other';
+    if (layoutTypes.includes(type)) return 'Layout';
+    if (displayTypes.includes(type)) return 'Display';
+    if (formTypes.includes(type)) return 'Form';
+    if (dataTypes.includes(type)) return 'Data';
+    if (controlTypes.includes(type)) return 'Control';
+    return 'Other';
 };
 
