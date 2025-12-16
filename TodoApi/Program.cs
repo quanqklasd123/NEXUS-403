@@ -8,6 +8,7 @@ using System.Text;
 using System.Linq;
 using TodoApi.Data;
 using TodoApi.Models;
+using TodoApi.Middleware;
 using MongoDB.Driver;
 
 // --- ĐẶT TÊN POLICY Ở ĐÂY ĐỂ DÙNG LẠI ---
@@ -76,6 +77,15 @@ try
         var client = sp.GetRequiredService<MongoDB.Driver.IMongoClient>();
         return new MongoDbContext(client, mongoDatabaseName);
     });
+
+    // Register AppDbContext for multi-tenant support
+    builder.Services.AddScoped<AppDbContext>(sp =>
+    {
+        var mongoClient = sp.GetRequiredService<MongoDB.Driver.IMongoClient>();
+        var mongoContext = sp.GetRequiredService<MongoDbContext>();
+        var logger = sp.GetService<ILogger<AppDbContext>>();
+        return new AppDbContext(mongoClient, mongoContext, logger);
+    });
     
     // Test connection synchronously để catch lỗi sớm
     try
@@ -108,6 +118,12 @@ catch (Exception ex)
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // AI và Google Calendar services đã được xóa để làm sạch dự án
+
+// Register Multi-Tenant Services
+builder.Services.AddScoped<TodoApi.Services.MultiTenantMigrationService>();
+builder.Services.AddScoped<TodoApi.Services.TenantDatabaseService>();
+builder.Services.AddScoped<TodoApi.Services.IndexCreationService>();
+builder.Services.AddScoped<TodoApi.Helpers.TenantSecurityHelper>();
 
 // --- BẮT ĐẦU CẤU HÌNH IDENTITY & JWT ---
 
@@ -241,6 +257,9 @@ app.UseCors(MyAllowSpecificOrigins); // <-- THÊM DÒNG NÀY
 // (QUAN TRỌNG: Phải nằm SAU UseCors và TRƯỚC MapControllers)
 app.UseAuthentication(); // Bật "Xác thực"
 app.UseAuthorization();  // Bật "Quyền"
+
+// Optional: Tenant Validation Middleware (uncomment nếu muốn dùng)
+// app.UseTenantValidation();
 // ========================================
 
 await SeedRoles(app);

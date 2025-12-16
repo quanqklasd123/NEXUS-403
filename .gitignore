@@ -1,0 +1,16 @@
+# Top-level gitignore for repository
+# Ignore development tools that may contain secrets or destructive scripts
+/tools/QueryUserApps/
+
+# Keep OS/editor temp files out
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Node and .NET standard ignores (delegated to subfolders)
+node_modules/
+dist/
+bin/
+obj/
