@@ -12,11 +12,11 @@ import {
 const getLinkClass = ({ isActive }) => {
     return `
     flex items-center p-3 mx-3 my-1 rounded-lg
-    text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800
-    transition-colors duration-200
+    text-neutral-700 hover:bg-neutral-900 hover:text-white
+    transition-all duration-200 font-medium
     ${isActive
-            ? 'bg-sage-100 text-sage-700 font-medium' // Style khi "Active"
-            : 'font-normal' // Style mặc định
+            ? 'bg-neutral-900 text-white shadow-lg' // Style khi "Active" - đen
+            : '' // Style mặc định
         }
   `;
 };
@@ -28,10 +28,10 @@ function Sidebar({ isOpen = true, onToggle }) {
             {!isOpen && (
                 <button
                     onClick={onToggle}
-                    className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-neutral-200 rounded-lg flex items-center justify-center shadow-md hover:bg-neutral-50 transition-colors"
+                    className="fixed top-4 left-4 z-50 w-10 h-10 bg-neutral-900 border-2 border-neutral-800 rounded-lg flex items-center justify-center shadow-lg hover:bg-black transition-all"
                     title="Hiện sidebar"
                 >
-                    <FiMenu className="w-5 h-5 text-neutral-700" />
+                    <FiMenu className="w-5 h-5 text-white" />
                 </button>
             )}
             
@@ -53,7 +53,7 @@ function Sidebar({ isOpen = true, onToggle }) {
                     </div>
                     <button
                         onClick={onToggle}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-900 hover:text-white transition-all"
                         title="Ẩn sidebar"
                     >
                         <FiX className="w-5 h-5 text-neutral-600" />

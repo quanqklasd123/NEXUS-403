@@ -11,7 +11,6 @@ const getPageTitle = (pathname) => {
         '/': 'My Apps',
         '/marketplace': 'Marketplace',
         '/app-builder': 'App Builder',
-        '/settings': 'Settings',
         '/admin': 'Admin Area'
     };
 
@@ -111,10 +110,7 @@ function PageHeader({ title: propTitle }) {
         return 'U';
     };
 
-    const handleSettings = () => {
-        navigate('/settings');
-        setIsDropdownOpen(false);
-    };
+
 
     if (loading) {
         return (
@@ -153,16 +149,16 @@ function PageHeader({ title: propTitle }) {
                     {/* Menu thả xuống */}
                     {isDropdownOpen && (
                         <div 
-                            className="absolute top-12 right-0 w-56 
-                                       bg-paper rounded-lg shadow-xl border border-primary/20
-                                       py-2 z-50 overflow-hidden"
+                            className="absolute top-12 right-0 w-64 
+                                       bg-white rounded-xl shadow-2xl border-2 border-neutral-900
+                                       overflow-hidden z-50"
                         >
                             {/* User Info Section */}
-                            <div className="px-4 py-3 border-b border-primary/10 bg-neutral-50">
-                                <div className="font-serif font-semibold text-text-main text-sm">
+                            <div className="px-5 py-4 bg-neutral-900 border-b-2 border-neutral-800">
+                                <div className="font-bold text-white text-base">
                                     {userInfo?.userName || 'User'}
                                 </div>
-                                <div className="text-xs text-neutral-500 mt-1 truncate">
+                                <div className="text-sm text-neutral-300 mt-1 truncate">
                                     {userInfo?.email || ''}
                                 </div>
                                 {userInfo?.roles && userInfo.roles.length > 0 && (
@@ -170,7 +166,7 @@ function PageHeader({ title: propTitle }) {
                                         {userInfo.roles.map((role, idx) => (
                                             <span 
                                                 key={idx}
-                                                className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full"
+                                                className="text-xs px-2.5 py-1 bg-white text-neutral-900 rounded-md font-medium"
                                             >
                                                 {role}
                                             </span>
@@ -180,29 +176,23 @@ function PageHeader({ title: propTitle }) {
                             </div>
 
                             {/* Menu Items */}
-                            <button
-                                onClick={handleSettings}
-                                className="w-full text-left px-4 py-2 text-text-main hover:bg-wood font-serif flex items-center gap-2 transition-colors"
-                            >
-                                <FiSettings className="w-4 h-4" />
-                                Cài đặt
-                            </button>
+                            <div className="py-2">
+                                {isUserAdmin && (
+                                    <button
+                                        onClick={handleAdminArea}
+                                        className="w-full text-left px-5 py-3 text-neutral-900 hover:bg-neutral-100 font-medium flex items-center gap-3 transition-all"
+                                    >
+                                        <FiShield className="w-5 h-5" />
+                                        Admin Area
+                                    </button>
+                                )}
+                            </div>
                             
-                            {isUserAdmin && (
-                                <button
-                                    onClick={handleAdminArea}
-                                    className="w-full text-left px-4 py-2 text-text-main hover:bg-wood font-serif flex items-center gap-2 transition-colors"
-                                >
-                                    <FiShield className="w-4 h-4" />
-                                    Admin Area
-                                </button>
-                            )}
-                            
-                            <div className="border-t border-primary/10 my-1"></div>
+                            <div className="border-t-2 border-neutral-100"></div>
                             
                             <button 
                                 onClick={handleLogout}
-                                className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-serif transition-colors"
+                                className="w-full text-left px-5 py-3 text-red-600 hover:bg-red-50 font-bold transition-all flex items-center gap-3"
                             >
                                 Đăng xuất
                             </button>

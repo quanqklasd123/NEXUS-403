@@ -489,14 +489,14 @@ export const TOOLS = [
         category: 'Control',
         description: 'Button để thêm task mới',
         defaultProps: {
-            label: '+ New Task',
+            label: 'New Task',
             defaultStatus: 'Todo',
             defaultPriority: 'Medium'
         },
         defaultStyle: {
             width: 'auto',
             height: 'auto',
-            backgroundColor: '#6366f1',
+            backgroundColor: '#000000',
             color: '#ffffff',
             padding: '8px 16px',
             borderRadius: '8px',

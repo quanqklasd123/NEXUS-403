@@ -52,11 +52,37 @@ function AppBuilderPage() {
     
     const navigate = useNavigate();
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
-    const [publishData, setPublishData] = useState({ name: '', description: '', category: 'Template', price: '' });
+    const [publishData, setPublishData] = useState({ name: '', description: '', category: '', price: '' });
+    const [categories, setCategories] = useState([]);
 
     // Get appId or projectId from params (for editing existing app)
     const { appId, projectId } = useParams();
     const id = appId || projectId; // Support both route patterns
+
+    // Load categories from API
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await apiService.getCategories();
+                const loadedCategories = response.data || [];
+                setCategories(loadedCategories);
+                
+                // Set default category to first available category
+                if (loadedCategories.length > 0) {
+                    setPublishData(prev => ({ 
+                        ...prev, 
+                        category: prev.category || loadedCategories[0].name 
+                    }));
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                // Fallback to default categories if API fails
+                setCategories([]);
+            }
+        };
+        fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Load project data
     useEffect(() => {
@@ -860,6 +886,8 @@ function AppBuilderPage() {
             return;
         }
 
+        console.log('📤 Publishing with data:', publishData);
+        
         setPublishing(true);
         try {
             await apiService.publishProject(id, { ...publishData });
@@ -929,6 +957,9 @@ function AppBuilderPage() {
     }, [canUndo, canRedo, onUndo, onRedo, isPreviewMode]);
 
     const selectedItem = canvasItems.find(i => i.id === selectedId);
+    // Drag preview state used to show temporary reorder while dragging
+    const [draggingInfo, setDraggingInfo] = useState(null);
+    const [previewItems, setPreviewItems] = useState(null);
 
     if (loading) return <div className="p-10 text-center">Đang tải dự án...</div>;
 
@@ -948,7 +979,76 @@ function AppBuilderPage() {
         >
             <DndContext 
                 sensors={sensors}
-                onDragEnd={isPreviewMode ? undefined : handleDragEnd}
+                onDragStart={(event) => {
+                    if (isPreviewMode) return;
+                    const active = event.active;
+                    setDraggingInfo({ id: active.id, data: active.data?.current || null });
+                    setPreviewItems(null);
+                }}
+                onDragOver={(event) => {
+                    if (isPreviewMode) return;
+                    const active = event.active;
+                    const over = event.over;
+                    if (!active || !over) return;
+
+                    // Only preview reorder for components (comp-*) or root level
+                    const activeId = active.id;
+                    const overId = over.id;
+
+                    // Work on a copy of canvasItems
+                    const itemsCopy = JSON.parse(JSON.stringify(canvasItems));
+
+                    const findIndexInSiblings = (arr, id) => arr.findIndex(i => i.id === id);
+
+                    // Helper: move active to position of over among siblings
+                    const moveWithinSiblings = (allItems, activeIdLocal, overIdLocal) => {
+                        const activeItem = allItems.find(i => i.id === activeIdLocal);
+                        const overItem = allItems.find(i => i.id === overIdLocal);
+                        if (!activeItem || !overItem) return null;
+
+                        const activeParent = activeItem.parentId || null;
+                        const overParent = overItem.parentId || null;
+
+                        // Only reorder if parents are same
+                        if (activeParent !== overParent) return null;
+
+                        const siblings = allItems.filter(i => (i.parentId || null) === activeParent).sort((a,b)=> (a.order||0)-(b.order||0));
+                        const activeIndex = siblings.findIndex(s => s.id === activeIdLocal);
+                        const overIndex = siblings.findIndex(s => s.id === overIdLocal);
+                        if (activeIndex === -1 || overIndex === -1) return null;
+
+                        const newSiblings = [...siblings];
+                        const [moved] = newSiblings.splice(activeIndex,1);
+                        newSiblings.splice(overIndex,0,moved);
+
+                        // Apply new order to a copy of allItems
+                        const newAll = allItems.map(item => ({ ...item }));
+                        newSiblings.forEach((s, idx) => {
+                            const idxAll = newAll.findIndex(i => i.id === s.id);
+                            if (idxAll !== -1) newAll[idxAll].order = idx;
+                        });
+                        return newAll;
+                    };
+
+                    // If dragging a component and over another component, try to preview reorder
+                    if (String(activeId).startsWith('comp-') && String(overId).startsWith('comp-')) {
+                        const preview = moveWithinSiblings(itemsCopy, activeId, overId);
+                        if (preview) {
+                            setPreviewItems(preview);
+                            return;
+                        }
+                    }
+
+                    // If dragging a root component over canvas-area, do nothing special
+                    // Clear preview if nothing to do
+                    setPreviewItems(null);
+                }}
+                onDragEnd={isPreviewMode ? undefined : (event) => {
+                    // Clear preview state and then call existing handler to commit
+                    setPreviewItems(null);
+                    setDraggingInfo(null);
+                    handleDragEnd(event);
+                }}
             >
                 <div className="flex flex-col h-screen w-full bg-white overflow-hidden" style={{ margin: 0, padding: 0 }}>
                 
@@ -974,7 +1074,7 @@ function AppBuilderPage() {
                         {/* Canvas Area */}
                         <div className="flex-1 overflow-auto w-full h-full">
                             <CanvasArea 
-                                items={canvasItems} 
+                                items={previewItems || canvasItems} 
                                 selectedId={selectedId} 
                                 onSelectItem={setSelectedId} 
                                 isPreview={isPreviewMode} 
@@ -1054,12 +1154,23 @@ function AppBuilderPage() {
                                     <select 
                                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none" 
                                         value={publishData.category} 
-                                        onChange={e => setPublishData({...publishData, category: e.target.value})}
+                                        onChange={e => {
+                                            console.log('📁 Category changed to:', e.target.value);
+                                            setPublishData({...publishData, category: e.target.value});
+                                        }}
                                     >
-                                        <option>Template</option>
-                                        <option>Module</option>
-                                        <option>Component</option>
-                                        <option>Automation</option>
+                                        {categories.length > 0 ? (
+                                            categories.map(cat => (
+                                                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option>Template</option>
+                                                <option>Module</option>
+                                                <option>Component</option>
+                                                <option>Automation</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div>

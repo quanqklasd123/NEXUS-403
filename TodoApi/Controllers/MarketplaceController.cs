@@ -26,12 +26,15 @@ namespace TodoApi.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            Console.WriteLine($"🔍 GetApps called with category: '{category}'");
+
             // 1. Lấy các Project đã Publish từ MongoDB
             var filter = Builders<Project>.Filter.Eq(p => p.IsPublished, true);
             
             // Filter theo category nếu có
             if (!string.IsNullOrEmpty(category) && category != "All")
             {
+                Console.WriteLine($"📁 Filtering by category: '{category}'");
                 filter = Builders<Project>.Filter.And(
                     filter,
                     Builders<Project>.Filter.Eq(p => p.Category, category)
@@ -43,6 +46,12 @@ namespace TodoApi.Controllers
                 .Find(filter)
                 .Sort(sort)
                 .ToListAsync();
+
+            Console.WriteLine($"✅ Found {publishedProjects.Count} published projects");
+            foreach (var proj in publishedProjects)
+            {
+                Console.WriteLine($"   - {proj.Name} (Category: '{proj.Category}')");
+            }
 
             // 2. Lấy danh sách Projects đã install để check IsInstalled (check Projects với MarketplaceAppId)
             var installedAppIds = new HashSet<string>();
@@ -59,6 +68,21 @@ namespace TodoApi.Controllers
                 installedAppIds = new HashSet<string>(installedProjects.Where(id => !string.IsNullOrEmpty(id)));
             }
 
+            // 2.5. Tính số lượt install cho mỗi app (đếm số Projects có MarketplaceAppId trùng với app Id)
+            var installCounts = new Dictionary<string, int>();
+            foreach (var project in publishedProjects)
+            {
+                var installFilter = Builders<Project>.Filter.Eq(p => p.MarketplaceAppId, project.Id);
+                var count = await _mongoContext.Projects.CountDocumentsAsync(installFilter);
+                installCounts[project.Id] = (int)count;
+            }
+
+            // 2.6. Lấy thông tin username cho các author
+            var authorIds = publishedProjects.Select(p => p.AppUserId).Distinct().ToList();
+            var authorFilter = Builders<Models.MongoIdentity.AppUser>.Filter.In(u => u.Id, authorIds);
+            var authors = await _mongoContext.Users.Find(authorFilter).ToListAsync();
+            var authorDict = authors.ToDictionary(u => u.Id, u => u.UserName ?? "Anonymous");
+
             // 3. Chuyển đổi Project -> MarketplaceAppDTO
             var marketplaceApps = publishedProjects.Select(p => new MarketplaceAppDTO
             {
@@ -66,9 +90,9 @@ namespace TodoApi.Controllers
                 Name = p.Name,
                 Description = p.Description ?? "No description",
                 Category = p.Category ?? "Template",
-                Author = p.AppUserId,
+                Author = authorDict.ContainsKey(p.AppUserId) ? authorDict[p.AppUserId] : "Anonymous",
                 Tags = new[] { "Community", p.Category ?? "Template" },
-                Downloads = "0",
+                Downloads = installCounts.ContainsKey(p.Id) ? installCounts[p.Id].ToString() : "0",
                 Rating = 0,
                 Color = "sage",
                 IsInstalled = installedAppIds.Contains(p.Id),
@@ -115,20 +139,30 @@ namespace TodoApi.Controllers
                         isInstalled = installedProject != null;
                     }
 
+                    // Tính số lượt install thực tế
+                    var installCountFilter = Builders<Project>.Filter.Eq(p => p.MarketplaceAppId, id);
+                    var installCount = await _mongoContext.Projects.CountDocumentsAsync(installCountFilter);
+
+                    // Lấy username của author
+                    var authorFilter = Builders<Models.MongoIdentity.AppUser>.Filter.Eq(u => u.Id, project.AppUserId);
+                    var author = await _mongoContext.Users.Find(authorFilter).FirstOrDefaultAsync();
+                    var authorName = author?.UserName ?? "Anonymous";
+
                     var appDto = new MarketplaceAppDTO
                     {
                         Id = project.Id,
                         Name = project.Name,
                         Description = project.Description ?? "No description",
                         Category = project.Category ?? "Template",
-                        Author = project.AppUserId,
+                        Author = authorName,
                         Tags = new[] { "Community", project.Category ?? "Template" },
-                        Downloads = "0",
+                        Downloads = installCount.ToString(),
                         Rating = 0,
                         Color = "sage",
                         IsInstalled = isInstalled,
                         Price = project.Price,
-                        JsonData = project.JsonData // include the appbuilder JSON so preview can render
+                        JsonData = project.JsonData, // include the appbuilder JSON so preview can render
+                        UpdatedAt = project.UpdatedAt
                     };
                     return Ok(appDto);
                 }
@@ -235,6 +269,26 @@ namespace TodoApi.Controllers
             if (project == null)
             {
                 return NotFound("Project not found or you don't own it.");
+            }
+
+            // 1.5. Tự động tạo Category nếu chưa tồn tại
+            if (!string.IsNullOrWhiteSpace(dto.Category))
+            {
+                var categoryFilter = Builders<Category>.Filter.Eq(c => c.Name, dto.Category);
+                var existingCategory = await _mongoContext.Categories.Find(categoryFilter).FirstOrDefaultAsync();
+                
+                if (existingCategory == null)
+                {
+                    var newCategory = new Category
+                    {
+                        Name = dto.Category,
+                        Description = $"Auto-created category for {dto.Category}",
+                        Color = "sage",
+                        CreatedBy = userId,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _mongoContext.Categories.InsertOneAsync(newCategory);
+                }
             }
 
             // 2. Cập nhật trạng thái IsPublished và thông tin của Project

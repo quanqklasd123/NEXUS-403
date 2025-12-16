@@ -10,7 +10,6 @@ import MarketplacePreviewPage from './pages/MarketplacePreviewPage';
 import AppBuilderPage from './pages/AppBuilderPage';
 import AppBuilderListPage from './pages/AppBuilderListPage'; // <-- App Builder Projects List
 import AppRuntimePage from './pages/AppRuntimePage'; // <-- App Runtime Page
-import SettingsPage from './pages/SettingsPage';
 import MyAppPage from './pages/MyAppPage'; // <-- My App Page
 import AdminPage from './pages/AdminPage'; // <-- Admin Page
 import PageHeader from './components/PageHeader'; // <-- PageHeader component
@@ -143,9 +142,6 @@ function AppContent() {
                                 <Route path="/app/:projectId" element={<AppRuntimePage />} />
                                 {/* Marketplace preview (read-only) */}
                                 <Route path="/marketplace/preview/:appId" element={<MarketplacePreviewPage />} />
-
-                                {/* Tuyến đường cho Settings */}
-                                <Route path="/settings" element={<SettingsPage />} />
 
                                 {/* Tuyến đường cho Admin Area */}
                                 <Route path="/admin" element={<AdminPage />} />

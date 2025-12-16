@@ -100,7 +100,7 @@ export function ViewSidebarRender({ props = {}, style }) {
                             className={`
                                 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
                                 ${isActive 
-                                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm' 
+                                    ? 'bg-sage-50 text-sage-600 border border-sage-100 shadow-sm' 
                                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
                                 }
                             `}
@@ -183,7 +183,7 @@ export function ViewSwitcherRender({ props = {}, style, isPreview = false }) {
                         onClick={() => handleViewChange(view)}
                         className={`p-2 rounded-md transition-colors flex-shrink-0 ${
                             isActive 
-                                ? 'bg-indigo-100 text-indigo-700' 
+                                ? 'bg-sage-100 text-sage-600' 
                                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                         }`}
                         title={view.charAt(0).toUpperCase() + view.slice(1)}
@@ -283,14 +283,14 @@ export function FilterBarRender({ props = {}, style, isPreview = false }) {
                     onClick={() => setIsOpen(!isOpen)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors flex-shrink-0 ${
                         activeFilters.length > 0 
-                            ? 'border-indigo-300 bg-indigo-50 text-indigo-700' 
+                            ? 'border-sage-200 bg-sage-50 text-sage-600' 
                             : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                     <FiFilter size={14} className="flex-shrink-0" />
                     <span className="whitespace-nowrap">Filter</span>
                     {activeFilters.length > 0 && (
-                        <span className="bg-indigo-600 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
+                        <span className="bg-sage-600 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
                             {activeFilters.length}
                         </span>
                     )}
@@ -342,7 +342,7 @@ export function FilterBarRender({ props = {}, style, isPreview = false }) {
                                             onClick={() => handleFilterChange(field, filters[field] === option ? null : option)}
                                             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                                                 filters[field] === option
-                                                    ? 'bg-indigo-600 text-white'
+                                                    ? 'bg-sage-600 text-white'
                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                         >
@@ -378,6 +378,10 @@ export function SearchBoxRender({ props = {}, style, isPreview = false }) {
         position: 'relative',
         overflow: 'hidden', // Ngăn text overflow
         minWidth: style.minWidth || '200px', // Đảm bảo có min width
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        maxWidth: '100%',
     };
 
     return (
@@ -390,11 +394,12 @@ export function SearchBoxRender({ props = {}, style, isPreview = false }) {
                 placeholder={placeholder}
                 style={{
                     width: '100%',
+                    height: style.height || '100%',
                     boxSizing: 'border-box',
                     paddingLeft: '36px', // Space for icon
                     paddingRight: query ? '36px' : '16px', // Space for clear button if needed
                 }}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent overflow-hidden text-ellipsis"
+                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent overflow-hidden text-ellipsis"
             />
             {query && (
                 <button
@@ -545,7 +550,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
                                     onClick={() => handleSortChange(field, 'asc')}
                                     className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
                                         currentSort.field === field && currentSort.order === 'asc'
-                                            ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                            ? 'bg-sage-100 text-sage-600 font-medium'
                                             : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 >
@@ -558,7 +563,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
                                     onClick={() => handleSortChange(field, 'desc')}
                                     className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
                                         currentSort.field === field && currentSort.order === 'desc'
-                                            ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                            ? 'bg-sage-100 text-sage-600 font-medium'
                                             : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 >
@@ -579,7 +584,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
 
 // ========== ADD TASK BUTTON ==========
 export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
-    const { label = '+ New Task', defaultStatus = 'Todo', defaultPriority = 'Medium' } = props || {};
+    const { label = 'New Task', defaultStatus = 'Todo', defaultPriority = 'Medium' } = props || {};
     const [isAdding, setIsAdding] = useState(false);
     const [newTask, setNewTask] = useState({ 
         title: '', 
@@ -804,32 +809,34 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
-    if (isAdding) {
-        return (
-            <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm min-w-[450px]">
+    
+    // Render add-task modal when isAdding is true (use portal) instead of replacing the button inline
+    const addTaskModal = isAdding ? createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-lg bg-white border border-gray-200 rounded-lg shadow-xl p-6" onMouseDown={(e) => e.stopPropagation()}>
                 {/* Title Input */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-4">
                     <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Tiêu đề:</label>
                     <input
                         type="text"
                         value={newTask.title}
                         onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                         placeholder="Tiêu đề task..."
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         autoFocus
                         onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                     />
                 </div>
 
                 {/* Status, Priority, DueDate Selection */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3 mb-4">
                     {/* Status */}
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-medium text-gray-600">Status</label>
                         <select
                             value={newTask.status}
                             onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         >
                             <option value="Todo">Todo</option>
                             <option value="InProgress">In Progress</option>
@@ -843,7 +850,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                         <select
                             value={newTask.priority}
                             onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         >
                             <option value="Low">Low</option>
                             <option value="Medium">Medium</option>
@@ -864,13 +871,13 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                     dueDate: value ? new Date(value).toISOString() : null 
                                 });
                             }}
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         />
                     </div>
                 </div>
 
                 {/* Category Selection */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-4">
                     <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Danh mục:</label>
                     {loadingCategories ? (
                         <span className="text-sm text-gray-500">Đang tải...</span>
@@ -886,7 +893,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                         }
                                         setShowCategoryDropdown(!showCategoryDropdown);
                                     }}
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-left flex items-center justify-between cursor-pointer"
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500 bg-white text-left flex items-center justify-between cursor-pointer"
                                 >
                                     <span className="truncate">
                                         {newTask.categoryId 
@@ -922,7 +929,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                                             type="text"
                                                             value={editCategoryName}
                                                             onChange={(e) => setEditCategoryName(e.target.value)}
-                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-sage-500"
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter') {
                                                                     handleSaveEditCategory();
@@ -956,7 +963,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                                 <div 
                                                     key={cat.id}
                                                     className={`px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer flex items-center justify-between ${
-                                                        newTask.categoryId === cat.id ? 'bg-indigo-50 text-indigo-700' : ''
+                                                        newTask.categoryId === cat.id ? 'bg-sage-50 text-sage-600' : ''
                                                     }`}
                                                     onClick={() => {
                                                         setNewTask(prev => ({ ...prev, categoryId: cat.id }));
@@ -996,7 +1003,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                     }
                                     setShowCategoryDropdown(false);
                                 }}
-                                className="px-3 py-2 text-sm text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition-colors"
+                                className="px-3 py-2 text-sm text-sage-600 border border-sage-200 rounded-md hover:bg-sage-50 transition-colors"
                                 title="Tạo danh mục mới"
                             >
                                 <FiPlus size={14} />
@@ -1007,13 +1014,13 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
 
                 {/* New Category Input */}
                 {showNewCategoryInput && (
-                    <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-md">
+                    <div className="flex items-center gap-2 p-2 bg-sage-50 rounded-md mb-4">
                         <input
                             type="text"
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             placeholder="Tên danh mục mới..."
-                            className="flex-1 px-3 py-1.5 text-sm border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="flex-1 px-3 py-1.5 text-sm border border-sage-200 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     handleCreateCategory();
@@ -1026,7 +1033,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                         />
                         <button
                             onClick={handleCreateCategory}
-                            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700"
+                            className="px-3 py-1.5 bg-sage-600 text-white text-xs font-medium rounded-md hover:bg-sage-700"
                         >
                             Tạo
                         </button>
@@ -1056,14 +1063,15 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                     </button>
                     <button
                         onClick={handleAdd}
-                        className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                        className="px-4 py-1.5 bg-sage-600 text-white text-sm font-medium rounded-md hover:bg-sage-700"
                     >
                         Thêm Task
                     </button>
                 </div>
             </div>
-        );
-    }
+        </div>,
+        document.body
+    ) : null;
 
     const buttonStyle = {
         ...style,
@@ -1072,15 +1080,46 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
         minWidth: style.minWidth || 'fit-content', // Đảm bảo có min width phù hợp
     };
 
+    const pointerStartRef = useRef({ x: 0, y: 0, moved: false });
+
+    const handlePointerDown = (e) => {
+        pointerStartRef.current = { x: e.clientX, y: e.clientY, moved: false };
+    };
+
+    const handlePointerMove = (e) => {
+        const s = pointerStartRef.current;
+        if (!s) return;
+        const dx = Math.abs(e.clientX - s.x);
+        const dy = Math.abs(e.clientY - s.y);
+        if (dx > 5 || dy > 5) {
+            s.moved = true;
+        }
+    };
+
+    const handlePointerUp = (e) => {
+        const s = pointerStartRef.current;
+        if (!s) return;
+        // If pointer didn't move significantly, treat as click
+        if (!s.moved) {
+            setIsAdding(true);
+        }
+        pointerStartRef.current = { x: 0, y: 0, moved: false };
+    };
+
     return (
-        <button
-            style={buttonStyle}
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 hover:opacity-90 transition-opacity overflow-hidden whitespace-nowrap"
-        >
-            <FiPlus size={16} className="flex-shrink-0" />
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
-        </button>
+        <>
+            <button
+                style={buttonStyle}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                className="drag-handle flex items-center gap-2 hover:opacity-90 transition-opacity overflow-hidden whitespace-nowrap"
+            >
+                <FiPlus size={16} className="flex-shrink-0" />
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
+            </button>
+            {addTaskModal}
+        </>
     );
 }
 

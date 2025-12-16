@@ -216,55 +216,61 @@ const CreateCategoryModal = ({ isOpen, onClose, onCreate }) => {
 
 // --- COMPONENT APP CARD ---
 const AppCard = ({ app, onInstall, onView }) => {
-    const colorClasses = {
-        'sage': 'from-sage-400 to-sage-600 bg-gradient-to-br',
-        'peach': 'from-peach-400 to-peach-600 bg-gradient-to-br',
-        'butter': 'from-butter-400 to-butter-600 bg-gradient-to-br',
-        'neutral': 'bg-neutral-400',
-    };
-    
     return (
-        <div onClick={() => onView(app)} className={`bg-white border border-neutral-200 rounded-2xl p-5 text-center hover:shadow-lg hover:-translate-y-1 transition-all ${app.isInstalled ? 'border-success/50 bg-success/5' : ''}`}>
+        <div 
+            onClick={() => onView(app)} 
+            className={`group bg-white border-2 transition-all duration-300 cursor-pointer ${
+                app.isInstalled 
+                    ? 'border-neutral-900 bg-neutral-50' 
+                    : 'border-neutral-200 hover:border-neutral-900 hover:shadow-2xl'
+            } rounded-lg p-6 flex flex-col h-full`}
+        >
             {/* Icon */}
-            <div className={`w-12 h-12 ${colorClasses[app.color] || 'bg-neutral-400'} rounded-xl mx-auto mb-3 flex items-center justify-center shadow-sm`}>
-                <FiSettings className="w-6 h-6 text-white" />
+            <div className="w-14 h-14 bg-neutral-900 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <FiSettings className="w-7 h-7 text-white" />
             </div>
             
             {/* Content */}
-            <h4 className="font-semibold text-sm mb-1 text-neutral-800">{app.name}</h4>
-            <p className="text-xs text-neutral-500 mb-3 line-clamp-2 h-8">{app.description}</p>
-            
-            {/* Category Tag */}
-            <div className="mb-3">
-                <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">
-                    {app.category || 'Uncategorized'}
-                </span>
+            <div className="flex-1">
+                <h4 className="font-bold text-base mb-2 text-neutral-900 group-hover:text-black">{app.name}</h4>
+                <p className="text-sm text-neutral-600 mb-4 line-clamp-2 leading-relaxed">{app.description}</p>
+                
+                {/* Category Tag */}
+                <div className="mb-4">
+                    <span className="text-xs uppercase tracking-widest font-bold text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-md">
+                        {app.category || 'UNCATEGORIZED'}
+                    </span>
+                </div>
             </div>
 
             {/* Footer: Price & Actions */}
-            <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
-                <span className={`text-xs font-medium px-2 py-1 rounded ${app.price ? 'bg-warning/10 text-warning' : 'bg-sage-100 text-sage-700'}`}>
-                    {app.price || 'Free'}
+            <div className="flex items-center justify-between pt-4 border-t-2 border-neutral-100">
+                <span className={`text-xs font-bold px-3 py-1.5 rounded-md ${
+                    app.price 
+                        ? 'bg-neutral-900 text-white' 
+                        : 'bg-neutral-100 text-neutral-700'
+                }`}>
+                    {app.price || 'FREE'}
                 </span>
                 
                 <div className="flex items-center gap-2">
                     <button
                         onClick={(e) => { e.stopPropagation(); onView(app); }}
-                        className="p-1.5 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+                        className="p-2 text-neutral-600 hover:bg-neutral-900 hover:text-white rounded-md transition-all"
                         title="View details"
                     >
                         <FiEye className="w-4 h-4" />
                     </button>
                     {app.isInstalled ? (
-                        <button disabled className="flex items-center gap-1 text-xs font-bold text-success">
-                            <FiCheck /> Installed
+                        <button disabled className="flex items-center gap-1 text-xs font-bold text-neutral-900 bg-neutral-200 px-3 py-1.5 rounded-md">
+                            <FiCheck /> INSTALLED
                         </button>
                     ) : (
                         <button 
                             onClick={(e) => { e.stopPropagation(); onInstall(app.id); }}
-                            className="text-xs font-bold text-sage-600 hover:text-sage-800 hover:underline"
+                            className="text-xs font-bold text-white bg-neutral-900 hover:bg-black px-4 py-1.5 rounded-md transition-all"
                         >
-                            Install
+                            INSTALL
                         </button>
                     )}
                 </div>
@@ -291,20 +297,26 @@ function MarketplacePage() {
         const fetchData = async () => {
             try {
                 setLoading(true);
+                console.log('🔍 Fetching apps for category:', selectedCategory);
                 const [categoriesRes, appsRes] = await Promise.all([
                     apiService.getCategories(),
                     apiService.getMarketplaceApps(selectedCategory)
                 ]);
                 setCategories(categoriesRes.data || []);
                 setApps(appsRes.data || []);
+                console.log('✅ Apps loaded:', appsRes.data?.length || 0, 'apps');
+                console.log('📦 Apps data:', appsRes.data);
+                console.log('📂 Categories loaded:', categoriesRes.data?.length || 0);
             } catch (error) {
-                console.error("Lỗi tải Marketplace:", error);
+                console.error("❌ Lỗi tải Marketplace:", error);
+                // Set empty arrays on error to prevent UI issues
+                setApps([]);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [location.pathname, location.key, selectedCategory]);
+    }, [selectedCategory]); // Simplified dependencies - only track selectedCategory
 
     // Xử lý cài đặt App
     const handleInstall = async (appId) => {
@@ -346,24 +358,13 @@ function MarketplacePage() {
 
     // Build category list: "All" + categories from API
     const categoryList = ["All", ...categories.map(c => c.name)];
+    console.log('📋 Category list:', categoryList);
+    console.log('🎯 Selected category:', selectedCategory);
 
     if (loading) return <div className="p-10 text-center text-neutral-500">Đang tải chợ ứng dụng...</div>;
 
     return (
         <div className="flex flex-col gap-8">
-            {/* Featured Banner */}
-            <section className="bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-2xl p-8 border border-neutral-100 relative overflow-hidden">
-                <div className="relative z-10">
-                    <span className="px-3 py-1 bg-white text-sage-700 text-xs font-bold rounded-full mb-4 inline-block shadow-sm">NEW ARRIVAL</span>
-                    <h2 className="text-3xl font-bold text-neutral-800 mb-2">AI Agent Builder</h2>
-                    <p className="text-neutral-600 max-w-lg mb-6">Create custom AI assistants to automate your workflow without writing a single line of code.</p>
-                    <button className="px-6 py-2.5 bg-neutral-800 text-white rounded-xl font-medium hover:bg-black transition-all shadow-lg hover:shadow-xl">
-                        Try Beta Access
-                    </button>
-                </div>
-                <div className="absolute -right-10 -top-10 w-64 h-64 bg-sage-200 rounded-full opacity-20 blur-3xl"></div>
-            </section>
-
             {/* Main Content Area */}
             <section>
                 {/* Toolbar: Search, Category Filter, Create Category */}

@@ -220,8 +220,13 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                 
                 // Render children nếu có
                 if (childItems.length > 0) {
+                    // If container has children, hide placeholder border/background (defaultStyle)
+                    const childContentStyle = { ...contentStyle };
+                    delete childContentStyle.border;
+                    delete childContentStyle.backgroundColor;
+
                     return (
-                        <div style={contentStyle} {...containerProps}>
+                        <div style={childContentStyle} {...containerProps}>
                             {childItems.map(child => (
                                 <DraggableChildComponent
                                     key={child.id}
@@ -258,8 +263,13 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                 const rowClassName = `text-neutral-400 text-sm ${isDroppableType && isOver ? 'ring-2 ring-sage-400 bg-sage-50' : ''}`;
                 
                 if (childItems.length > 0) {
+                    // Hide placeholder border/background when children exist
+                    const childRowStyle = { ...rowStyle };
+                    delete childRowStyle.border;
+                    delete childRowStyle.backgroundColor;
+
                     return (
-                        <div style={rowStyle} className={rowClassName} ref={isDroppableType ? setDroppableRef : undefined}>
+                        <div style={childRowStyle} className={rowClassName} ref={isDroppableType ? setDroppableRef : undefined}>
                             {childItems.map(child => (
                                 <DraggableChildComponent
                                     key={child.id}
@@ -294,9 +304,14 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                 const gridClassName = `${isDroppableType && isOver ? 'ring-2 ring-sage-400 bg-sage-50' : ''}`;
                 
                 if (childItems.length > 0) {
+                    // Hide placeholder border/background when children exist
+                    const childGridStyle = { ...gridStyle };
+                    delete childGridStyle.border;
+                    delete childGridStyle.backgroundColor;
+
                     return (
                         <div 
-                            style={gridStyle} 
+                            style={childGridStyle} 
                             className={gridClassName} 
                             ref={isDroppableType ? setDroppableRef : undefined}
                         >
