@@ -365,6 +365,14 @@ function MarketplacePage() {
 
     return (
         <div className="flex flex-col gap-8">
+            {/* Header */}
+            <div className="mb-4">
+                <h1 className="text-2xl font-semibold text-neutral-800">Marketplace</h1>
+                <p className="text-neutral-500 text-sm mt-1">
+                    Khám phá và cài đặt các ứng dụng được chia sẻ từ cộng đồng
+                </p>
+            </div>
+
             {/* Main Content Area */}
             <section>
                 {/* Toolbar: Search, Category Filter, Create Category */}
@@ -398,7 +406,7 @@ function MarketplacePage() {
                                 </button>
                             ))}
                         </div>
-                        {admin ? (
+                        {admin && (
                             <button
                                 onClick={() => setIsCreateCategoryModalOpen(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-all whitespace-nowrap"
@@ -406,11 +414,6 @@ function MarketplacePage() {
                                 <FiPlus className="w-4 h-4" />
                                 <span className="text-sm font-medium">New Category</span>
                             </button>
-                        ) : (
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-neutral-400 whitespace-nowrap">
-                                <FiPlus className="w-4 h-4" />
-                                <span className="text-sm">New Category</span>
-                            </div>
                         )}
                         <div className="text-sm text-neutral-400 font-medium hidden md:block whitespace-nowrap">
                             {filteredApps.length} apps found

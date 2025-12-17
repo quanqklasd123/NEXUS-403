@@ -16,6 +16,7 @@ import {
     TaskCalendarRender,
     ViewSwitcherRender,
     ViewSidebarRender,
+    ViewAreaRender,
     FilterBarRender,
     SearchBoxRender,
     SortDropdownRender,
@@ -783,6 +784,79 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
             
             case 'viewSidebar':
                 return <ViewSidebarRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+            
+            case 'viewArea': {
+                // ViewArea is a droppable container that shows/hides based on viewType
+                // Children maintain absolute positioning like canvas items
+                const viewAreaProps = {};
+                
+                // Add droppable ref and visual feedback
+                if (isDroppableType) {
+                    viewAreaProps.ref = setDroppableRef;
+                    if (isOver) {
+                        viewAreaProps.className = 'ring-2 ring-neutral-400 bg-neutral-50';
+                    }
+                }
+                
+                // Render children if any - use absolute positioning wrapper
+                if (childItems.length > 0) {
+                    // Remove border when has children
+                    const childContentStyle = { ...contentStyle };
+                    delete childContentStyle.border;
+                    
+                    return (
+                        <ViewAreaRender props={mergedProps} style={childContentStyle} isPreview={isPreview}>
+                            <div className="absolute inset-0" {...viewAreaProps}>
+                                {childItems.map(child => {
+                                    // Keep absolute positioning from child.position and style
+                                    const childPosition = child.position || { x: 20, y: 60 };
+                                    const childStyleWidth = child.style?.width || '400px';
+                                    const childStyleHeight = child.style?.height || '200px';
+                                    const childStyle = {
+                                        position: 'absolute',
+                                        left: `${childPosition.x}px`,
+                                        top: `${childPosition.y}px`,
+                                        width: typeof childStyleWidth === 'number' ? `${childStyleWidth}px` : childStyleWidth,
+                                        height: typeof childStyleHeight === 'number' ? `${childStyleHeight}px` : childStyleHeight,
+                                        zIndex: child.id === isSelected ? 100 : 1
+                                    };
+                                    
+                                    return (
+                                        <div
+                                            key={child.id}
+                                            style={childStyle}
+                                            className={child.id === isSelected ? 'ring-2 ring-neutral-900 ring-offset-1' : ''}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!isPreview && onClick) {
+                                                    onClick(child.id);
+                                                }
+                                            }}
+                                        >
+                                            <RenderComponent
+                                                item={child}
+                                                items={items}
+                                                isSelected={child.id === isSelected}
+                                                onClick={onClick}
+                                                isPreview={isPreview}
+                                                navigate={navigate}
+                                                context={context}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </ViewAreaRender>
+                    );
+                }
+                
+                // Empty viewArea - show placeholder
+                return (
+                    <ViewAreaRender props={mergedProps} style={contentStyle} isPreview={isPreview}>
+                        <div {...viewAreaProps} className="w-full h-full" />
+                    </ViewAreaRender>
+                );
+            }
             
             case 'filterBar':
                 return <FilterBarRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;

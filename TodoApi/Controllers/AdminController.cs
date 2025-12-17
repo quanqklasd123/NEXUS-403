@@ -234,5 +234,48 @@ namespace TodoApi.Controllers
 
             return BadRequest(new { message = "Không thể xóa user.", errors = result.Errors });
         }
+
+        // PUT: api/admin/users/{id}/roles
+        [HttpPut("users/{id}/roles")]
+        public async Task<IActionResult> UpdateUserRoles(string id, [FromBody] List<string> newRoles)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound("User không tồn tại.");
+            }
+
+            // Validate roles
+            var validRoles = new[] { "User", "Admin" };
+            if (newRoles.Any(r => !validRoles.Contains(r, StringComparer.OrdinalIgnoreCase)))
+            {
+                return BadRequest(new { message = "Roles không hợp lệ. Chỉ chấp nhận 'User' và 'Admin'." });
+            }
+
+            // Get current roles
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            // Remove all current roles
+            if (currentRoles.Any())
+            {
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                {
+                    return BadRequest(new { message = "Không thể xóa roles hiện tại.", errors = removeResult.Errors });
+                }
+            }
+
+            // Add new roles
+            if (newRoles.Any())
+            {
+                var addResult = await _userManager.AddToRolesAsync(user, newRoles);
+                if (!addResult.Succeeded)
+                {
+                    return BadRequest(new { message = "Không thể thêm roles mới.", errors = addResult.Errors });
+                }
+            }
+
+            return Ok(new { message = "Đã cập nhật roles thành công.", roles = newRoles });
+        }
     }
 }

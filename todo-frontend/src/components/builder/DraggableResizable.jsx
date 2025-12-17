@@ -88,7 +88,17 @@ const DraggableResizable = ({
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [actualSize, setActualSize] = useState(null);
+    const [activeView, setActiveView] = useState('table');
     const contentRef = useRef(null);
+    
+    // Listen for view-change events to show/hide components
+    useEffect(() => {
+        const handleViewChange = (e) => {
+            setActiveView(e.detail?.view || 'table');
+        };
+        window.addEventListener('view-change', handleViewChange);
+        return () => window.removeEventListener('view-change', handleViewChange);
+    }, []);
     
     const bounds = getInitialBounds(item);
     
@@ -172,6 +182,18 @@ const DraggableResizable = ({
         }
     };
     
+    // Check if component should be visible in current view (AFTER all hooks)
+    const visibleInViews = item.props?.visibleInViews || ['table', 'list', 'board', 'calendar'];
+    const isVisibleInCurrentView = visibleInViews.includes(activeView);
+    
+    // Only apply view-based visibility to data components
+    const isDataComponentType = ['taskBoard', 'taskList', 'taskTable', 'taskCalendar'].includes(item.type);
+    
+    // Hide data components not visible in current view
+    if (isDataComponentType && !isVisibleInCurrentView) {
+        return null; // Hide data components completely
+    }
+    
     // Disable drag/resize in preview mode
     if (isPreview) {
         return (
@@ -222,6 +244,7 @@ const DraggableResizable = ({
                 `}
                 onClick={(e) => {
                     e.stopPropagation();
+                    console.log('ParentId onClick', { itemId: item.id });
                     onClick(item.id);
                 }}
             >
@@ -279,6 +302,7 @@ const DraggableResizable = ({
             `}
             onClick={(e) => {
                 e.stopPropagation();
+                console.log('Rnd onClick', { isDragging, isResizing, itemId: item.id });
                 if (!isDragging && !isResizing) {
                     onClick(item.id);
                 }

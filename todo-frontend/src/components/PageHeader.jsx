@@ -1,7 +1,7 @@
 // src/components/PageHeader.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiBell, FiShield, FiUser, FiSettings } from 'react-icons/fi';
+import { FiShield, FiUser, FiSettings } from 'react-icons/fi';
 import { isAdmin, getUserInfo } from '../utils/jwtUtils';
 import apiService from '../services/apiService';
 
@@ -115,24 +115,14 @@ function PageHeader({ title: propTitle }) {
     if (loading) {
         return (
             <div className="flex items-center justify-between w-full mb-6 pb-4 border-b border-primary/10">
-                <h2 className="text-3xl font-serif text-text-main">{displayTitle}</h2>
                 <div className="w-10 h-10 rounded-full bg-neutral-200 animate-pulse"></div>
             </div>
         );
     }
 
     return (
-        <div className="flex items-center justify-between w-full mb-6 pb-4 border-b border-primary/10">
-            <h2 className="text-3xl font-serif text-text-main">
-                {displayTitle}
-            </h2>
-
+        <div className="flex items-center justify-end w-full mb-6 pb-4 border-b border-primary/10">
             <div className="flex items-center gap-4">
-                {/* Nút chuông */}
-                <button className="p-2 rounded-full hover:bg-wood/50 text-primary transition-colors">
-                    <FiBell className="w-6 h-6" />
-                </button>
-                
                 {/* Avatar với menu dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button

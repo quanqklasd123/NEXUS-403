@@ -312,6 +312,18 @@ function AppBuilderPage() {
             delete baseStyle.position;
         }
 
+        // Auto-assign visibleInViews for data components based on their type
+        let defaultVisibleInViews = ['table', 'list', 'board', 'calendar']; // Default for non-data components
+        if (toolType === 'taskTable') {
+            defaultVisibleInViews = ['table'];
+        } else if (toolType === 'taskList') {
+            defaultVisibleInViews = ['list'];
+        } else if (toolType === 'taskBoard') {
+            defaultVisibleInViews = ['board'];
+        } else if (toolType === 'taskCalendar') {
+            defaultVisibleInViews = ['calendar'];
+        }
+
         return {
             id: `comp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: toolData.label || toolType,
@@ -330,6 +342,7 @@ function AppBuilderPage() {
             position: position, // null nếu trong layout, object nếu root
             props: {
                 ...(toolData.defaultProps || {}),
+                visibleInViews: defaultVisibleInViews, // Auto-assign based on component type
                 events: (toolData.defaultProps?.events || {})
             },
             style: baseStyle
@@ -377,9 +390,9 @@ function AppBuilderPage() {
                     }
                 }
             } else if (over.id.startsWith('comp-')) {
-                // Kiểm tra xem có phải layout component không (container, row, grid)
+                // Kiểm tra xem có phải layout component không (container, row, grid, viewArea)
                 const parentItem = canvasItems.find(i => i.id === over.id);
-                const isLayout = parentItem && ['container', 'row', 'grid'].includes(parentItem.type);
+                const isLayout = parentItem && ['container', 'row', 'grid', 'viewArea'].includes(parentItem.type);
                 
                 if (isLayout) {
                     // Thêm vào layout component

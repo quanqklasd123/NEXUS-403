@@ -268,54 +268,55 @@ export function FilterBarRender({ props = {}, style, isPreview = false }) {
 
     const filterBarStyle = {
         ...style,
-        overflow: 'hidden',
+        overflow: 'visible',
         position: 'relative',
-        width: style.width || 'auto', // FilterBar không nên có width: 100% mặc định
-        minWidth: style.minWidth || 'fit-content',
+        width: 'auto',
+        display: 'inline-block',
     };
 
     return (
-        <div style={filterBarStyle} className="relative">
-            <div className="flex items-center gap-2 flex-wrap">
-                {/* Filter Button */}
-                <button
-                    ref={buttonRef}
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors flex-shrink-0 ${
-                        activeFilters.length > 0 
-                            ? 'border-sage-200 bg-sage-50 text-sage-600' 
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                >
-                    <FiFilter size={14} className="flex-shrink-0" />
-                    <span className="whitespace-nowrap">Filter</span>
-                    {activeFilters.length > 0 && (
-                        <span className="bg-sage-600 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
-                            {activeFilters.length}
-                        </span>
-                    )}
-                    <FiChevronDown size={14} className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Active Filter Tags */}
-                {activeFilters.map(({ field, value }) => (
-                    <span 
-                        key={field}
-                        className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700 flex-shrink-0 overflow-hidden"
-                    >
-                        <span className="overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]">{field}: {value}</span>
-                        <button onClick={() => clearFilter(field)} className="hover:text-red-500 flex-shrink-0">
-                            <FiX size={12} />
-                        </button>
-                    </span>
-                ))}
-
+        <div style={filterBarStyle} className="relative inline-block">
+            {/* Filter Button */}
+            <button
+                ref={buttonRef}
+                onClick={() => setIsOpen(!isOpen)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                    activeFilters.length > 0 
+                        ? 'border-sage-200 bg-sage-50 text-sage-600' 
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+            >
+                <FiFilter size={14} />
+                <span className="whitespace-nowrap">Filter</span>
                 {activeFilters.length > 0 && (
-                    <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500 whitespace-nowrap flex-shrink-0">
-                        Clear all
-                    </button>
+                    <span className="bg-sage-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {activeFilters.length}
+                    </span>
                 )}
-            </div>
+                <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Active Filter Tags - Positioned absolutely */}
+            {activeFilters.length > 0 && (
+                <div className="absolute left-0 top-full mt-1 flex items-center gap-2 flex-wrap z-10">
+                    {activeFilters.map(({ field, value }) => (
+                        <span 
+                            key={field}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700 shadow-sm"
+                        >
+                            <span className="whitespace-nowrap">{field}: {value}</span>
+                            <button onClick={() => clearFilter(field)} className="hover:text-red-500">
+                                <FiX size={12} />
+                            </button>
+                        </span>
+                    ))}
+                    {activeFilters.length > 0 && (
+                        <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500 whitespace-nowrap">
+                            Clear all
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Dropdown */}
             {isOpen && createPortal(
@@ -1148,6 +1149,59 @@ export function DatabaseTitleRender({ props = {}, style, isPreview = false }) {
         >
             <span className="text-2xl flex-shrink-0">{icon}</span>
             <span className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">{title}</span>
+        </div>
+    );
+}
+// ========== VIEW AREA (Container for specific view type) ==========
+export function ViewAreaRender({ props = {}, style, isPreview = false, children }) {
+    const { viewType = 'board', label = '' } = props || {};
+    const [activeView, setActiveView] = useState('table'); // Default to table
+    const [shouldShow, setShouldShow] = useState(false);
+
+    // Listen for view-change events from ViewSwitcher
+    useEffect(() => {
+        const handleViewChange = (e) => {
+            const newView = e.detail?.view || 'table';
+            setActiveView(newView);
+            setShouldShow(newView === viewType);
+        };
+        
+        window.addEventListener('view-change', handleViewChange);
+        
+        // Initial check
+        setShouldShow(activeView === viewType);
+        
+        return () => {
+            window.removeEventListener('view-change', handleViewChange);
+        };
+    }, [viewType, activeView]);
+
+    // In builder mode (not preview), always show with semi-transparency when not active
+    if (!isPreview) {
+        const opacity = shouldShow ? 1 : 0.3;
+        return (
+            <div
+                style={{ ...style, opacity }}
+                className="w-full h-full border-2 border-dashed border-neutral-300 rounded-lg p-4 relative"
+            >
+                <div className="absolute top-2 left-2 px-2 py-1 bg-neutral-900 text-white text-xs rounded">
+                    {label || `${viewType} View`}
+                </div>
+                <div className="w-full h-full">
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
+    // In preview mode, only show when active view matches
+    if (!shouldShow) {
+        return null;
+    }
+
+    return (
+        <div style={style} className="w-full h-full">
+            {children}
         </div>
     );
 }

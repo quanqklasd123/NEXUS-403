@@ -327,7 +327,7 @@ export const TOOLS = [
             filters: ['status', 'priority', 'dueDate']
         },
         defaultStyle: {
-            width: '100%',
+            width: 'fit-content',
             height: 'auto',
             padding: '8px',
             backgroundColor: '#ffffff',

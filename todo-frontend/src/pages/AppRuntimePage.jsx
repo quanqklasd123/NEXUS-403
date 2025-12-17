@@ -19,6 +19,16 @@ const AppRuntimePage = () => {
     const [error, setError] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showHeader, setShowHeader] = useState(true);
+    const [activeView, setActiveView] = useState('table'); // Track active view for view switching
+
+    // Listen for view-change events from ViewSwitcher
+    useEffect(() => {
+        const handleViewChange = (e) => {
+            setActiveView(e.detail?.view || 'table');
+        };
+        window.addEventListener('view-change', handleViewChange);
+        return () => window.removeEventListener('view-change', handleViewChange);
+    }, []);
 
     // App State for interactive components
     const [appState, setAppState] = useState({
@@ -161,30 +171,30 @@ const AppRuntimePage = () => {
     }
 
     return (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        <div className="fixed inset-0 bg-neutral-50 z-50 flex flex-col">
             {/* Header Bar */}
             {showHeader && (
-                <div className="bg-neutral-900 border-b border-neutral-800 px-4 py-3 flex items-center justify-between shrink-0">
+                <div className="bg-white border-b border-neutral-200 px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
                     <div className="flex items-center gap-4">
                         {/* Back Button */}
                         <button
                             onClick={() => navigate('/')}
-                            className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
+                            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                             title="Quay lại My Apps"
                         >
-                            <FiArrowLeft className="w-5 h-5 text-neutral-300" />
+                            <FiArrowLeft className="w-5 h-5 text-neutral-700" />
                         </button>
 
                         {/* App Info */}
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-neutral-700 to-neutral-900 rounded-xl flex items-center justify-center text-white font-medium border border-neutral-700">
+                            <div className="w-10 h-10 bg-gradient-to-br from-neutral-200 to-neutral-300 rounded-xl flex items-center justify-center text-neutral-800 font-medium border border-neutral-300">
                                 {project?.name?.charAt(0)?.toUpperCase() || 'A'}
                             </div>
                             <div>
-                                <h1 className="font-semibold text-white">
+                                <h1 className="font-semibold text-neutral-800">
                                     {project?.name || 'Untitled App'}
                                 </h1>
-                                <p className="text-xs text-neutral-400">
+                                <p className="text-xs text-neutral-500">
                                     {project?.description || 'No description'}
                                 </p>
                             </div>
@@ -196,29 +206,29 @@ const AppRuntimePage = () => {
                         {/* Home */}
                         <Link
                             to="/"
-                            className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
+                            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                             title="My Apps"
                         >
-                            <FiHome className="w-5 h-5 text-neutral-300" />
+                            <FiHome className="w-5 h-5 text-neutral-700" />
                         </Link>
 
                         {/* Fullscreen */}
                         <button
                             onClick={toggleFullscreen}
-                            className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
+                            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
                         >
                             {isFullscreen ? (
-                                <FiMinimize2 className="w-5 h-5 text-neutral-300" />
+                                <FiMinimize2 className="w-5 h-5 text-neutral-700" />
                             ) : (
-                                <FiMaximize2 className="w-5 h-5 text-neutral-300" />
+                                <FiMaximize2 className="w-5 h-5 text-neutral-700" />
                             )}
                         </button>
 
                         {/* Hide Header Toggle */}
                         <button
                             onClick={() => setShowHeader(false)}
-                            className="px-3 py-1.5 text-xs bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors text-neutral-200"
+                            className="px-3 py-1.5 text-xs bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors text-neutral-700"
                         >
                             Hide Header
                         </button>
@@ -230,19 +240,54 @@ const AppRuntimePage = () => {
             {!showHeader && (
                 <button
                     onClick={() => setShowHeader(true)}
-                    className="fixed top-4 right-4 z-50 px-3 py-1.5 bg-neutral-800 shadow-lg rounded-lg text-xs text-neutral-200 hover:bg-neutral-700 border border-neutral-700"
+                    className="fixed top-4 right-4 z-50 px-3 py-1.5 bg-white shadow-lg rounded-lg text-xs text-neutral-700 hover:bg-neutral-50 border border-neutral-200"
                 >
                     Show Header
                 </button>
             )}
 
-            {/* App Content Area - Centered with max width */}
-            <div className="flex-1 overflow-auto flex items-center justify-center p-6">
-                <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl border-2 border-neutral-800">
-                    {/* Render all components */}
-                    <div className="p-8">
-                        {renderItems(null)}
-                    </div>
+            {/* App Content Area - Full canvas like AppBuilder preview */}
+            <div className="flex-1 overflow-auto bg-neutral-50">
+                <div className="relative min-h-full w-full">
+                    {canvasItems
+                        .filter(item => !item.parentId)
+                        .filter(item => {
+                            // Only filter data components by view - control components always show
+                            const isDataComponent = ['taskBoard', 'taskList', 'taskTable', 'taskCalendar'].includes(item.type);
+                            if (!isDataComponent) {
+                                return true; // Always show control components (buttons, filters, etc)
+                            }
+                            // For data components, check visibleInViews
+                            const visibleInViews = item.props?.visibleInViews || ['table', 'list', 'board', 'calendar'];
+                            return visibleInViews.includes(activeView);
+                        })
+                        .map(item => {
+                            const position = item.position || { x: 20, y: 20 };
+                            const itemStyle = item.style || {};
+                            
+                            return (
+                                <div
+                                    key={item.id}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${position.x}px`,
+                                        top: `${position.y}px`,
+                                        width: itemStyle.width || 'auto',
+                                        height: itemStyle.height || 'auto',
+                                        zIndex: 1 // Ensure proper z-index stacking
+                                    }}
+                                >
+                                    <RenderComponent
+                                        item={item}
+                                        items={canvasItems}
+                                        isPreview={true}
+                                        navigate={navigate}
+                                        context={appState}
+                                        onUpdateProps={(newProps) => handleUpdateProps(item.id, newProps)}
+                                    />
+                                </div>
+                            );
+                        })}
                 </div>
             </div>
         </div>
