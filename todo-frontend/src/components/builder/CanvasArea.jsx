@@ -62,8 +62,9 @@ const CanvasArea = ({
             {/* Removed empty-canvas placeholder to avoid persistent background box behind components */}
             {/* Absolute positioned components with snap to grid */}
             <div 
-                className="w-full min-h-full p-4 relative" 
-                style={{ minHeight: '100vh', position: 'relative' }}
+                id="canvas-inner"
+                className="w-full min-h-full relative" 
+                style={{ minHeight: '100%' }}
                 onDragOver={(e) => {
                     // Allow drop from toolbox
                     e.preventDefault();

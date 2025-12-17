@@ -94,7 +94,10 @@ const DraggableResizable = ({
     
     // Check if it's a control component that should fit content
     const controlComponents = ['viewSwitcher', 'filterBar', 'searchBox', 'sortDropdown', 'addTaskButton', 'databaseTitle', 'button', 'checkbox', 'switch', 'input', 'select', 'datePicker'];
+    const dataComponents = ['taskBoard', 'taskList', 'taskTable'];
     const isControlComponent = controlComponents.includes(item.type);
+    const isDataComponent = dataComponents.includes(item.type);
+    const shouldAutoSize = isControlComponent || isDataComponent;
     
     // Check if it's a layout component (container, row, grid)
     const isLayoutComponent = item.type === 'container' || item.type === 'row' || item.type === 'grid';
@@ -215,8 +218,7 @@ const DraggableResizable = ({
                     zIndex: isSelected ? 100 : 1
                 }}
                 className={`
-                    ${isSelected ? 'ring-2 ring-sage-500 ring-offset-2' : ''}
-                    transition-shadow duration-200
+                    ${isSelected ? 'ring-2 ring-neutral-900 ring-offset-1' : ''}
                 `}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -225,7 +227,7 @@ const DraggableResizable = ({
             >
                 {/* Selection indicator */}
                 {isSelected && (
-                    <div className="absolute -top-6 left-0 flex items-center gap-2 px-2 py-1 bg-sage-500 text-white text-xs rounded shadow-lg z-50">
+                    <div className="absolute -top-6 left-0 flex items-center gap-2 px-2 py-1 bg-neutral-900 text-white text-xs rounded z-50">
                         <FiMove className="w-3 h-3" />
                         <span>{item.name || item.type}</span>
                     </div>
@@ -267,14 +269,12 @@ const DraggableResizable = ({
             style={{
                 zIndex: isDragging || isResizing ? 1000 : (isSelected ? 100 : 1),
                 opacity: isDragging || isResizing ? 0.8 : 1,
-                ...(isControlComponent ? {
-                    display: 'inline-block'
-                } : {})
+                border: 'none',
+                outline: 'none',
+                background: 'transparent'
             }}
             className={`
-                ${isSelected ? 'ring-2 ring-sage-500 ring-offset-2' : ''}
-                ${isDragging || isResizing ? 'shadow-2xl' : 'shadow-sm'}
-                transition-shadow duration-200
+                ${isSelected ? 'ring-2 ring-neutral-900 ring-offset-1' : ''}
                 ${isControlComponent ? 'control-component-rnd' : ''}
             `}
             onClick={(e) => {
@@ -322,12 +322,11 @@ const DraggableResizable = ({
                 </div>
             )}
             
-            {/* Component content - control components use inline-block wrapper */}
-            {isControlComponent ? (
+            {/* Component content - control and data components use wrapper for auto-sizing */}
+            {shouldAutoSize ? (
                 <div 
                     ref={contentRef}
-                    className="relative" 
-                    style={{ display: 'inline-block', width: 'fit-content', height: 'fit-content' }}
+                    className="w-full h-full"
                 >
                     <RenderComponent 
                         item={item} 

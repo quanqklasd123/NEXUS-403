@@ -111,7 +111,7 @@ const DraggableChildComponent = ({ child, items, isSelected, onClick, isPreview,
                     // Don't preventDefault to allow @dnd-kit to work
                 }
             }}
-            className={`${isDragging ? 'shadow-2xl cursor-grabbing' : isSelected ? 'ring-2 ring-sage-400' : ''} ${!isPreview ? 'hover:shadow-md transition-shadow' : ''}`}
+            className={`${isDragging ? 'cursor-grabbing' : isSelected ? 'ring-2 ring-neutral-900' : ''}`}
         >
             <RenderComponent 
                 item={child} 

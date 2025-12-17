@@ -372,34 +372,15 @@ export function SearchBoxRender({ props = {}, style, isPreview = false }) {
         }
     };
 
-    // Đảm bảo wrapper có overflow handling
-    const wrapperStyle = {
-        ...style,
-        position: 'relative',
-        overflow: 'hidden', // Ngăn text overflow
-        minWidth: style.minWidth || '200px', // Đảm bảo có min width
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        maxWidth: '100%',
-    };
-
     return (
-        <div style={wrapperStyle} className="relative">
+        <div style={style} className="relative w-full h-full flex items-center">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={16} />
             <input
                 type="text"
                 value={query}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder={placeholder}
-                style={{
-                    width: '100%',
-                    height: style.height || '100%',
-                    boxSizing: 'border-box',
-                    paddingLeft: '36px', // Space for icon
-                    paddingRight: query ? '36px' : '16px', // Space for clear button if needed
-                }}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent overflow-hidden text-ellipsis"
+                className="w-full h-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
             />
             {query && (
                 <button

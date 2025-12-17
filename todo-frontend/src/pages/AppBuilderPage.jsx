@@ -357,15 +357,24 @@ function AppBuilderPage() {
                 parentId = null;
                 order = canvasItems.filter(item => !item.parentId).length;
                 // Tính position dựa trên drop location với snap to grid
-                if (event.over?.rect && event.activatorEvent) {
-                    const rect = event.over.rect;
-                    const clientX = event.activatorEvent.clientX || 0;
-                    const clientY = event.activatorEvent.clientY || 0;
+                if (event.activatorEvent) {
                     const GRID_SIZE = 20;
-                    position = {
-                        x: Math.max(20, Math.round((clientX - rect.left) / GRID_SIZE) * GRID_SIZE),
-                        y: Math.max(20, Math.round((clientY - rect.top) / GRID_SIZE) * GRID_SIZE)
-                    };
+                    // Get canvas inner element (actual container for components)
+                    const canvasElement = document.getElementById('canvas-area');
+                    if (canvasElement) {
+                        const canvasRect = canvasElement.getBoundingClientRect();
+                        const clientX = event.activatorEvent.clientX || 0;
+                        const clientY = event.activatorEvent.clientY || 0;
+                        
+                        // Calculate position relative to canvas top-left
+                        const relativeX = clientX - canvasRect.left;
+                        const relativeY = clientY - canvasRect.top;
+                        
+                        position = {
+                            x: Math.max(20, Math.round(relativeX / GRID_SIZE) * GRID_SIZE),
+                            y: Math.max(20, Math.round(relativeY / GRID_SIZE) * GRID_SIZE)
+                        };
+                    }
                 }
             } else if (over.id.startsWith('comp-')) {
                 // Kiểm tra xem có phải layout component không (container, row, grid)
@@ -383,15 +392,24 @@ function AppBuilderPage() {
                     parentId = null;
                     order = canvasItems.filter(item => !item.parentId).length;
                     // Tính position với snap to grid
-                    if (event.over?.rect && event.activatorEvent) {
-                        const rect = event.over.rect;
-                        const clientX = event.activatorEvent.clientX || 0;
-                        const clientY = event.activatorEvent.clientY || 0;
+                    if (event.activatorEvent) {
                         const GRID_SIZE = 20;
-                        position = {
-                            x: Math.max(20, Math.round((clientX - rect.left) / GRID_SIZE) * GRID_SIZE),
-                            y: Math.max(20, Math.round((clientY - rect.top) / GRID_SIZE) * GRID_SIZE)
-                        };
+                        // Get canvas element to calculate relative position
+                        const canvasElement = document.getElementById('canvas-area');
+                        if (canvasElement) {
+                            const canvasRect = canvasElement.getBoundingClientRect();
+                            const clientX = event.activatorEvent.clientX || 0;
+                            const clientY = event.activatorEvent.clientY || 0;
+                            
+                            // Calculate position relative to canvas top-left
+                            const relativeX = clientX - canvasRect.left;
+                            const relativeY = clientY - canvasRect.top;
+                            
+                            position = {
+                                x: Math.max(20, Math.round(relativeX / GRID_SIZE) * GRID_SIZE),
+                                y: Math.max(20, Math.round(relativeY / GRID_SIZE) * GRID_SIZE)
+                            };
+                        }
                     }
                 }
             }
