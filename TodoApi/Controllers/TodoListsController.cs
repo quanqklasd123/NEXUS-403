@@ -341,60 +341,49 @@ namespace TodoApi.Controllers
                     return Unauthorized(new { message = "User ID not found in token" });
                 }
 
-                // Tìm list từ main database trước để lấy AppId hiện tại (dùng cho kiểm tra quyền)
-                var mainFilter = Builders<TodoList>.Filter.And(
+                var appId = updateDto.AppId;
+
+                // Validate và verify AppId ownership nếu có
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    if (!_securityHelper.IsValidObjectId(appId))
+                    {
+                        return BadRequest(new { message = "Invalid AppId format" });
+                    }
+
+                    if (!await _securityHelper.VerifyAppOwnershipAsync(appId, userId))
+                    {
+                        _logger.LogWarning("User {UserId} attempted to update list {ListId} with unauthorized app {AppId}", userId, id, appId);
+                        return Forbid("You don't have access to this app");
+                    }
+                }
+
+                // Lấy collection từ đúng database (dựa vào AppId gửi lên)
+                var collection = _appContext.GetAppCollection<TodoList>(appId, "todoLists");
+                
+                var filter = Builders<TodoList>.Filter.And(
                     Builders<TodoList>.Filter.Eq(list => list.Id, id),
                     Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
                 );
 
-                var existingList = await _mongoContext.TodoLists.Find(mainFilter).FirstOrDefaultAsync();
+                // Nếu có AppId, filter thêm theo AppId để đảm bảo chính xác
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    filter = Builders<TodoList>.Filter.And(
+                        filter,
+                        Builders<TodoList>.Filter.Eq(list => list.AppId, appId)
+                    );
+                }
+
+                var existingList = await collection.Find(filter).FirstOrDefaultAsync();
 
                 if (existingList == null)
                 {
                     return NotFound(new { message = "TodoList not found" });
                 }
 
-                var currentAppId = existingList.AppId;
-                var newAppId = updateDto.AppId;
-
-                // Validate và verify ownership cho AppId mới nếu có
-                if (!string.IsNullOrWhiteSpace(newAppId))
-                {
-                    if (!_securityHelper.IsValidObjectId(newAppId))
-                    {
-                        return BadRequest(new { message = "Invalid AppId format" });
-                    }
-
-                    if (!await _securityHelper.VerifyAppOwnershipAsync(newAppId, userId))
-                    {
-                        _logger.LogWarning("User {UserId} attempted to update list {ListId} with unauthorized app {AppId}", userId, id, newAppId);
-                        return Forbid("You don't have access to this app");
-                    }
-                }
-
-                // Nếu AppId thay đổi, cần migrate (chuyển) dữ liệu (tạm thời chỉ cập nhật trong cùng database)
-                // TODO: Triển khai (Implement) chức năng migration dữ liệu nếu AppId thay đổi
-                if (currentAppId != newAppId)
-                {
-                    _logger.LogWarning("AppId change detected for list {ListId}. Migration not yet implemented.", id);
-                    // Tạm thời giữ nguyên AppId cũ, chỉ update name
-                }
-
-                // Lấy collection từ đúng database
-                var collection = _appContext.GetAppCollection<TodoList>(currentAppId ?? newAppId, "todoLists");
-                var filter = Builders<TodoList>.Filter.And(
-                    Builders<TodoList>.Filter.Eq(list => list.Id, id),
-                    Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
-                );
-
                 // Build update
                 var update = Builders<TodoList>.Update.Set(list => list.Name, updateDto.Name);
-
-                // Update AppId nếu có trong DTO và khác với hiện tại
-                if (newAppId != currentAppId && !string.IsNullOrWhiteSpace(newAppId))
-                {
-                    update = update.Set(list => list.AppId, newAppId);
-                }
 
                 await collection.UpdateOneAsync(filter, update);
 
@@ -418,7 +407,7 @@ namespace TodoApi.Controllers
 
         // DELETE: api/TodoLists/5 - Xóa TodoList (PHẢI LÀ CỦA NGƯỜI DÙNG HIỆN TẠI)
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTodoList(string id)
+        public async Task<IActionResult> DeleteTodoList(string id, [FromQuery] string? appId = null)
         {
             try
             {
@@ -428,21 +417,6 @@ namespace TodoApi.Controllers
                 {
                     return Unauthorized(new { message = "User ID not found in token" });
                 }
-
-                // Tìm list từ main database trước để lấy AppId
-                var mainFilter = Builders<TodoList>.Filter.And(
-                    Builders<TodoList>.Filter.Eq(list => list.Id, id),
-                    Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
-                );
-
-                var todoList = await _mongoContext.TodoLists.Find(mainFilter).FirstOrDefaultAsync();
-
-                if (todoList == null)
-                {
-                    return NotFound(new { message = "TodoList not found" });
-                }
-
-                var appId = todoList.AppId;
 
                 // Validate và verify AppId ownership nếu có
                 if (!string.IsNullOrWhiteSpace(appId))

@@ -712,7 +712,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false, appI
         }
         try {
             setLoadingCategories(true);
-            await apiService.updateTodoList(editingCategoryId, editCategoryName.trim());
+            await apiService.updateTodoList(editingCategoryId, editCategoryName.trim(), appId);
             setCategories(prev => prev.map(cat => 
                 cat.id === editingCategoryId ? { ...cat, name: editCategoryName.trim() } : cat
             ));
@@ -733,7 +733,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false, appI
         }
         try {
             setLoadingCategories(true);
-            await apiService.deleteTodoList(categoryId);
+            await apiService.deleteTodoList(categoryId, appId);
             setCategories(prev => prev.filter(cat => cat.id !== categoryId));
             // Nếu category đang được chọn, reset selection
             if (newTask.categoryId === categoryId) {

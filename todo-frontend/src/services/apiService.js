@@ -100,12 +100,13 @@ const apiService = {
         return apiClient.post('/todolists', { Name: name, AppId: appId });
     },
 
-    updateTodoList: (id, name) => {
-        return apiClient.put(`/todolists/${id}`, { Name: name });
+    updateTodoList: (id, name, appId = null) => {
+        return apiClient.put(`/todolists/${id}`, { Name: name, AppId: appId });
     },
 
-    deleteTodoList: (id) => {
-        return apiClient.delete(`/todolists/${id}`);
+    deleteTodoList: (id, appId = null) => {
+        const params = appId ? { appId } : {};
+        return apiClient.delete(`/todolists/${id}`, { params });
     },
 
     createTodoItem: (itemData) => {
