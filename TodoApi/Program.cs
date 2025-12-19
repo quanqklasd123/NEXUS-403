@@ -11,40 +11,40 @@ using TodoApi.Models;
 using TodoApi.Middleware;
 using MongoDB.Driver;
 
-// --- ĐẶT TÊN POLICY Ở ĐÂY ĐỂ DÙNG LẠI ---
+// --- ĐặT TÊN POLICY CORS Ở ĐÂY ĐỂ DÙNG LẠI ---
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration; // Lấy config
 
-// === VỊ TRÍ 1: THÊM DỊCH VỤ CORS ===
-// (Nên đặt trước AddControllers)
+// === VỊ TRÍ 1: THÊM DỊCH VỤ CORS (Cross-Origin Resource Sharing) ===
+// (Nên đặt trước khi gọi AddControllers)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          // Cho phép các nguồn gốc này
+                          // Cho phép các nguồn gốc (origins) sau đây truy cập API
                           policy.WithOrigins("http://localhost:3000", // Cổng mặc định của React
                                            "http://localhost:5173", // Cổng mặc định của Vite
-                                           "http://localhost:5174") // Cổng Vite khi 5173 bị chiếm
-                                .AllowAnyHeader()   // Cho phép mọi header
-                                .AllowAnyMethod()   // Cho phép mọi phương thức (GET, POST, PUT...)
-                                .AllowCredentials(); // Cho phép gửi credentials (cookies, headers)
+                                           "http://localhost:5174") // Cổng Vite dự phòng khi 5173 bị chiếm
+                                .AllowAnyHeader()   // Cho phép mọi loại header
+                                .AllowAnyMethod()   // Cho phép mọi phương thức HTTP (GET, POST, PUT, DELETE...)
+                                .AllowCredentials(); // Cho phép gửi thông tin xác thực (cookies, headers)
                       });
 });
-// ===================================
+// ==========================================
 
-// 1. Thêm Services với JSON options để tự động map camelCase
+// 1. Thêm dịch vụ Controllers với cấu hình JSON để tự động chuyển đổi camelCase (JavaScript) <-> PascalCase (C#)
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Cho phép tự động map giữa camelCase (frontend) và PascalCase (backend)
-        // ASP.NET Core mặc định sẽ tự động map, nhưng cấu hình rõ ràng để đảm bảo
+        // Cho phép tự động mapping giữa camelCase (frontend) và PascalCase (backend)
+        // ASP.NET Core mặc định đã tự động map, nhưng cấu hình rõ ràng để đảm bảo
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// 2. Cấu hình MongoDB
+// 2. Cấu hình kết nối MongoDB
 var mongoConnectionString = configuration.GetConnectionString("MongoDbConnection");
 var mongoDatabaseName = configuration.GetConnectionString("MongoDbDatabaseName") ?? "NexusDb";
 
@@ -53,21 +53,21 @@ if (string.IsNullOrEmpty(mongoConnectionString))
     throw new InvalidOperationException("MongoDbConnection string is not configured");
 }
 
-// Đảm bảo connection string có TLS options
+// Đảm bảo connection string có các tùy chọn TLS bảo mật
 if (!mongoConnectionString.Contains("tls=") && !mongoConnectionString.Contains("ssl="))
 {
-    // Thêm TLS options nếu chưa có
+    // Thêm các tùy chọn TLS nếu chưa có trong connection string
     var separator = mongoConnectionString.Contains("?") ? "&" : "?";
     mongoConnectionString = $"{mongoConnectionString}{separator}tls=true";
 }
 
-// Tạo MongoDB client settings với TLS
+// Tạo các thiết lập (settings) cho MongoDB client với TLS được bật
 var mongoClientSettings = MongoDB.Driver.MongoClientSettings.FromConnectionString(mongoConnectionString);
 mongoClientSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
 mongoClientSettings.ConnectTimeout = TimeSpan.FromSeconds(10);
 mongoClientSettings.SocketTimeout = TimeSpan.FromSeconds(10);
 
-// Tạo MongoDB client với error handling
+// Tạo MongoDB client với xử lý lỗi (error handling)
 try
 {
     var mongoClient = new MongoDB.Driver.MongoClient(mongoClientSettings);
@@ -87,7 +87,7 @@ try
         return new AppDbContext(mongoClient, mongoContext, logger);
     });
     
-    // Test connection synchronously để catch lỗi sớm
+    // Kiểm tra kết nối đồng bộ (synchronously) để bắt lỗi sớm
     try
     {
         var testClient = new MongoDB.Driver.MongoClient(mongoClientSettings);
@@ -110,28 +110,28 @@ catch (Exception ex)
     throw;
 }
 
-// 2b. Đã chuyển hoàn toàn sang MongoDB - không còn dùng SQL Server/TodoContext
-// TodoContext đã được thay thế bằng MongoDbContext cho tất cả business data
-// Identity cũng đã chuyển sang MongoDB với custom stores
+// 2b. Đã chuyển hoàn toàn sang MongoDB - không còn sử dụng SQL Server/TodoContext nữa
+// TodoContext đã được thay thế bằng MongoDbContext cho tất cả dữ liệu kinh doanh (business data)
+// Hệ thống Identity cũng đã chuyển sang MongoDB với các custom stores
 
-// 3. Cấu hình AutoMapper (Giữ nguyên)
+// 3. Cấu hình AutoMapper (thư viện tự động chuyển đổi giữa các đối tượng)
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// AI và Google Calendar services đã được xóa để làm sạch dự án
+// Các dịch vụ AI và Google Calendar đã được gỡ bỏ để làm sạch dự án
 
-// Register Multi-Tenant Services
+// Đăng ký các dịch vụ Multi-Tenant (Hệ thống đa thuê bao)
 builder.Services.AddScoped<TodoApi.Services.MultiTenantMigrationService>();
 builder.Services.AddScoped<TodoApi.Services.TenantDatabaseService>();
 builder.Services.AddScoped<TodoApi.Services.IndexCreationService>();
 builder.Services.AddScoped<TodoApi.Helpers.TenantSecurityHelper>();
 
-// --- BẮT ĐẦU CẤU HÌNH IDENTITY & JWT ---
+// --- BẮT ĐẦU CẤU HÌNH HỆ THỐNG IDENTITY & JWT (XÁC THỰC TOKEN) ---
 
-// 4. Thêm Identity với MongoDB (thay vì SQL Server)
+// 4. Thêm hệ thống Identity với MongoDB (thay vì SQL Server truyền thống)
 builder.Services.AddIdentity<TodoApi.Models.MongoIdentity.AppUser, TodoApi.Models.MongoIdentity.IdentityRole>()
     .AddDefaultTokenProviders();
 
-// Đăng ký custom MongoDB stores
+// Đăng ký các custom MongoDB stores cho Identity
 builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IUserStore<TodoApi.Models.MongoIdentity.AppUser>>(sp =>
 {
     var mongoContext = sp.GetRequiredService<MongoDbContext>();
@@ -144,7 +144,7 @@ builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IRoleStore<TodoApi.Mode
     return new TodoApi.Data.MongoIdentity.MongoRoleStore(mongoContext.Database);
 });
 
-// 5. Thêm Xác thực (Authentication) và cấu hình JWT
+// 5. Thêm dịch vụ Xác thực (Authentication) và cấu hình JWT Token
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -154,7 +154,7 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(options =>
 {
     options.SaveToken = true;
-    options.RequireHttpsMetadata = false; // Tắt HTTPS (chỉ trong dev)
+    options.RequireHttpsMetadata = false; // Tắt yêu cầu HTTPS (chỉ dùng trong môi trường development)
     options.TokenValidationParameters = new TokenValidationParameters()
     {
         ValidateIssuer = true,
@@ -162,13 +162,13 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = configuration["JwtConfig:Audience"],
         ValidIssuer = configuration["JwtConfig:Issuer"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtConfig:Secret"])),
-        // Cấu hình để đọc role claims từ token
+        // Cấu hình để đọc các role claims (vai trò) từ token
         RoleClaimType = ClaimTypes.Role,
         NameClaimType = ClaimTypes.Name
     };
 });
 
-// 6. Thêm Authorization để hỗ trợ role-based access control
+// 6. Thêm dịch vụ Phân quyền (Authorization) để hỗ trợ kiểm soát truy cập dựa trên vai trò (role-based access control)
 builder.Services.AddAuthorization(options =>
 {
     // Sử dụng case-insensitive role matching - chỉ kiểm tra claims từ JWT token
@@ -180,7 +180,7 @@ builder.Services.AddAuthorization(options =>
                 .Select(c => c.Value)
                 .ToList();
             
-            // Kiểm tra case-insensitive
+            // Kiểm tra vai trò không phân biệt chữ hoa/thường (case-insensitive)
             return roleClaims.Any(role => 
                 role.Equals("Admin", StringComparison.OrdinalIgnoreCase) || 
                 role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase));
@@ -203,14 +203,14 @@ builder.Services.AddAuthorization(options =>
         }));
 });
 
-// AiPredictionService đã được xóa
+// Dịch vụ AiPredictionService đã được gỡ bỏ
 
-// --- KẾT THÚC CẤU HÌNH ---
+// --- KẾT THÚC PHẦN CẤU HÌNH ---
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    // Thêm định nghĩa bảo mật (Security Definition) cho JWT
+    // Thêm định nghĩa bảo mật (Security Definition) cho JWT Token
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
@@ -220,7 +220,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer"
     });
 
-    // Yêu cầu tất cả các request phải gửi kèm token
+    // Yêu cầu tất cả các request phải gửi kèm token xác thực
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
         {
@@ -239,7 +239,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ... (Cấu hình Swagger)
+// ... (Cấu hình middleware Swagger cho development)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -249,16 +249,16 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // === VỊ TRÍ 2: SỬ DỤNG MIDDLEWARE CORS ===
-// (Rất quan trọng về thứ tự: Phải đặt SAU UseRouting (ẩn),
+// (Rất quan trọng về thứ tự: Phải đặt SAU UseRouting (ẩn - ASP.NET Core tự động gọi),
 // và TRƯỚC UseAuthentication/UseAuthorization)
 
-app.UseCors(MyAllowSpecificOrigins); // <-- THÊM DÒNG NÀY
+app.UseCors(MyAllowSpecificOrigins); // <-- THÊM DÒNG NÀY ĐỂ KÍCH HOẠT CORS
 
 // (QUAN TRỌNG: Phải nằm SAU UseCors và TRƯỚC MapControllers)
-app.UseAuthentication(); // Bật "Xác thực"
-app.UseAuthorization();  // Bật "Quyền"
+app.UseAuthentication(); // Bật chức năng "Xác thực" (kiểm tra token)
+app.UseAuthorization();  // Bật chức năng "Phân quyền" (kiểm tra vai trò)
 
-// Optional: Tenant Validation Middleware (uncomment nếu muốn dùng)
+// Tùy chọn: Tenant Validation Middleware (bỏ comment nếu muốn sử dụng)
 // app.UseTenantValidation();
 // ========================================
 
@@ -269,22 +269,22 @@ app.Run();
 
 async Task SeedRoles(WebApplication app)
 {
-    // 1. Tạo một "scope" (phạm vi) dịch vụ để lấy các service
+    // Bước 1: Tạo một "scope" (phạm vi) dịch vụ để lấy các service cần thiết
     using (var scope = app.Services.CreateScope())
     {
-        // 2. Lấy RoleManager từ service provider (sử dụng custom IdentityRole cho MongoDB)
+        // Bước 2: Lấy RoleManager từ service provider (sử dụng custom IdentityRole cho MongoDB)
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<TodoApi.Models.MongoIdentity.IdentityRole>>();
 
-        // 3. Danh sách các role bạn muốn tạo
+        // Bước 3: Danh sách các vai trò (roles) bạn muốn tạo trong hệ thống
         string[] roleNames = { "Admin", "User" };
 
         foreach (var roleName in roleNames)
         {
-            // 4. Kiểm tra xem role đã tồn tại chưa
+            // Bước 4: Kiểm tra xem vai trò đã tồn tại trong hệ thống chưa
             var roleExists = await roleManager.RoleExistsAsync(roleName);
             if (!roleExists)
             {
-                // 5. Nếu chưa, tạo role mới
+                // Bước 5: Nếu chưa có, tạo vai trò mới
                 var role = new TodoApi.Models.MongoIdentity.IdentityRole
                 {
                     Name = roleName,

@@ -1,7 +1,7 @@
 // src/pages/AppRuntimePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FiArrowLeft, FiMaximize2, FiMinimize2, FiHome } from 'react-icons/fi';
+import { FiArrowLeft, FiMaximize2, FiMinimize2, FiHome, FiStar } from 'react-icons/fi';
 import apiService from '../services/apiService';
 import RenderComponent from '../components/builder/RenderComponent';
 import useTaskData from '../hooks/useTaskData';
@@ -39,7 +39,7 @@ const AppRuntimePage = () => {
         setFilters,
         setSearchQuery: setTaskSearchQuery,
         setSort
-    } = useTaskData({ isPreview: false });
+    } = useTaskData({ isPreview: false, appId: projectId });
 
     // Listen for view-change events from ViewSwitcher
     useEffect(() => {
@@ -103,8 +103,10 @@ const AppRuntimePage = () => {
 
             try {
                 setLoading(true);
+                console.log('[AppRuntimePage] Loading project with ID:', projectId);
                 const response = await apiService.getProject(projectId);
                 const projectData = response.data;
+                console.log('[AppRuntimePage] Project data:', projectData);
                 setProject(projectData);
 
                 if (projectData.jsonData) {
@@ -163,6 +165,7 @@ const AppRuntimePage = () => {
                 items={canvasItems}
                 isPreview={true}
                 context={appState}
+                onClick={() => {}} // Dummy onClick để tránh lỗi trong runtime mode
                 onUpdateProps={(newProps) => handleUpdateProps(item.id, newProps)}
             />
         ));
@@ -301,8 +304,19 @@ const AppRuntimePage = () => {
             )}
 
             {/* App Content Area - Full canvas like AppBuilder preview */}
-            <div className="flex-1 overflow-auto bg-neutral-50">
-                <div className="relative min-h-full w-full">
+            <div className="flex-1 overflow-auto bg-neutral-100 flex justify-center relative">
+                {/* Decorative Stars Background */}
+                <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+                    <FiStar className="absolute top-[15%] left-[5%] text-neutral-300 w-12 h-12 opacity-50 rotate-12" />
+                    <FiStar className="absolute top-[25%] right-[8%] text-neutral-300 w-16 h-16 opacity-40 -rotate-12" />
+                    <FiStar className="absolute bottom-[20%] left-[8%] text-neutral-300 w-20 h-20 opacity-30 rotate-45" />
+                    <FiStar className="absolute bottom-[35%] right-[12%] text-neutral-300 w-10 h-10 opacity-50 rotate-12" />
+                    <FiStar className="absolute top-[45%] left-[15%] text-neutral-300 w-6 h-6 opacity-60" />
+                    <FiStar className="absolute top-[10%] right-[25%] text-neutral-300 w-8 h-8 opacity-40" />
+                    <FiStar className="absolute bottom-[10%] left-[30%] text-neutral-300 w-14 h-14 opacity-30 -rotate-6" />
+                </div>
+
+                <div className="relative min-h-full w-full max-w-7xl z-10">
                     {canvasItems
                         .filter(item => !item.parentId)
                         .filter(item => {
@@ -334,9 +348,10 @@ const AppRuntimePage = () => {
                                     <RenderComponent
                                         item={item}
                                         items={canvasItems}
-                                        isPreview={true}
+                                        isPreview={false}
                                         navigate={navigate}
                                         context={appState}
+                                        onClick={() => {}} // Dummy onClick để tránh lỗi
                                         onUpdateProps={(newProps) => handleUpdateProps(item.id, newProps)}
                                         tasks={tasks}
                                         allTasks={allTasks}
@@ -347,6 +362,7 @@ const AppRuntimePage = () => {
                                         onTaskUpdate={updateTask}
                                         onTaskStatusUpdate={updateTaskStatus}
                                         onTaskDelete={deleteTask}
+                                        appId={projectId}
                                     />
                                 </div>
                             );

@@ -30,8 +30,8 @@ namespace TodoApi.Models
         public string TodoListId { get; set; }
 
         /// <summary>
-        /// ID của UserApp mà item này thuộc về (Multi-tenant support)
-        /// Nullable để backward compatible với existing data
+        /// ID của UserApp mà item này thuộc về (Hỗ trợ đa người thuê - Multi-tenant support)
+        /// Nullable để tương thích ngược với dữ liệu hiện có (backward compatible)
         /// </summary>
         [BsonElement("appId")]
         public string? AppId { get; set; }

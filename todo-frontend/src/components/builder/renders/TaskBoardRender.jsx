@@ -1,7 +1,7 @@
 // src/components/builder/renders/TaskBoardRender.jsx
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { FiFlag, FiCalendar } from 'react-icons/fi';
+import { FiFlag, FiCalendar, FiTrash2, FiEdit2 } from 'react-icons/fi';
 import apiService from '../../../services/apiService';
 
 const COLUMN_COLORS = {
@@ -16,12 +16,23 @@ const PRIORITY_COLORS = {
     High: 'text-red-500',
 };
 
-export default function TaskBoardRender({ props = {}, style, isPreview = false }) {
+export default function TaskBoardRender({ 
+    props = {}, 
+    style, 
+    isPreview = false,
+    tasks: tasksFromProps = [],
+    allTasks: allTasksFromProps = [],
+    onTaskUpdate,
+    onTaskStatusUpdate,
+    onTaskDelete
+}) {
     const { 
         columns = ['Todo', 'InProgress', 'Done'], 
         allowDrag = true,
         showPriority = true,
         showDueDate = true,
+        allowEdit = true,
+        allowDelete = true,
         todoListId 
     } = props || {};
 
@@ -44,37 +55,45 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
         setTasks(result);
     }, [allTasks, filters, searchQuery]);
 
+    // Sử dụng tasks từ props thay vì fetch riêng
     useEffect(() => {
-        fetchTasks();
+        if (isPreview) {
+            setAllTasks([]);
+            setTasks([]);
+            setLoading(false);
+            return;
+        }
 
-        const handleTaskUpdate = () => fetchTasks();
+        const filtered = todoListId ? allTasksFromProps.filter(t => t.todoListId === todoListId) : allTasksFromProps;
+        setAllTasks(filtered);
+        setLoading(false);
+    }, [allTasksFromProps, todoListId, isPreview]);
+
+    // Listen for events
+    useEffect(() => {
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
-        
-        // Listen for view change event
         const handleViewChange = (e) => {
             const view = e.detail?.view || 'table';
             setCurrentView(view);
         };
         
-        window.addEventListener('tasks-updated', handleTaskUpdate);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
         window.addEventListener('view-change', handleViewChange);
         
         return () => {
-            window.removeEventListener('tasks-updated', handleTaskUpdate);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
             window.removeEventListener('view-change', handleViewChange);
         };
-    }, [todoListId]);
+    }, []);
 
     const handleDragEnd = async (result) => {
-        if (!result.destination || !isPreview || !allowDrag) return;
+        if (!result.destination || !allowDrag) return;
 
         const { draggableId, destination } = result;
-        const taskId = parseInt(draggableId);
+        const taskId = draggableId;
         const columnName = destination.droppableId;
         
         // Map column names to status values
@@ -88,29 +107,42 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
         // Optimistic update
         const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
         setTasks(updatedTasks);
+        setAllTasks(prevAll => prevAll.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
 
-        try {
-            await apiService.updateItemStatus(taskId, newStatus);
-            window.dispatchEvent(new CustomEvent('tasks-updated'));
-        } catch (error) {
-            console.error('Failed to update task status:', error);
-            // Revert on error
-            fetchTasks();
+        if (isPreview) return;
+
+        // Use callback from parent
+        if (onTaskStatusUpdate) {
+            try {
+                await onTaskStatusUpdate(taskId, newStatus);
+            } catch (error) {
+                console.error('Failed to update task status:', error);
+                // Revert on error
+                const oldTask = tasks.find(t => t.id === taskId);
+                if (oldTask) {
+                    setTasks(tasks.map(t => t.id === taskId ? oldTask : t));
+                    setAllTasks(prevAll => prevAll.map(t => t.id === taskId ? oldTask : t));
+                }
+            }
         }
     };
 
-    const fetchTasks = async () => {
-        try {
-            setLoading(true);
-            const response = await apiService.getAllMyItems();
-            const items = Array.isArray(response.data) ? response.data : [];
-            const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
-            setAllTasks(filtered);
-        } catch (error) {
-            console.error('Failed to fetch tasks:', error);
-            setAllTasks([]);
-        } finally {
-            setLoading(false);
+    const handleDelete = async (taskId, e) => {
+        // Prevent event propagation to drag handlers
+        e.stopPropagation();
+        
+        if (isPreview) return;
+        if (!confirm('Bạn có chắc chắn muốn xóa task này không?')) return;
+        
+        if (onTaskDelete) {
+            try {
+                await onTaskDelete(taskId);
+                setAllTasks(prev => prev.filter(t => t.id !== taskId));
+                setTasks(prev => prev.filter(t => t.id !== taskId));
+            } catch (error) {
+                console.error('Failed to delete task:', error);
+                alert('Không thể xóa task. Vui lòng thử lại.');
+            }
         }
     };
 
@@ -180,13 +212,29 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
-                                                            className={`bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing transition-shadow ${
+                                                            className={`group bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing transition-shadow ${
                                                                 snapshot.isDragging ? 'shadow-lg ring-2 ring-indigo-500/30' : 'hover:shadow-md'
                                                             }`}
                                                         >
-                                                            <p className="text-sm font-medium text-gray-800 mb-2">
-                                                                {task.title}
-                                                            </p>
+                                                            <div className="flex items-start justify-between mb-2">
+                                                                <p className="text-sm font-medium text-gray-800 flex-1">
+                                                                    {task.title}
+                                                                </p>
+                                                                {/* Action buttons - only show on hover and when not preview */}
+                                                                {(allowEdit || allowDelete) && !isPreview && (
+                                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                                                        {allowDelete && (
+                                                                            <button
+                                                                                onClick={(e) => handleDelete(task.id, e)}
+                                                                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                                                title="Xóa task"
+                                                                            >
+                                                                                <FiTrash2 size={12} />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                             <div className="flex items-center gap-3 text-xs text-gray-500">
                                                                 {showPriority && (
                                                                     <span className={`flex items-center gap-1 ${PRIORITY_COLORS[task.priority]}`}>

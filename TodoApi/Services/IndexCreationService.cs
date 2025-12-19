@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace TodoApi.Services
 {
     /// <summary>
-    /// Service để tạo indexes cho multi-tenant collections
+    /// Dịch vụ (Service) để tạo các indexes (chỉ mục) cho các collections multi-tenant
     /// </summary>
     public class IndexCreationService
     {
@@ -25,7 +25,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Tạo tất cả indexes cho main database
+        /// Tạo tất cả các indexes (chỉ mục) cho main database (database chính)
         /// </summary>
         public async Task<IndexCreationResult> CreateIndexesForMainDatabaseAsync()
         {
@@ -39,13 +39,13 @@ namespace TodoApi.Services
             {
                 _logger.LogInformation("Creating indexes for main database: {DatabaseName}", result.DatabaseName);
 
-                // Create indexes for todoLists
+                // Tạo indexes (chỉ mục) cho todoLists
                 result.TodoListsIndexesCreated = await CreateTodoListsIndexesAsync(_mainContext.Database);
 
-                // Create indexes for todoItems
+                // Tạo indexes (chỉ mục) cho todoItems
                 result.TodoItemsIndexesCreated = await CreateTodoItemsIndexesAsync(_mainContext.Database);
 
-                // Create indexes for userApps
+                // Tạo indexes (chỉ mục) cho userApps
                 result.UserAppsIndexesCreated = await CreateUserAppsIndexesAsync(_mainContext.Database);
 
                 result.Success = true;
@@ -69,7 +69,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Tạo indexes cho separate database (app database)
+        /// Tạo indexes (chỉ mục) cho separate database (app database - database tách biệt)
         /// </summary>
         public async Task<IndexCreationResult> CreateIndexesForAppDatabaseAsync(string databaseName)
         {
@@ -85,13 +85,13 @@ namespace TodoApi.Services
 
                 var database = _mongoClient.GetDatabase(databaseName);
 
-                // Create indexes for todoLists
+                // Tạo indexes (chỉ mục) cho todoLists
                 result.TodoListsIndexesCreated = await CreateTodoListsIndexesAsync(database);
 
-                // Create indexes for todoItems
+                // Tạo indexes (chỉ mục) cho todoItems
                 result.TodoItemsIndexesCreated = await CreateTodoItemsIndexesAsync(database);
 
-                // Note: userApps không có trong separate database (chỉ có trong main database)
+                // Lưu ý (Note): userApps không có trong separate database (chỉ có trong main database)
 
                 result.Success = true;
                 result.EndTime = DateTime.UtcNow;
@@ -115,7 +115,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Tạo indexes cho tất cả separate databases (từ UserApps)
+        /// Tạo indexes (chỉ mục) cho tất cả các separate databases (từ UserApps)
         /// </summary>
         public async Task<Dictionary<string, IndexCreationResult>> CreateIndexesForAllAppDatabasesAsync()
         {
@@ -123,7 +123,7 @@ namespace TodoApi.Services
 
             try
             {
-                // Lấy tất cả UserApps với separate database mode
+                // Lấy tất cả các UserApps với chế độ separate database (database tách biệt)
                 var filter = Builders<UserApp>.Filter.And(
                     Builders<UserApp>.Filter.Eq(app => app.TenantMode, "separate"),
                     Builders<UserApp>.Filter.Ne(app => app.DatabaseName, null)
@@ -152,7 +152,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Tạo indexes cho todoLists collection
+        /// Tạo các indexes (chỉ mục) cho todoLists collection
         /// </summary>
         private async Task<int> CreateTodoListsIndexesAsync(IMongoDatabase database)
         {
@@ -161,14 +161,14 @@ namespace TodoApi.Services
 
             try
             {
-                // Compound index: (appUserId, appId)
+                // Chỉ mục kết hợp (Compound index): (appUserId, appId)
                 var index1 = Builders<TodoList>.IndexKeys
                     .Ascending(list => list.AppUserId)
                     .Ascending(list => list.AppId);
                 var index1Options = new CreateIndexOptions 
                 { 
                     Name = "idx_appUserId_appId",
-                    Background = true // Create in background
+                    Background = true // Tạo ở chế độ nền (background) để không chặn server
                 };
 
                 if (!await IndexExistsAsync(collection, "idx_appUserId_appId"))
@@ -178,7 +178,7 @@ namespace TodoApi.Services
                     _logger.LogInformation("Created index: todoLists.idx_appUserId_appId");
                 }
 
-                // Index: appId
+                // Chỉ mục (Index): appId
                 var index2 = Builders<TodoList>.IndexKeys.Ascending(list => list.AppId);
                 var index2Options = new CreateIndexOptions 
                 { 
@@ -193,7 +193,7 @@ namespace TodoApi.Services
                     _logger.LogInformation("Created index: todoLists.idx_appId");
                 }
 
-                // Index: appUserId (verify existing)
+                // Chỉ mục (Index): appUserId (xác minh chỉ mục hiện có - verify existing)
                 var index3 = Builders<TodoList>.IndexKeys.Ascending(list => list.AppUserId);
                 var index3Options = new CreateIndexOptions 
                 { 
@@ -223,7 +223,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Tạo indexes cho todoItems collection
+        /// Tạo các indexes (chỉ mục) cho todoItems collection
         /// </summary>
         private async Task<int> CreateTodoItemsIndexesAsync(IMongoDatabase database)
         {
@@ -232,7 +232,7 @@ namespace TodoApi.Services
 
             try
             {
-                // Compound index: (appId, todoListId)
+                // Chỉ mục kết hợp (Compound index): (appId, todoListId)
                 var index1 = Builders<TodoItem>.IndexKeys
                     .Ascending(item => item.AppId)
                     .Ascending(item => item.TodoListId);

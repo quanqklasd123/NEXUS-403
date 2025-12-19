@@ -1,6 +1,6 @@
 // src/components/builder/renders/TaskListRender.jsx
 import { useState, useEffect } from 'react';
-import { FiCircle, FiCheckCircle, FiClock, FiFlag } from 'react-icons/fi';
+import { FiCircle, FiCheckCircle, FiClock, FiFlag, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import apiService from '../../../services/apiService';
 
 const PRIORITY_COLORS = {
@@ -36,13 +36,23 @@ const convertPriorityToString = (priorityNum) => {
     return priorityMap[priorityNum] || 'Medium';
 };
 
-export default function TaskListRender({ props = {}, style, isPreview = false }) {
+export default function TaskListRender({ 
+    props = {}, 
+    style, 
+    isPreview = false,
+    tasks: tasksFromProps = [],
+    allTasks: allTasksFromProps = [],
+    onTaskUpdate,
+    onTaskDelete
+}) {
     const { 
         showCheckbox = true, 
         showPriority = true, 
         showDueDate = true, 
-        showCategory = true, // Thêm option hiển thị Category
+        showCategory = true,
         groupByStatus = false,
+        allowEdit = true,
+        allowDelete = true,
         todoListId 
     } = props || {};
 
@@ -67,43 +77,41 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
         setTasks(result);
     }, [allTasks, filters, searchQuery]);
 
+    // Sử dụng tasks từ props thay vì fetch riêng
     useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                setLoading(true);
-                const response = await apiService.getAllMyItems();
-                const items = Array.isArray(response.data) ? response.data : [];
-                const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
-                // Convert status và priority từ số sang string
-                const convertedItems = filtered.map(item => ({
-                    ...item,
-                    status: convertStatusToString(item.status),
-                    priority: convertPriorityToString(item.priority)
-                }));
-                setAllTasks(convertedItems);
-            } catch (error) {
-                console.error('Failed to fetch tasks:', error);
-                setAllTasks([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTasks();
+        if (isPreview) {
+            // Preview mode: không có data thật, dùng mock data
+            setAllTasks([]);
+            setTasks([]);
+            setLoading(false);
+            return;
+        }
 
-        const handleTaskUpdate = () => fetchTasks();
+        // Runtime mode: dùng tasks từ props
+        const filtered = todoListId ? allTasksFromProps.filter(t => t.todoListId === todoListId) : allTasksFromProps;
+        // Convert status và priority từ số sang string
+        const convertedItems = filtered.map(item => ({
+            ...item,
+            status: convertStatusToString(item.status),
+            priority: convertPriorityToString(item.priority)
+        }));
+        setAllTasks(convertedItems);
+        setLoading(false);
+    }, [allTasksFromProps, todoListId, isPreview]);
+
+    // Listen for filter and search events
+    useEffect(() => {
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
         
-        window.addEventListener('tasks-updated', handleTaskUpdate);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
         
         return () => {
-            window.removeEventListener('tasks-updated', handleTaskUpdate);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
         };
-    }, [todoListId]);
+    }, []);
 
     const toggleStatus = async (task) => {
         // Toggle logic: 
@@ -122,20 +130,38 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
         // If preview mode, just update local state (no API call)
         if (isPreview) return;
         
-        // In production, update via API
-        const newStatusInt = convertStatusToInt(newStatusStr);
-        try {
-            await apiService.updateItemStatus(task.id, newStatusInt);
-            window.dispatchEvent(new CustomEvent('tasks-updated'));
-        } catch (error) {
-            console.error('Failed to update status:', error);
-            // Revert on error
-            const revertTaskStatus = (prevTasks) => prevTasks.map(t => 
-                t.id === task.id ? { ...t, status: task.status } : t
-            );
-            setTasks(revertTaskStatus);
-            setAllTasks(revertTaskStatus);
-            alert(`Không thể cập nhật trạng thái: ${error.response?.data?.message || error.message || 'Lỗi không xác định'}`);
+        // In production, use callback from parent (which handles appId)
+        if (onTaskUpdate) {
+            const newStatusInt = convertStatusToInt(newStatusStr);
+            try {
+                await onTaskUpdate(task.id, { ...task, status: newStatusInt });
+            } catch (error) {
+                console.error('Failed to update status:', error);
+                // Revert on error
+                const revertTaskStatus = (prevTasks) => prevTasks.map(t => 
+                    t.id === task.id ? { ...t, status: task.status } : t
+                );
+                setTasks(revertTaskStatus);
+                setAllTasks(revertTaskStatus);
+                alert(`Không thể cập nhật trạng thái: ${error.message || 'Lỗi không xác định'}`);
+            }
+        }
+    };
+
+    const handleDelete = async (taskId) => {
+        if (isPreview) return;
+        if (!confirm('Bạn có chắc chắn muốn xóa task này không?')) return;
+        
+        // Use callback from parent (which handles appId)
+        if (onTaskDelete) {
+            try {
+                await onTaskDelete(taskId);
+                setAllTasks(prev => prev.filter(t => t.id !== taskId));
+                setTasks(prev => prev.filter(t => t.id !== taskId));
+            } catch (error) {
+                console.error('Failed to delete task:', error);
+                alert('Không thể xóa task. Vui lòng thử lại.');
+            }
         }
     };
 
@@ -145,7 +171,7 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
         return (
             <div 
                 key={task.id}
-                className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${isDone ? 'opacity-60' : ''}`}
+                className={`group flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${isDone ? 'opacity-60' : ''}`}
             >
                 {showCheckbox && (
                     <input
@@ -177,6 +203,21 @@ export default function TaskListRender({ props = {}, style, isPreview = false })
                         <span className="text-xs text-gray-500">
                             {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
+                    )}
+
+                    {/* Action buttons - only show on hover */}
+                    {(allowEdit || allowDelete) && !isPreview && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {allowDelete && (
+                                <button
+                                    onClick={() => handleDelete(task.id)}
+                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Xóa task"
+                                >
+                                    <FiTrash2 size={14} />
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

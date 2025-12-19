@@ -108,13 +108,13 @@ function AdminPage() {
 
     // Delete marketplace app
     const handleDeleteApp = async (appId) => {
-        if (!window.confirm('Bạn có chắc chắn muốn ẩn app này khỏi marketplace không? App sẽ vẫn tồn tại trong My Apps của users đã cài.')) {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa app này khỏi marketplace không?')) {
             return;
         }
 
         try {
             await apiService.deleteMarketplaceApp(appId);
-            alert('Đã ẩn app khỏi marketplace thành công.');
+            alert('Đã xóa app khỏi marketplace thành công.');
             fetchMarketplaceApps();
         } catch (error) {
             console.error('Error deleting app:', error);

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using TodoApi.Data;
 using TodoApi.Dtos;
 using TodoApi.Models;
+using TodoApi.Services;
 using MongoDB.Driver;
 using Microsoft.Extensions.Logging;
 
@@ -11,25 +12,30 @@ namespace TodoApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Bắt buộc đăng nhập
+    [Authorize] // Yêu cầu phải đăng nhập mới được truy cập
     public class ProjectsController : ControllerBase
     {
         private readonly MongoDbContext _mongoContext;
+        private readonly TenantDatabaseService _tenantDatabaseService;
         private readonly ILogger<ProjectsController> _logger;
 
-        public ProjectsController(MongoDbContext mongoContext, ILogger<ProjectsController> logger)
+        public ProjectsController(
+            MongoDbContext mongoContext, 
+            TenantDatabaseService tenantDatabaseService,
+            ILogger<ProjectsController> logger)
         {
             _mongoContext = mongoContext;
+            _tenantDatabaseService = tenantDatabaseService;
             _logger = logger;
         }
 
-        // Hàm helper lấy UserId hiện tại
+        // Hàm hỗ trợ lấy UserId của người dùng hiện tại từ JWT token
         private string GetCurrentUserId()
         {
             return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
-        // 1. GET: api/projects (Lấy danh sách của tôi)
+        // 1. GET: api/projects - Lấy danh sách tất cả các projects của tôi (user hiện tại)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetProjects()
         {
@@ -85,7 +91,7 @@ namespace TodoApi.Controllers
             }
         }
 
-        // 2. GET: api/projects/5 (Lấy chi tiết 1 project)
+        // 2. GET: api/projects/5 - Lấy thông tin chi tiết của 1 project theo ID
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectDTO>> GetProject(string id)
         {
@@ -153,23 +159,43 @@ namespace TodoApi.Controllers
             }
         }
 
-        // 3. POST: api/projects (Tạo mới)
+        // 3. POST: api/projects - Tạo mới một project
         [HttpPost]
         public async Task<ActionResult<ProjectDTO>> PostProject(CreateProjectDTO createDto)
         {
             var userId = GetCurrentUserId();
 
+            // Tạo project với TenantMode
             var project = new Project
             {
                 Name = createDto.Name,
                 Description = createDto.Description,
-                JsonData = createDto.JsonData ?? "[]", // Mặc định là mảng rỗng
+                JsonData = createDto.JsonData ?? "[]", // Mặc định là mảng JSON rỗng
                 AppUserId = userId,
                 CreatedAt = DateTime.UtcNow,
-                IsPublished = false
+                IsPublished = false,
+                TenantMode = createDto.TenantMode ?? "separate" // Mặc định mỗi project có database riêng
             };
 
+            // Insert project để có ID
             await _mongoContext.Projects.InsertOneAsync(project);
+
+            // Nếu tenantMode là "separate", tạo database riêng
+            if (project.TenantMode == "separate")
+            {
+                var dbName = _tenantDatabaseService.GenerateDatabaseName(project.Id);
+                await _tenantDatabaseService.CreateSeparateDatabaseAsync(dbName);
+
+                // Cập nhật lại project với DatabaseName
+                var filter = Builders<Project>.Filter.Eq(p => p.Id, project.Id);
+                var update = Builders<Project>.Update.Set(p => p.DatabaseName, dbName);
+                await _mongoContext.Projects.UpdateOneAsync(filter, update);
+
+                // Gán vào object để trả về
+                project.DatabaseName = dbName;
+
+                _logger.LogInformation("Created separate database '{DatabaseName}' for project '{ProjectId}'", dbName, project.Id);
+            }
 
             var projectDto = new ProjectDTO
             {
@@ -184,7 +210,7 @@ namespace TodoApi.Controllers
             return CreatedAtAction(nameof(GetProject), new { id = project.Id }, projectDto);
         }
 
-        // 4. PUT: api/projects/5 (Lưu/Cập nhật - Dùng cho nút Save App)
+        // 4. PUT: api/projects/5 - Lưu/Cập nhật project (Dùng cho nút Save App)
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProject(string id, CreateProjectDTO updateDto)
         {
@@ -203,7 +229,7 @@ namespace TodoApi.Controllers
                 .Set(p => p.Name, updateDto.Name)
                 .Set(p => p.Description, updateDto.Description);
             
-            // Quan trọng: Cập nhật JsonData (cấu trúc Canvas)
+            // Quan trọng: Cập nhật JsonData (chứa cấu trúc của Canvas/App Builder)
             if (updateDto.JsonData != null)
             {
                 update = update.Set(p => p.JsonData, updateDto.JsonData);
@@ -214,7 +240,7 @@ namespace TodoApi.Controllers
             return NoContent();
         }
 
-        // 5. DELETE: api/projects/5 (Xóa)
+        // 5. DELETE: api/projects/5 - Xóa một project
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(string id)
         {
@@ -232,7 +258,7 @@ namespace TodoApi.Controllers
             return NoContent();
         }
 
-        // --- API MỚI: PUBLISH ---
+        // --- API MỚI: PHÁT HÀNH (PUBLISH) PROJECT LÊN MARKETPLACE ---
         [HttpPost("{id}/publish")]
         public async Task<IActionResult> PublishProject(string id, [FromBody] PublishAppDTO publishDto)
         {
@@ -245,7 +271,7 @@ namespace TodoApi.Controllers
 
             if (project == null) return NotFound("Project not found.");
 
-            // Cập nhật thông tin và đánh dấu đã xuất bản
+            // Cập nhật thông tin và đánh dấu là đã xuất bản (published)
             var update = Builders<Project>.Update
                 .Set(p => p.Name, publishDto.Name)
                 .Set(p => p.Description, publishDto.Description)

@@ -32,15 +32,15 @@ namespace TodoApi.Controllers
             _logger = logger;
         }
 
-        // Helper to get current user ID
+        // Hàm trợ giúp (Helper) để lấy ID người dùng hiện tại
         private string GetCurrentUserId()
         {
             return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
         }
 
         /// <summary>
-        /// GET: api/userapps - Get all user's apps
-        /// Query: ?filter=all|created|downloaded
+        /// GET: api/userapps - Lấy tất cả các ứng dụng của người dùng
+        /// Truy vấn (Query): ?filter=all|created|downloaded
         /// </summary>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserAppDTO>>> GetUserApps([FromQuery] string filter = "all")
@@ -50,7 +50,7 @@ namespace TodoApi.Controllers
             var baseFilter = Builders<UserApp>.Filter.Eq(a => a.AppUserId, userId);
             FilterDefinition<UserApp>? filterDef = null;
 
-            // Apply filter
+            // Áp dụng bộ lọc (Apply filter)
             if (filter == "created")
             {
                 filterDef = Builders<UserApp>.Filter.And(
@@ -95,7 +95,7 @@ namespace TodoApi.Controllers
         }
 
         /// <summary>
-        /// GET: api/userapps/{id} - Get a single app
+        /// GET: api/userapps/{id} - Lấy thông tin một ứng dụng cụ thể
         /// </summary>
         [HttpGet("{id}")]
         public async Task<ActionResult<UserAppDTO>> GetUserApp(string id)
@@ -118,7 +118,7 @@ namespace TodoApi.Controllers
 
             if (app == null)
             {
-                // Return 404 để không leak info
+                // Trả về 404 để không tiết lộ thông tin (avoid information leakage)
                 _logger.LogWarning("App not found or access denied: AppId={AppId}, UserId={UserId}", id, userId);
                 return NotFound(new { message = "App not found" });
             }
@@ -141,7 +141,7 @@ namespace TodoApi.Controllers
         }
 
         /// <summary>
-        /// POST: api/userapps - Create a new app
+        /// POST: api/userapps - Tạo một ứng dụng mới
         /// </summary>
         [HttpPost]
         public async Task<ActionResult<UserAppDTO>> CreateUserApp(CreateUserAppDTO createDto)
@@ -152,10 +152,10 @@ namespace TodoApi.Controllers
                 var tenantMode = createDto.TenantMode ?? "shared";
                 string? databaseName = null;
 
-                // Nếu tenantMode = "separate", tạo database riêng
+                // Nếu tenantMode = "separate", tạo database riêng (tách biệt)
                 if (tenantMode == "separate")
                 {
-                    // Tạo app trước để có appId
+                    // Tạo app trước để có appId (create app first to get ID)
                     var app = new UserApp
                     {
                         Name = createDto.Name,
@@ -171,13 +171,13 @@ namespace TodoApi.Controllers
 
                     await _mongoContext.UserApps.InsertOneAsync(app);
 
-                    // Generate database name sau khi có appId
+                    // Tạo tên database sau khi có appId (generate database name after getting ID)
                     databaseName = _tenantDatabaseService.GenerateDatabaseName(app.Id);
                     
-                    // Tạo separate database
+                    // Tạo database tách biệt (separate database)
                     await _tenantDatabaseService.CreateSeparateDatabaseAsync(databaseName);
 
-                    // Update app với databaseName
+                    // Cập nhật app với tên database (update app with database name)
                     var updateFilter = Builders<UserApp>.Filter.Eq(a => a.Id, app.Id);
                     var update = Builders<UserApp>.Update
                         .Set(a => a.DatabaseName, databaseName);
@@ -203,7 +203,7 @@ namespace TodoApi.Controllers
                 }
                 else
                 {
-                    // Shared mode: DatabaseName = null
+                    // Chế độ chia sẻ (Shared mode): DatabaseName = null
                     var app = new UserApp
                     {
                         Name = createDto.Name,
@@ -246,8 +246,8 @@ namespace TodoApi.Controllers
         }
 
         /// <summary>
-        /// POST: api/userapps/save-from-builder - Save app from App Builder
-        /// Default: shared mode
+        /// POST: api/userapps/save-from-builder - Lưu ứng dụng từ App Builder
+        /// Mặc định (Default): chế độ chia sẻ (shared mode)
         /// </summary>
         [HttpPost("save-from-builder")]
         public async Task<ActionResult<UserAppDTO>> SaveFromBuilder(SaveFromBuilderDTO dto)
@@ -264,7 +264,7 @@ namespace TodoApi.Controllers
                     Config = dto.Config,
                     Source = "created",
                     AppUserId = userId,
-                    TenantMode = "shared", // Default: shared mode
+                    TenantMode = "shared", // Mặc định: chế độ chia sẻ (shared mode)
                     DatabaseName = null,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -297,7 +297,7 @@ namespace TodoApi.Controllers
         }
 
         /// <summary>
-        /// PUT: api/userapps/{id} - Update an existing app (only for source='created')
+        /// PUT: api/userapps/{id} - Cập nhật ứng dụng hiện có (chỉ cho source='created')
         /// </summary>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUserApp(string id, UpdateUserAppDTO updateDto)
@@ -324,13 +324,13 @@ namespace TodoApi.Controllers
                 return NotFound(new { message = "App not found" });
             }
 
-            // Only allow editing apps created by user
+            // Chỉ cho phép chỉnh sửa các app do user tạo (không cho phép chỉnh sửa app đã tải về)
             if (app.Source != "created")
             {
                 return BadRequest(new { message = "Cannot edit downloaded apps" });
             }
 
-            // Build update
+            // Xây dựng cập nhật (Build update)
             var update = Builders<UserApp>.Update.Set(a => a.UpdatedAt, DateTime.UtcNow);
             
             if (!string.IsNullOrEmpty(updateDto.Name))
@@ -344,7 +344,7 @@ namespace TodoApi.Controllers
 
             await _mongoContext.UserApps.UpdateOneAsync(filter, update);
 
-            // Reload để lấy dữ liệu mới nhất
+            // Tải lại (Reload) để lấy dữ liệu mới nhất sau khi cập nhật
             var updatedApp = await _mongoContext.UserApps.Find(filter).FirstOrDefaultAsync();
 
             return Ok(new UserAppDTO
@@ -363,7 +363,7 @@ namespace TodoApi.Controllers
         }
 
         /// <summary>
-        /// DELETE: api/userapps/{id} - Delete an app
+        /// DELETE: api/userapps/{id} - Xóa một ứng dụng
         /// </summary>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUserApp(string id)
@@ -395,7 +395,7 @@ namespace TodoApi.Controllers
         }
 
         /// <summary>
-        /// POST: api/userapps/download/{marketplaceAppId} - Download an app from Marketplace
+        /// POST: api/userapps/download/{marketplaceAppId} - Tải xuống ứng dụng từ Marketplace
         /// </summary>
         [HttpPost("download/{marketplaceAppId}")]
         public async Task<ActionResult<UserAppDTO>> DownloadFromMarketplace(string marketplaceAppId)

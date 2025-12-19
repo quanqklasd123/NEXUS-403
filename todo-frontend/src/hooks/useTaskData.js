@@ -5,7 +5,11 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import apiService from '../services/apiService';
 import eventBus, { EVENTS } from '../utils/eventBus';
 
-export default function useTaskData({ todoListId = null, isPreview = false }) {
+export default function useTaskData({ 
+    todoListId = null, 
+    isPreview = false,
+    appId = null 
+}) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -36,18 +40,21 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
         try {
             setLoading(true);
             setError(null);
-            const response = await apiService.getAllMyItems();
+            console.log('[useTaskData] Fetching tasks with appId:', appId);
+            const response = await apiService.getAllMyItems(appId);
+            console.log('[useTaskData] Fetch response:', response.data);
             const items = Array.isArray(response.data) ? response.data : [];
             const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
+            console.log('[useTaskData] Filtered tasks:', filtered);
             setTasks(filtered);
         } catch (err) {
-            console.error('Failed to fetch tasks:', err);
+            console.error('[useTaskData] Failed to fetch tasks:', err);
             setError(err.message);
             setTasks([]);
         } finally {
             setLoading(false);
         }
-    }, [todoListId, isPreview, mockTasks]);
+    }, [todoListId, isPreview, mockTasks, appId]);
 
     // Initial fetch
     useEffect(() => {
@@ -208,6 +215,7 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
             await apiService.createTodoItem({
                 ...taskData,
                 todoListId: todoListId || taskData.todoListId || 1,
+                appId: appId, // Truyền appId (projectId) để lưu vào database riêng
             });
             eventBus.emit(EVENTS.TASK_CREATED, taskData);
             eventBus.emit(EVENTS.TASKS_UPDATED);
@@ -215,12 +223,36 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
             console.error('Failed to create task:', err);
             throw err;
         }
-    }, [todoListId, isPreview]);
+    }, [todoListId, isPreview, appId]);
 
     const updateTask = useCallback(async (taskId, updates) => {
         if (isPreview) return;
         try {
-            await apiService.updateTodoItem(taskId, updates);
+            // Tìm task hiện tại để lấy đầy đủ thông tin
+            const currentTask = tasks.find(t => t.id === taskId);
+            if (!currentTask) {
+                throw new Error('Task not found');
+            }
+
+            // Convert status và priority string sang số trước khi gửi
+            const statusMap = { 'Todo': 0, 'InProgress': 1, 'Done': 2 };
+            const priorityMap = { 'Low': 0, 'Medium': 1, 'High': 2 };
+
+            // Tạo full data để gửi lên backend
+            const fullData = {
+                title: updates.title || currentTask.title,
+                status: updates.status !== undefined 
+                    ? (typeof updates.status === 'string' ? statusMap[updates.status] : updates.status)
+                    : (typeof currentTask.status === 'string' ? statusMap[currentTask.status] : currentTask.status),
+                priority: updates.priority !== undefined
+                    ? (typeof updates.priority === 'string' ? priorityMap[updates.priority] : updates.priority)
+                    : (typeof currentTask.priority === 'string' ? priorityMap[currentTask.priority] : currentTask.priority),
+                dueDate: updates.dueDate !== undefined ? updates.dueDate : currentTask.dueDate,
+                todoListId: updates.todoListId || currentTask.todoListId,
+                appId: updates.appId || currentTask.appId || null
+            };
+
+            await apiService.updateTodoItem(taskId, fullData, appId);
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
             eventBus.emit(EVENTS.TASK_UPDATED, { taskId, updates });
             eventBus.emit(EVENTS.TASKS_UPDATED);
@@ -228,12 +260,12 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
             console.error('Failed to update task:', err);
             throw err;
         }
-    }, [isPreview]);
+    }, [tasks, isPreview, appId]);
 
     const updateTaskStatus = useCallback(async (taskId, status) => {
         if (isPreview) return;
         try {
-            await apiService.updateItemStatus(taskId, status);
+            await apiService.updateItemStatus(taskId, status, appId);
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status } : t));
             eventBus.emit(EVENTS.TASK_UPDATED, { taskId, updates: { status } });
             eventBus.emit(EVENTS.TASKS_UPDATED);
@@ -241,12 +273,12 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
             console.error('Failed to update task status:', err);
             throw err;
         }
-    }, [isPreview]);
+    }, [isPreview, appId]);
 
     const deleteTask = useCallback(async (taskId) => {
         if (isPreview) return;
         try {
-            await apiService.deleteTodoItem(taskId);
+            await apiService.deleteTodoItem(taskId, appId);
             setTasks(prev => prev.filter(t => t.id !== taskId));
             eventBus.emit(EVENTS.TASK_DELETED, { taskId });
             eventBus.emit(EVENTS.TASKS_UPDATED);
@@ -254,7 +286,7 @@ export default function useTaskData({ todoListId = null, isPreview = false }) {
             console.error('Failed to delete task:', err);
             throw err;
         }
-    }, [isPreview]);
+    }, [isPreview, appId]);
 
     return {
         // Data

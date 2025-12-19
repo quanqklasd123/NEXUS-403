@@ -60,7 +60,13 @@ const CalendarDay = ({ date, currentMonth, events, onDayClick, isPreview = false
     );
 };
 
-export default function TaskCalendarRender({ props = {}, style, isPreview = false }) {
+export default function TaskCalendarRender({ 
+    props = {}, 
+    style, 
+    isPreview = false,
+    tasks: tasksFromProps = [],
+    allTasks: allTasksFromProps = []
+}) {
     const { showPriority = true, todoListId } = props || {};
     
     const [tasks, setTasks] = useState([]);
@@ -84,45 +90,39 @@ export default function TaskCalendarRender({ props = {}, style, isPreview = fals
         setTasks(result);
     }, [allTasks, filters, searchQuery]);
 
+    // Sử dụng tasks từ props thay vì fetch riêng
     useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                setLoading(true);
-                const response = await apiService.getAllMyItems();
-                const items = Array.isArray(response.data) ? response.data : [];
-                const filtered = todoListId ? items.filter(t => t.todoListId === todoListId) : items;
-                setAllTasks(filtered);
-            } catch (error) {
-                console.error('Failed to fetch tasks:', error);
-                setAllTasks([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTasks();
+        if (isPreview) {
+            setAllTasks([]);
+            setTasks([]);
+            setLoading(false);
+            return;
+        }
 
-        const handleTaskUpdate = () => fetchTasks();
+        const filtered = todoListId ? allTasksFromProps.filter(t => t.todoListId === todoListId) : allTasksFromProps;
+        setAllTasks(filtered);
+        setLoading(false);
+    }, [allTasksFromProps, todoListId, isPreview]);
+
+    // Listen for events
+    useEffect(() => {
         const handleFilterChange = (e) => setFilters(e.detail?.filters || {});
         const handleSearchChange = (e) => setSearchQuery(e.detail?.query || '');
-        
-        // Listen for view change event
         const handleViewChange = (e) => {
             const view = e.detail?.view || 'table';
             setCurrentView(view);
         };
         
-        window.addEventListener('tasks-updated', handleTaskUpdate);
         window.addEventListener('filter-change', handleFilterChange);
         window.addEventListener('search-change', handleSearchChange);
         window.addEventListener('view-change', handleViewChange);
         
         return () => {
-            window.removeEventListener('tasks-updated', handleTaskUpdate);
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
             window.removeEventListener('view-change', handleViewChange);
         };
-    }, [todoListId]);
+    }, []);
 
     // Chỉ hiển thị khi view là 'calendar'
     if (currentView !== 'calendar') {

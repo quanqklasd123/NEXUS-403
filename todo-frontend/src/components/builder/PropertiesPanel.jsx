@@ -921,6 +921,24 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                                     />
                                     <span className="text-sm">Nhóm theo trạng thái</span>
                                 </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.allowEdit !== false}
+                                        onChange={(e) => handleChange('props', 'allowEdit', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Cho phép chỉnh sửa</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.allowDelete !== false}
+                                        onChange={(e) => handleChange('props', 'allowDelete', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Cho phép xóa</span>
+                                </label>
                             </div>
                         </div>
                     </>
@@ -986,6 +1004,24 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                                         className="w-4 h-4 text-sage-600"
                                     />
                                     <span className="text-sm">Hiển thị ngày hết hạn</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.allowEdit !== false}
+                                        onChange={(e) => handleChange('props', 'allowEdit', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Cho phép chỉnh sửa</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedItem.props?.allowDelete !== false}
+                                        onChange={(e) => handleChange('props', 'allowDelete', e.target.checked)}
+                                        className="w-4 h-4 text-sage-600"
+                                    />
+                                    <span className="text-sm">Cho phép xóa</span>
                                 </label>
                             </div>
                         </div>

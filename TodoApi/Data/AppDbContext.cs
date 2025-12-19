@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace TodoApi.Data
 {
     /// <summary>
-    /// Helper class để quản lý database context cho từng app (tenant)
-    /// Hỗ trợ cả shared database mode (với AppId) và separate database mode
+    /// Lớp trợ giúp (Helper class) để quản lý database context cho từng ứng dụng (tenant)
+    /// Hỗ trợ cả shared database mode (với AppId) và separate database mode (database tách biệt)
     /// </summary>
     public class AppDbContext
     {
@@ -22,10 +22,11 @@ namespace TodoApi.Data
         }
 
         /// <summary>
-        /// Lấy database context cho app (shared hoặc separate)
-        /// Synchronous version - sử dụng FirstOrDefault() blocking
+        /// Lấy database context cho ứng dụng (shared hoặc separate)
+        /// Phiên bản đồng bộ (Synchronous version) - sử dụng FirstOrDefault() blocking
+        /// Hỗ trợ cả UserApp (Marketplace) và Project (App Builder)
         /// </summary>
-        /// <param name="appId">ID của UserApp. Nếu null hoặc empty, trả về main database</param>
+        /// <param name="appId">ID của UserApp hoặc Project. Nếu null hoặc empty, trả về main database</param>
         /// <returns>IMongoDatabase cho app hoặc main database nếu appId không hợp lệ</returns>
         public IMongoDatabase GetAppDatabase(string? appId)
         {
@@ -37,27 +38,46 @@ namespace TodoApi.Data
 
             try
             {
-                // Query UserApp từ main database để lấy TenantMode và DatabaseName
-                // Note: FirstOrDefault() là blocking call, nhưng acceptable cho single document query
+                // Thử tìm UserApp trước (Marketplace apps)
                 var userApp = _mainContext.UserApps
                     .Find(a => a.Id == appId)
                     .FirstOrDefault();
 
-                if (userApp == null)
+                if (userApp != null)
                 {
-                    _logger?.LogWarning("UserApp with Id '{AppId}' not found, falling back to main database", appId);
-                    return _mainContext.Database; // Fallback về main database
+                    // Nếu là separate database mode và có DatabaseName
+                    if (userApp.TenantMode == "separate" && !string.IsNullOrWhiteSpace(userApp.DatabaseName))
+                    {
+                        _logger?.LogDebug("Using separate database '{DatabaseName}' for UserApp '{AppId}'", userApp.DatabaseName, appId);
+                        return _mongoClient.GetDatabase(userApp.DatabaseName);
+                    }
+
+                    // Shared database mode hoặc DatabaseName null → dùng main database
+                    _logger?.LogDebug("Using shared database (main) for UserApp '{AppId}' (TenantMode: {TenantMode})", appId, userApp.TenantMode);
+                    return _mainContext.Database;
                 }
 
-                // Nếu là separate database mode và có DatabaseName
-                if (userApp.TenantMode == "separate" && !string.IsNullOrWhiteSpace(userApp.DatabaseName))
+                // Không tìm thấy UserApp, thử tìm Project (App Builder)
+                var project = _mainContext.Projects
+                    .Find(p => p.Id == appId)
+                    .FirstOrDefault();
+
+                if (project != null)
                 {
-                    _logger?.LogDebug("Using separate database '{DatabaseName}' for app '{AppId}'", userApp.DatabaseName, appId);
-                    return _mongoClient.GetDatabase(userApp.DatabaseName);
+                    // Nếu là separate database mode và có DatabaseName
+                    if (project.TenantMode == "separate" && !string.IsNullOrWhiteSpace(project.DatabaseName))
+                    {
+                        _logger?.LogDebug("Using separate database '{DatabaseName}' for Project '{AppId}'", project.DatabaseName, appId);
+                        return _mongoClient.GetDatabase(project.DatabaseName);
+                    }
+
+                    // Shared database mode hoặc DatabaseName null → dùng main database
+                    _logger?.LogDebug("Using shared database (main) for Project '{AppId}' (TenantMode: {TenantMode})", appId, project.TenantMode);
+                    return _mainContext.Database;
                 }
 
-                // Shared database mode hoặc DatabaseName null → dùng main database
-                _logger?.LogDebug("Using shared database (main) for app '{AppId}' (TenantMode: {TenantMode})", appId, userApp.TenantMode);
+                // Không tìm thấy cả UserApp và Project
+                _logger?.LogWarning("No UserApp or Project found with Id '{AppId}', falling back to main database", appId);
                 return _mainContext.Database;
             }
             catch (Exception ex)
@@ -68,10 +88,11 @@ namespace TodoApi.Data
         }
 
         /// <summary>
-        /// Lấy database context cho app (shared hoặc separate) - Async version
-        /// Recommended cho async contexts
+        /// Lấy database context cho ứng dụng (shared hoặc separate) - Phiên bản bất đồng bộ (Async version)
+        /// Khuyến nghị (Recommended) cho các async contexts
+        /// Hỗ trợ cả UserApp (Marketplace) và Project (App Builder)
         /// </summary>
-        /// <param name="appId">ID của UserApp. Nếu null hoặc empty, trả về main database</param>
+        /// <param name="appId">ID của UserApp hoặc Project. Nếu null hoặc empty, trả về main database</param>
         /// <returns>IMongoDatabase cho app hoặc main database nếu appId không hợp lệ</returns>
         public async Task<IMongoDatabase> GetAppDatabaseAsync(string? appId)
         {
@@ -83,26 +104,46 @@ namespace TodoApi.Data
 
             try
             {
-                // Query UserApp từ main database để lấy TenantMode và DatabaseName
+                // Thử tìm UserApp trước (Marketplace apps)
                 var userApp = await _mainContext.UserApps
                     .Find(a => a.Id == appId)
                     .FirstOrDefaultAsync();
 
-                if (userApp == null)
+                if (userApp != null)
                 {
-                    _logger?.LogWarning("UserApp with Id '{AppId}' not found, falling back to main database", appId);
-                    return _mainContext.Database; // Fallback về main database
+                    // Nếu là separate database mode và có DatabaseName
+                    if (userApp.TenantMode == "separate" && !string.IsNullOrWhiteSpace(userApp.DatabaseName))
+                    {
+                        _logger?.LogDebug("Using separate database '{DatabaseName}' for UserApp '{AppId}'", userApp.DatabaseName, appId);
+                        return _mongoClient.GetDatabase(userApp.DatabaseName);
+                    }
+
+                    // Shared database mode hoặc DatabaseName null → dùng main database
+                    _logger?.LogDebug("Using shared database (main) for UserApp '{AppId}' (TenantMode: {TenantMode})", appId, userApp.TenantMode);
+                    return _mainContext.Database;
                 }
 
-                // Nếu là separate database mode và có DatabaseName
-                if (userApp.TenantMode == "separate" && !string.IsNullOrWhiteSpace(userApp.DatabaseName))
+                // Không tìm thấy UserApp, thử tìm Project (App Builder)
+                var project = await _mainContext.Projects
+                    .Find(p => p.Id == appId)
+                    .FirstOrDefaultAsync();
+
+                if (project != null)
                 {
-                    _logger?.LogDebug("Using separate database '{DatabaseName}' for app '{AppId}'", userApp.DatabaseName, appId);
-                    return _mongoClient.GetDatabase(userApp.DatabaseName);
+                    // Nếu là separate database mode và có DatabaseName
+                    if (project.TenantMode == "separate" && !string.IsNullOrWhiteSpace(project.DatabaseName))
+                    {
+                        _logger?.LogDebug("Using separate database '{DatabaseName}' for Project '{AppId}'", project.DatabaseName, appId);
+                        return _mongoClient.GetDatabase(project.DatabaseName);
+                    }
+
+                    // Shared database mode hoặc DatabaseName null → dùng main database
+                    _logger?.LogDebug("Using shared database (main) for Project '{AppId}' (TenantMode: {TenantMode})", appId, project.TenantMode);
+                    return _mainContext.Database;
                 }
 
-                // Shared database mode hoặc DatabaseName null → dùng main database
-                _logger?.LogDebug("Using shared database (main) for app '{AppId}' (TenantMode: {TenantMode})", appId, userApp.TenantMode);
+                // Không tìm thấy cả UserApp và Project
+                _logger?.LogWarning("No UserApp or Project found with Id '{AppId}', falling back to main database", appId);
                 return _mainContext.Database;
             }
             catch (Exception ex)
@@ -113,10 +154,55 @@ namespace TodoApi.Data
         }
 
         /// <summary>
-        /// Lấy collection trong app database
+        /// Lấy database context cho Project (App Builder) - hỗ trợ multi-tenant
         /// </summary>
-        /// <typeparam name="T">Type của document trong collection</typeparam>
-        /// <param name="appId">ID của UserApp. Nếu null hoặc empty, dùng main database</param>
+        /// <param name="projectId">ID của Project. Nếu null hoặc empty, trả về main database</param>
+        /// <returns>IMongoDatabase cho project hoặc main database nếu projectId không hợp lệ</returns>
+        public async Task<IMongoDatabase> GetProjectDatabaseAsync(string? projectId)
+        {
+            // Nếu projectId null hoặc empty → trả về main database
+            if (string.IsNullOrWhiteSpace(projectId))
+            {
+                return _mainContext.Database;
+            }
+
+            try
+            {
+                // Query Project từ main database để lấy TenantMode và DatabaseName
+                var project = await _mainContext.Projects
+                    .Find(p => p.Id == projectId)
+                    .FirstOrDefaultAsync();
+
+                if (project == null)
+                {
+                    _logger?.LogWarning("Project with Id '{ProjectId}' not found, falling back to main database", projectId);
+                    return _mainContext.Database;
+                }
+
+                // Nếu là separate database mode và có DatabaseName
+                if (project.TenantMode == "separate" && !string.IsNullOrWhiteSpace(project.DatabaseName))
+                {
+                    _logger?.LogDebug("Using separate database '{DatabaseName}' for project '{ProjectId}'", project.DatabaseName, projectId);
+                    return _mongoClient.GetDatabase(project.DatabaseName);
+                }
+
+                // Shared database mode hoặc DatabaseName null → dùng main database
+                _logger?.LogDebug("Using shared database (main) for project '{ProjectId}' (TenantMode: {TenantMode})", projectId, project.TenantMode);
+                return _mainContext.Database;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error getting database for project '{ProjectId}', falling back to main database", projectId);
+                return _mainContext.Database;
+            }
+        }
+
+        /// <summary>
+        /// Lấy collection trong app database (database của ứng dụng)
+        /// Hỗ trợ cả UserApp (Marketplace) và Project (App Builder)
+        /// </summary>
+        /// <typeparam name="T">Kiểu dữ liệu (Type) của document trong collection</typeparam>
+        /// <param name="appId">ID của UserApp hoặc Project. Nếu null hoặc empty, dùng main database</param>
         /// <param name="collectionName">Tên collection</param>
         /// <returns>IMongoCollection từ đúng database (app database hoặc main database)</returns>
         public IMongoCollection<T> GetAppCollection<T>(string? appId, string collectionName)
@@ -131,11 +217,12 @@ namespace TodoApi.Data
         }
 
         /// <summary>
-        /// Lấy collection trong app database - Async version
-        /// Recommended cho async contexts
+        /// Lấy collection trong app database - Phiên bản bất đồng bộ (Async version)
+        /// Khuyến nghị (Recommended) cho các async contexts
+        /// Hỗ trợ cả UserApp (Marketplace) và Project (App Builder)
         /// </summary>
         /// <typeparam name="T">Type của document trong collection</typeparam>
-        /// <param name="appId">ID của UserApp. Nếu null hoặc empty, dùng main database</param>
+        /// <param name="appId">ID của UserApp hoặc Project. Nếu null hoặc empty, dùng main database</param>
         /// <param name="collectionName">Tên collection</param>
         /// <returns>IMongoCollection từ đúng database (app database hoặc main database)</returns>
         public async Task<IMongoCollection<T>> GetAppCollectionAsync<T>(string? appId, string collectionName)

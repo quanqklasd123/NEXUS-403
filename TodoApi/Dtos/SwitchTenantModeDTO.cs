@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace TodoApi.Dtos
 {
     /// <summary>
-    /// DTO để switch tenant mode của UserApp
+    /// DTO để chuyển đổi (switch) chế độ tenant của UserApp
     /// </summary>
     public class SwitchTenantModeDTO
     {
