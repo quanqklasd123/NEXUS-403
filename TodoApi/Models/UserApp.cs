@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace TodoApi.Models
 {
     /// <summary>
-    /// UserApp - Represents an app owned by a user (created from App Builder or downloaded from Marketplace)
+    /// UserApp - Biểu diễn một ứng dụng thuộc sở hữu của người dùng (tạo từ App Builder hoặc tải về từ Marketplace)
     /// </summary>
     public class UserApp
     {
@@ -22,25 +22,25 @@ namespace TodoApi.Models
         public string? Description { get; set; }
 
         /// <summary>
-        /// JSON config storing all components and their properties
+        /// Cấu hình JSON lưu trữ tất cả các components và thuộc tính của chúng
         /// </summary>
         [BsonElement("config")]
         public string? Config { get; set; }
 
         /// <summary>
-        /// Source of the app: 'created' (from App Builder) or 'downloaded' (from Marketplace)
+        /// Nguồn gốc của ứng dụng: 'created' (từ App Builder) hoặc 'downloaded' (từ Marketplace)
         /// </summary>
         [BsonElement("source")]
         public string Source { get; set; } = "created";
 
         /// <summary>
-        /// If downloaded, the original Marketplace app ID
+        /// Nếu được tải xuống, đây là ID ứng dụng gốc từ Marketplace
         /// </summary>
         [BsonElement("marketplaceAppId")]
         public string? MarketplaceAppId { get; set; }
 
         /// <summary>
-        /// If downloaded, the original author's name
+        /// Nếu được tải xuống, đây là tên tác giả gốc
         /// </summary>
         [BsonElement("originalAuthor")]
         public string? OriginalAuthor { get; set; }
@@ -64,7 +64,7 @@ namespace TodoApi.Models
 
         /// <summary>
         /// Chế độ tenant: "shared" (dùng AppId trong cùng database) hoặc "separate" (database riêng)
-        /// Default: "shared" để backward compatible
+        /// Mặc định (Default): "shared" để tương thích ngược (backward compatible)
         /// </summary>
         [BsonElement("tenantMode")]
         public string TenantMode { get; set; } = "shared";

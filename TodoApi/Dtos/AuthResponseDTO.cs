@@ -6,6 +6,6 @@ namespace TodoApi.Dtos
     {
         public string UserId { get; set; }
         public string Email { get; set; }
-        public string Token { get; set; } // Chìa khóa truy cập
+        public string Token { get; set; } // Mã token (Chìa khóa truy cập - Access token)
     }
 }

@@ -12,27 +12,27 @@ namespace TodoApi.Data
             _database = client.GetDatabase(databaseName);
         }
 
-        // Collections
+        // Các Collections (bộ sưu tập dữ liệu)
         public IMongoCollection<T> GetCollection<T>(string collectionName)
         {
             return _database.GetCollection<T>(collectionName);
         }
 
-        // Helper methods for common collections
+        // Các phương thức trợ giúp (Helper methods) cho các collections phổ biến
         public IMongoCollection<Models.Project> Projects => GetCollection<Models.Project>("projects");
         public IMongoCollection<Models.UserApp> UserApps => GetCollection<Models.UserApp>("userApps");
         public IMongoCollection<Models.TodoList> TodoLists => GetCollection<Models.TodoList>("todoLists");
         public IMongoCollection<Models.TodoItem> TodoItems => GetCollection<Models.TodoItem>("todoItems");
-        // Google Calendar collections đã được xóa
+        // Các collections Google Calendar đã được gỡ bỏ (removed)
 
-        // Identity collections
+        // Các collections Identity (Hệ thống xác thực)
         public IMongoCollection<Models.MongoIdentity.AppUser> Users => GetCollection<Models.MongoIdentity.AppUser>("users");
         public IMongoCollection<Models.MongoIdentity.IdentityRole> Roles => GetCollection<Models.MongoIdentity.IdentityRole>("roles");
 
-        // Marketplace collections
+        // Các collections Marketplace (Chợ ứng dụng)
         public IMongoCollection<Models.Category> Categories => GetCollection<Models.Category>("categories");
 
-        // Database access for Identity stores
+        // Truy cập database cho các Identity stores (Kho lưu trữ xác thực)
         public IMongoDatabase Database => _database;
     }
 }

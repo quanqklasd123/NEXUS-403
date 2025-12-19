@@ -9,7 +9,7 @@ using System.Text;
 namespace TodoApi.Services
 {
     /// <summary>
-    /// Service để quản lý separate database cho multi-tenant
+    /// Dịch vụ (Service) để quản lý database tách biệt cho kiến trúc đa người thuê (multi-tenant)
     /// </summary>
     public class TenantDatabaseService
     {
@@ -28,15 +28,15 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Generate database name cho app
-        /// Format: app_{appId} hoặc app_{hash} nếu appId quá dài
+        /// Tạo tên database cho ứng dụng (app)
+        /// Định dạng (Format): app_{appId} hoặc app_{hash} nếu appId quá dài
         /// </summary>
         public string GenerateDatabaseName(string appId)
         {
-            // MongoDB database name rules:
-            // - Max 64 characters
-            // - Cannot contain: /\. "$
-            // - Case-sensitive
+            // Quy tắc đặt tên database của MongoDB:
+            // - Tối đa 64 ký tự
+            // - Không được chứa: /\\. "$
+            // - Phân biệt chữ hoa/thường (Case-sensitive)
 
             // Nếu appId ngắn và hợp lệ, dùng trực tiếp
             if (appId.Length <= 50 && IsValidDatabaseName(appId))
@@ -44,26 +44,26 @@ namespace TodoApi.Services
                 return $"app_{appId}";
             }
 
-            // Nếu appId dài hoặc không hợp lệ, dùng hash
+            // Nếu appId dài hoặc không hợp lệ, sử dụng hash (mã hóa)
             var hash = ComputeHash(appId);
             return $"app_{hash}";
         }
 
         /// <summary>
-        /// Kiểm tra database name có hợp lệ không
+        /// Kiểm tra tên database có hợp lệ không (theo quy định của MongoDB)
         /// </summary>
         private bool IsValidDatabaseName(string name)
         {
             if (string.IsNullOrWhiteSpace(name) || name.Length > 64)
                 return false;
 
-            // Không được chứa các ký tự đặc biệt
+            // Không được chứa các ký tự đặc biệt (theo quy định MongoDB)
             var invalidChars = new[] { '/', '\\', '.', ' ', '"', '$' };
             return !invalidChars.Any(c => name.Contains(c));
         }
 
         /// <summary>
-        /// Compute hash cho appId (SHA256, lấy 16 ký tự đầu)
+        /// Tính toán mã hash (Compute hash) cho appId (SHA256, lấy 16 ký tự đầu)
         /// </summary>
         private string ComputeHash(string input)
         {
@@ -73,7 +73,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Tạo separate database cho app
+        /// Tạo database tách biệt (separate database) cho ứng dụng
         /// </summary>
         public async Task<IMongoDatabase> CreateSeparateDatabaseAsync(string databaseName)
         {
@@ -83,8 +83,8 @@ namespace TodoApi.Services
 
                 var database = _mongoClient.GetDatabase(databaseName);
 
-                // Tạo collections cơ bản bằng cách insert và xóa một document test
-                // MongoDB tự động tạo database và collection khi first write
+                // Tạo các collections cơ bản bằng cách chèn và xóa một document thử nghiệm
+                // MongoDB tự động tạo database và collection khi ghi dữ liệu lần đầu tiên (first write)
                 var testCollection = database.GetCollection<BsonDocument>("_init");
                 try
                 {
@@ -112,7 +112,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Migrate data từ main database sang separate database
+        /// Chuyển dữ liệu (Migrate data) từ main database sang separate database
         /// </summary>
         public async Task<DatabaseMigrationResult> MigrateToSeparateDatabaseAsync(string appId, string databaseName)
         {
@@ -202,7 +202,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Migrate data từ separate database về main database
+        /// Chuyển dữ liệu (Migrate data) từ separate database về main database
         /// </summary>
         public async Task<DatabaseMigrationResult> MigrateToMainDatabaseAsync(string appId, string databaseName)
         {
@@ -289,7 +289,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Xóa separate database (sau khi migrate về main)
+        /// Xóa database tách biệt (separate database) sau khi migrate về main
         /// </summary>
         public async Task<bool> DropSeparateDatabaseAsync(string databaseName)
         {
@@ -309,7 +309,7 @@ namespace TodoApi.Services
     }
 
     /// <summary>
-    /// Kết quả migration giữa databases (separate ↔ main)
+    /// Kết quả quá trình chuyển dữ liệu (migration) giữa các databases (separate ↔ main)
     /// </summary>
     public class DatabaseMigrationResult
     {

@@ -16,13 +16,13 @@ namespace TodoApi.Models
         public string? Description { get; set; }
 
         [BsonElement("color")]
-        public string Color { get; set; } = "sage"; // sage, peach, butter, neutral
+        public string Color { get; set; } = "sage"; // Màu sắc: sage (xanh xám), peach (cam nhạt), butter (vàng bơ), neutral (trung tính)
 
         [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [BsonElement("createdBy")]
-        public string CreatedBy { get; set; } // User ID who created this category
+        public string CreatedBy { get; set; } // ID người dùng (User ID) đã tạo danh mục này
     }
 }
 

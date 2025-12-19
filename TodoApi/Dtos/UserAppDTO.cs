@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TodoApi.Dtos
 {
-    // DTO for creating a new UserApp
+    // DTO để tạo một UserApp mới (Data Transfer Object for creating)
     public class CreateUserAppDTO
     {
         [Required]
@@ -21,13 +21,13 @@ namespace TodoApi.Dtos
         public string Source { get; set; } = "created";
 
         /// <summary>
-        /// Tenant mode: "shared" (default) or "separate"
+        /// Chế độ Tenant: "shared" (mặc định - default) hoặc "separate" (tách biệt)
         /// </summary>
         [StringLength(20)]
         public string TenantMode { get; set; } = "shared";
     }
 
-    // DTO for updating a UserApp
+    // DTO để cập nhật một UserApp (Data Transfer Object for updating)
     public class UpdateUserAppDTO
     {
         [StringLength(255)]
@@ -42,7 +42,7 @@ namespace TodoApi.Dtos
         public string? Config { get; set; }
     }
 
-    // DTO for response
+    // DTO để trả về (phản hồi - response)
     public class UserAppDTO
     {
         public string Id { get; set; } = string.Empty;
@@ -59,7 +59,7 @@ namespace TodoApi.Dtos
         public DateTime UpdatedAt { get; set; }
     }
 
-    // DTO for saving from App Builder
+    // DTO để lưu từ App Builder (Data Transfer Object for saving from App Builder)
     public class SaveFromBuilderDTO
     {
         [Required]

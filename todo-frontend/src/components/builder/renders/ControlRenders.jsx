@@ -565,7 +565,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
 }
 
 // ========== ADD TASK BUTTON ==========
-export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
+export function AddTaskButtonRender({ props = {}, style, isPreview = false, appId = null }) {
     const { label = 'New Task', defaultStatus = 'Todo', defaultPriority = 'Medium' } = props || {};
     const [isAdding, setIsAdding] = useState(false);
     const [newTask, setNewTask] = useState({ 
@@ -589,7 +589,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
     const loadCategories = useCallback(async () => {
         try {
             setLoadingCategories(true);
-            const response = await apiService.getTodoLists();
+            const response = await apiService.getTodoLists(appId);
             const lists = response.data || [];
             setCategories(lists);
             // Set default category if not set
@@ -604,7 +604,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
         } finally {
             setLoadingCategories(false);
         }
-    }, []);
+    }, [appId]);
 
     // Load categories when adding form opens
     useEffect(() => {
@@ -682,7 +682,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
         }
         try {
             setLoadingCategories(true);
-            const response = await apiService.createTodoList(newCategoryName.trim());
+            const response = await apiService.createTodoList(newCategoryName.trim(), appId);
             const newCategory = response.data;
             setCategories(prev => [...prev, newCategory]);
             setNewTask(prev => ({ ...prev, categoryId: newCategory.id }));
@@ -768,7 +768,8 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                 status: convertStatusToInt(newTask.status),
                 priority: convertPriorityToInt(newTask.priority),
                 dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : null,
-                todoListId: newTask.categoryId // MongoDB dùng string, không parse int
+                todoListId: newTask.categoryId, // MongoDB dùng string, không parse int
+                appId: appId // Truyền appId để lưu vào database riêng
             });
             setNewTask({ title: '', status: defaultStatus, priority: defaultPriority, dueDate: null, categoryId: null });
             setIsAdding(false);

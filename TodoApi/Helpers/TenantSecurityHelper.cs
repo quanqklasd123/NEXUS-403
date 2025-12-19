@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace TodoApi.Helpers
 {
     /// <summary>
-    /// Helper class để verify security và validation cho multi-tenant
+    /// Lớp trợ giúp (Helper class) để xác minh bảo mật (verify security) và kiểm tra tính hợp lệ (validation) cho đa người thuê (multi-tenant)
     /// </summary>
     public class TenantSecurityHelper
     {
@@ -21,16 +21,17 @@ namespace TodoApi.Helpers
         }
 
         /// <summary>
-        /// Verify AppId ownership - đảm bảo app thuộc về user hiện tại
+        /// Xác minh quyền sở hữu AppId (Verify AppId ownership) - đảm bảo app thuộc về người dùng hiện tại
+        /// Hỗ trợ cả UserApp (Marketplace) và Project (App Builder)
         /// </summary>
-        /// <param name="appId">ID của UserApp cần verify</param>
+        /// <param name="appId">ID của UserApp hoặc Project cần verify</param>
         /// <param name="userId">ID của user hiện tại (từ JWT token)</param>
         /// <returns>True nếu app thuộc về user, false nếu không</returns>
         public async Task<bool> VerifyAppOwnershipAsync(string? appId, string userId)
         {
             if (string.IsNullOrWhiteSpace(appId))
             {
-                return true; // Không có AppId thì không cần verify (backward compatible)
+                return true; // Không có AppId thì không cần xác minh (backward compatible - tương thích ngược)
             }
 
             if (string.IsNullOrWhiteSpace(userId))
@@ -48,27 +49,38 @@ namespace TodoApi.Helpers
 
             try
             {
+                // Thử tìm UserApp trước (Marketplace apps)
                 var app = await _mongoContext.UserApps
                     .Find(a => a.Id == appId && a.AppUserId == userId)
                     .FirstOrDefaultAsync();
 
-                if (app == null)
+                if (app != null)
                 {
-                    _logger.LogWarning("App ownership verification failed: AppId={AppId}, UserId={UserId}", appId, userId);
-                    return false;
+                    return true;
                 }
 
-                return true;
+                // Không tìm thấy UserApp, thử tìm Project (App Builder)
+                var project = await _mongoContext.Projects
+                    .Find(p => p.Id == appId && p.AppUserId == userId)
+                    .FirstOrDefaultAsync();
+
+                if (project != null)
+                {
+                    return true;
+                }
+
+                _logger.LogWarning("App/Project ownership verification failed: AppId={AppId}, UserId={UserId}", appId, userId);
+                return false;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error verifying app ownership: AppId={AppId}, UserId={UserId}", appId, userId);
-                return false; // Fail secure: return false on error
+                return false; // Bảo mật an toàn (Fail secure): trả về false khi có lỗi
             }
         }
 
         /// <summary>
-        /// Verify AppId ownership và throw exception nếu không owned
+        /// Xác minh quyền sở hữu AppId (Verify AppId ownership) và ném ngoại lệ (throw exception) nếu không sở hữu (not owned)
         /// </summary>
         /// <param name="appId">ID của UserApp cần verify</param>
         /// <param name="userId">ID của user hiện tại</param>
@@ -83,7 +95,7 @@ namespace TodoApi.Helpers
         }
 
         /// <summary>
-        /// Validate AppId format (MongoDB ObjectId)
+        /// Kiểm tra tính hợp lệ (Validate) định dạng AppId (MongoDB ObjectId)
         /// </summary>
         public bool IsValidObjectId(string? appId)
         {
@@ -96,13 +108,13 @@ namespace TodoApi.Helpers
         }
 
         /// <summary>
-        /// Validate AppId và verify ownership trong một call
+        /// Kiểm tra tính hợp lệ (Validate) AppId và xác minh quyền sở hữu trong một lần gọi (one call)
         /// </summary>
         public async Task<(bool IsValid, bool IsOwned)> ValidateAndVerifyAppIdAsync(string? appId, string userId)
         {
             if (string.IsNullOrWhiteSpace(appId))
             {
-                return (true, true); // Null AppId is valid and owned (backward compatible)
+                return (true, true); // Null AppId là hợp lệ và được sở hữu (backward compatible - tương thích ngược)
             }
 
             var isValid = IsValidObjectId(appId);
@@ -116,7 +128,7 @@ namespace TodoApi.Helpers
         }
 
         /// <summary>
-        /// Get UserApp và verify ownership
+        /// Lấy UserApp và xác minh quyền sở hữu (Get UserApp and verify ownership)
         /// </summary>
         /// <returns>UserApp nếu owned, null nếu không</returns>
         public async Task<UserApp?> GetUserAppIfOwnedAsync(string? appId, string userId)
@@ -142,14 +154,14 @@ namespace TodoApi.Helpers
         }
 
         /// <summary>
-        /// Verify AppId không thể set thành app của user khác
-        /// Khi user cố gắng set AppId trong DTO, verify nó thuộc về user hiện tại
+        /// Xác minh (Verify) AppId không thể được đặt thành app của người dùng khác
+        /// Khi người dùng cố gắng đặt AppId trong DTO, xác minh nó thuộc về người dùng hiện tại
         /// </summary>
         public async Task<bool> CanUserSetAppIdAsync(string? appId, string userId)
         {
             if (string.IsNullOrWhiteSpace(appId))
             {
-                return true; // Null AppId is allowed (backward compatible)
+                return true; // Null AppId là cho phép (backward compatible - tương thích ngược)
             }
 
             return await VerifyAppOwnershipAsync(appId, userId);

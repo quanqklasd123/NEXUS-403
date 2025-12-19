@@ -22,11 +22,11 @@ namespace TodoApi.Controllers
         {
             try
             {
-                // Test MongoDB connection
+                // Kiểm tra kết nối MongoDB (Test MongoDB connection)
                 var collections = await _mongoContext.Projects.Database.ListCollectionNamesAsync();
                 var collectionList = await collections.ToListAsync();
                 
-                // Count documents in each collection
+                // Đếm số lượng documents trong mỗi collection
                 var projectCount = await _mongoContext.Projects.CountDocumentsAsync(_ => true);
                 var todoListCount = await _mongoContext.TodoLists.CountDocumentsAsync(_ => true);
                 var todoItemCount = await _mongoContext.TodoItems.CountDocumentsAsync(_ => true);
@@ -61,7 +61,7 @@ namespace TodoApi.Controllers
             }
         }
 
-        // GET: api/health/data - Xem dữ liệu (chỉ cho development)
+        // GET: api/health/data - Xem dữ liệu (chỉ dùng cho môi trường development - phát triển)
         [HttpGet("data")]
         public async Task<IActionResult> GetData([FromQuery] string collection = null, [FromQuery] int limit = 10)
         {

@@ -25,7 +25,27 @@ import {
 } from './renders';
 
 // Helper component để wrap children trong DraggableComponent
-const DraggableChildComponent = ({ child, items, isSelected, onClick, isPreview, navigate, context }) => {
+const DraggableChildComponent = ({ 
+    child, 
+    items, 
+    isSelected, 
+    onClick, 
+    isPreview, 
+    navigate, 
+    context,
+    // Task-related props
+    tasks,
+    allTasks,
+    searchQuery,
+    filterTag,
+    filters,
+    onTaskCreate,
+    onTaskUpdate,
+    onTaskStatusUpdate,
+    onTaskDelete,
+    onUpdateProps,
+    appId
+}) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: child.id,
         disabled: isPreview,
@@ -114,20 +134,51 @@ const DraggableChildComponent = ({ child, items, isSelected, onClick, isPreview,
             }}
             className={`${isDragging ? 'cursor-grabbing' : isSelected ? 'ring-2 ring-neutral-900' : ''}`}
         >
-            <RenderComponent 
-                item={child} 
+            <RenderComponent
+                item={child}
                 items={items}
-                isSelected={isSelected} 
-                onClick={onClick} 
-                isPreview={isPreview} 
+                isSelected={isSelected}
+                onClick={onClick}
+                isPreview={isPreview}
                 navigate={navigate}
                 context={context}
+                tasks={tasks}
+                allTasks={allTasks}
+                searchQuery={searchQuery}
+                filterTag={filterTag}
+                filters={filters}
+                onTaskCreate={onTaskCreate}
+                onTaskUpdate={onTaskUpdate}
+                onTaskStatusUpdate={onTaskStatusUpdate}
+                onTaskDelete={onTaskDelete}
+                onUpdateProps={onUpdateProps}
+                appId={appId}
             />
         </div>
     );
 };
 
-const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = false, navigate = null, context = {} }) => {
+const RenderComponent = ({ 
+    item, 
+    items = [], 
+    isSelected, 
+    onClick, 
+    isPreview = false, 
+    navigate = null, 
+    context = {},
+    // Task-related props
+    tasks = [],
+    allTasks = [],
+    searchQuery = '',
+    filterTag = '',
+    filters = {},
+    onTaskCreate = null,
+    onTaskUpdate = null,
+    onTaskStatusUpdate = null,
+    onTaskDelete = null,
+    onUpdateProps = null,
+    appId = null // ID của app/project để lưu data vào database riêng
+}) => {
     // Make container/row/grid droppable (hooks must be called before any early returns)
     const isDroppableType = !isPreview && (item.type === 'container' || item.type === 'row' || item.type === 'grid');
     const droppableResult = useDroppable({ 
@@ -238,6 +289,17 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                                     isPreview={isPreview}
                                     navigate={navigate}
                                     context={context}
+                                    tasks={tasks}
+                                    allTasks={allTasks}
+                                    searchQuery={searchQuery}
+                                    filterTag={filterTag}
+                                    filters={filters}
+                                    onTaskCreate={onTaskCreate}
+                                    onTaskUpdate={onTaskUpdate}
+                                    onTaskStatusUpdate={onTaskStatusUpdate}
+                                    onTaskDelete={onTaskDelete}
+                                    onUpdateProps={onUpdateProps}
+                                    appId={appId}
                                 />
                             ))}
                         </div>
@@ -281,6 +343,17 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                                     isPreview={isPreview}
                                     navigate={navigate}
                                     context={context}
+                                    tasks={tasks}
+                                    allTasks={allTasks}
+                                    searchQuery={searchQuery}
+                                    filterTag={filterTag}
+                                    filters={filters}
+                                    onTaskCreate={onTaskCreate}
+                                    onTaskUpdate={onTaskUpdate}
+                                    onTaskStatusUpdate={onTaskStatusUpdate}
+                                    onTaskDelete={onTaskDelete}
+                                    onUpdateProps={onUpdateProps}
+                                    appId={appId}
                                 />
                             ))}
                         </div>
@@ -326,6 +399,17 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                                     isPreview={isPreview}
                                     navigate={navigate}
                                     context={context}
+                                    tasks={tasks}
+                                    allTasks={allTasks}
+                                    searchQuery={searchQuery}
+                                    filterTag={filterTag}
+                                    filters={filters}
+                                    onTaskCreate={onTaskCreate}
+                                    onTaskUpdate={onTaskUpdate}
+                                    onTaskStatusUpdate={onTaskStatusUpdate}
+                                    onTaskDelete={onTaskDelete}
+                                    onUpdateProps={onUpdateProps}
+                                    appId={appId}
                                 />
                             ))}
                         </div>
@@ -767,16 +851,55 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
             }
             
             case 'taskTable':
-                return <TaskTableRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+                return (
+                    <TaskTableRender 
+                        props={mergedProps} 
+                        style={contentStyle} 
+                        isPreview={isPreview}
+                        tasks={tasks}
+                        allTasks={allTasks}
+                        onTaskUpdate={onTaskUpdate}
+                        onTaskDelete={onTaskDelete}
+                    />
+                );
             
             case 'taskList':
-                return <TaskListRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+                return (
+                    <TaskListRender 
+                        props={mergedProps} 
+                        style={contentStyle} 
+                        isPreview={isPreview}
+                        tasks={tasks}
+                        allTasks={allTasks}
+                        onTaskUpdate={onTaskUpdate}
+                        onTaskDelete={onTaskDelete}
+                    />
+                );
             
             case 'taskBoard':
-                return <TaskBoardRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+                return (
+                    <TaskBoardRender 
+                        props={mergedProps} 
+                        style={contentStyle} 
+                        isPreview={isPreview}
+                        tasks={tasks}
+                        allTasks={allTasks}
+                        onTaskUpdate={onTaskUpdate}
+                        onTaskStatusUpdate={onTaskStatusUpdate}
+                        onTaskDelete={onTaskDelete}
+                    />
+                );
             
             case 'taskCalendar':
-                return <TaskCalendarRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+                return (
+                    <TaskCalendarRender 
+                        props={mergedProps} 
+                        style={contentStyle} 
+                        isPreview={isPreview}
+                        tasks={tasks}
+                        allTasks={allTasks}
+                    />
+                );
 
             // === CONTROL COMPONENTS ===
             case 'viewSwitcher':
@@ -868,7 +991,7 @@ const RenderComponent = ({ item, items = [], isSelected, onClick, isPreview = fa
                 return <SortDropdownRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
             
             case 'addTaskButton':
-                return <AddTaskButtonRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;
+                return <AddTaskButtonRender props={mergedProps} style={contentStyle} isPreview={isPreview} appId={appId} />;
             
             case 'databaseTitle':
                 return <DatabaseTitleRender props={mergedProps} style={contentStyle} isPreview={isPreview} />;

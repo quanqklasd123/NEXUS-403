@@ -86,8 +86,9 @@ const apiService = {
     },
 
     // --- TodoLists ---
-    getTodoLists: () => {
-        return apiClient.get('/todolists');
+    getTodoLists: (appId = null) => {
+        const params = appId ? { appId } : {};
+        return apiClient.get('/todolists', { params });
     },
 
     // Lấy chi tiết MỘT list (sẽ chứa cả các items)
@@ -95,8 +96,8 @@ const apiService = {
         return apiClient.get(`/todolists/${id}`);
     },
 
-    createTodoList: (name) => {
-        return apiClient.post('/todolists', { Name: name });
+    createTodoList: (name, appId = null) => {
+        return apiClient.post('/todolists', { Name: name, AppId: appId });
     },
 
     updateTodoList: (id, name) => {
@@ -114,14 +115,16 @@ const apiService = {
     // --- THÊM HÀM UPDATE ---
     // Cập nhật một item. BE của chúng ta cần *toàn bộ* DTO
     // ngay cả khi chỉ thay đổi 1 trường (do chúng ta dùng PUT)
-    updateTodoItem: (id, itemData) => {
+    updateTodoItem: (id, itemData, appId = null) => {
         // itemData sẽ là { title, isDone, priority, dueDate, todoListId }
-        return apiClient.put(`/todoitems/${id}`, itemData);
+        const config = appId ? { params: { appId } } : {};
+        return apiClient.put(`/todoitems/${id}`, itemData, config);
     },
 
     // --- THÊM HÀM DELETE ---
-    deleteTodoItem: (id) => {
-        return apiClient.delete(`/todoitems/${id}`);
+    deleteTodoItem: (id, appId = null) => {
+        const config = appId ? { params: { appId } } : {};
+        return apiClient.delete(`/todoitems/${id}`, config);
     },
 
     // --- AI ---
@@ -136,12 +139,14 @@ const apiService = {
     },
 
     // --- THÊM HÀM MỚI CHO KANBAN ---
-    updateItemStatus: (id, newStatus) => {
-        return apiClient.patch(`/todoitems/${id}/status`, { Status: newStatus });
+    updateItemStatus: (id, newStatus, appId = null) => {
+        const params = appId ? { appId } : {};
+        return apiClient.patch(`/todoitems/${id}/status`, { Status: newStatus }, { params });
     },
 
-    getAllMyItems: () => {
-        return apiClient.get('/todoitems/my-all');
+    getAllMyItems: (appId = null) => {
+        const params = appId ? { appId } : {};
+        return apiClient.get('/todoitems/my-all', { params });
     },
 
     getMarketplaceApps: (category) => {

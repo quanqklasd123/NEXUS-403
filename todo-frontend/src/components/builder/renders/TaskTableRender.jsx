@@ -51,7 +51,16 @@ const PriorityBadge = ({ priority }) => {
     );
 };
 
-export default function TaskTableRender({ props = {}, style, isPreview = false }) {
+export default function TaskTableRender({ 
+    props = {}, 
+    style, 
+    isPreview = false,
+    // Props from parent
+    tasks: externalTasks = null,
+    allTasks: externalAllTasks = null,
+    onTaskUpdate: externalOnTaskUpdate = null,
+    onTaskDelete: externalOnTaskDelete = null
+}) {
     const { columns = ['title', 'status', 'priority', 'dueDate', 'category'], showHeader = true, allowEdit = true, allowDelete = true, todoListId } = props || {};
     
     const [tasks, setTasks] = useState([]);
@@ -111,8 +120,22 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
         setTasks(result);
     }, [allTasks, filters, searchQuery]);
 
-    // Fetch tasks từ API
+    // Fetch tasks từ API hoặc sử dụng props từ parent
     useEffect(() => {
+        // Nếu có external tasks từ parent (AppRuntimePage), sử dụng chúng
+        if (externalAllTasks !== null) {
+            const filtered = todoListId ? externalAllTasks.filter(t => t.todoListId === todoListId) : externalAllTasks;
+            const convertedItems = filtered.map(item => ({
+                ...item,
+                status: typeof item.status === 'number' ? convertStatusToString(item.status) : item.status,
+                priority: typeof item.priority === 'number' ? convertPriorityToString(item.priority) : item.priority
+            }));
+            setAllTasks(convertedItems);
+            setLoading(false);
+            return;
+        }
+
+        // Fallback: fetch từ API nếu không có external tasks
         const fetchTasks = async () => {
             try {
                 setLoading(true);
@@ -149,7 +172,7 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
             window.removeEventListener('filter-change', handleFilterChange);
             window.removeEventListener('search-change', handleSearchChange);
         };
-    }, [todoListId]);
+    }, [todoListId, externalAllTasks]);
 
     const handleEdit = (task) => {
         setEditingId(task.id);
@@ -162,24 +185,76 @@ export default function TaskTableRender({ props = {}, style, isPreview = false }
             return;
         }
         try {
-            await apiService.updateTodoItem(editingId, editForm);
-            setTasks(tasks.map(t => t.id === editingId ? { ...t, ...editForm } : t));
+            // Tìm task gốc để lấy todoListId
+            const originalTask = allTasks.find(t => t.id === editingId);
+            if (!originalTask) {
+                console.error('Original task not found');
+                return;
+            }
+
+            // Nếu có external callback từ parent, sử dụng nó
+            if (externalOnTaskUpdate) {
+                await externalOnTaskUpdate(editingId, editForm);
+                setAllTasks(prev => prev.map(t => t.id === editingId ? { 
+                    ...t, 
+                    ...editForm
+                } : t));
+                setEditingId(null);
+                return;
+            }
+
+            // Fallback: gọi API trực tiếp
+            // Convert status và priority string sang số trước khi gửi
+            const statusMap = { 'Todo': 0, 'InProgress': 1, 'Done': 2 };
+            const priorityMap = { 'Low': 0, 'Medium': 1, 'High': 2 };
+
+            // Chuẩn bị data để gửi lên backend (phải có đầy đủ các trường)
+            const updateData = {
+                title: editForm.title || originalTask.title,
+                status: statusMap[editForm.status] ?? statusMap[originalTask.status] ?? 0,
+                priority: priorityMap[editForm.priority] ?? priorityMap[originalTask.priority] ?? 1,
+                dueDate: editForm.dueDate || originalTask.dueDate || null,
+                todoListId: originalTask.todoListId,
+                appId: originalTask.appId || null
+            };
+
+            await apiService.updateTodoItem(editingId, updateData);
+            
+            // Update local state với data đã convert
+            setAllTasks(prev => prev.map(t => t.id === editingId ? { 
+                ...t, 
+                title: editForm.title || t.title,
+                status: editForm.status || t.status,
+                priority: editForm.priority || t.priority,
+                dueDate: editForm.dueDate || t.dueDate
+            } : t));
+            
             setEditingId(null);
             window.dispatchEvent(new CustomEvent('tasks-updated'));
         } catch (error) {
             console.error('Failed to update task:', error);
+            alert('Failed to update task. Please try again.');
         }
     };
 
     const handleDelete = async (id) => {
         if (isPreview) return;
-        if (!confirm('Are you sure you want to delete this task?')) return;
+        if (!confirm('Bạn có chắc chắn muốn xóa task này không?')) return;
         try {
+            // Nếu có external callback từ parent, sử dụng nó
+            if (externalOnTaskDelete) {
+                await externalOnTaskDelete(id);
+                setAllTasks(prev => prev.filter(t => t.id !== id));
+                return;
+            }
+
+            // Fallback: gọi API trực tiếp
             await apiService.deleteTodoItem(id);
-            setTasks(tasks.filter(t => t.id !== id));
+            setAllTasks(prev => prev.filter(t => t.id !== id));
             window.dispatchEvent(new CustomEvent('tasks-updated'));
         } catch (error) {
             console.error('Failed to delete task:', error);
+            alert('Không thể xóa task. Vui lòng thử lại.');
         }
     };
 

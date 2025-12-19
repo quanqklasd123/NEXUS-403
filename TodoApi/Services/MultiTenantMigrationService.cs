@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace TodoApi.Services
 {
     /// <summary>
-    /// Service để migrate existing data sang multi-tenant architecture
+    /// Dịch vụ (Service) để chuyển dữ liệu hiện có sang kiến trúc đa người thuê (multi-tenant architecture)
     /// </summary>
     public class MultiTenantMigrationService
     {
@@ -20,8 +20,8 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Chạy migration để update existing data với multi-tenant support
-        /// Idempotent - có thể chạy nhiều lần an toàn
+        /// Chạy quá trình migration để cập nhật dữ liệu hiện có với hỗ trợ multi-tenant
+        /// Idempotent - có thể chạy nhiều lần một cách an toàn (safe to run multiple times)
         /// </summary>
         public async Task<MigrationResult> RunMigrationAsync()
         {
@@ -69,7 +69,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Update existing TodoLists: Set AppId = null (backward compatible)
+        /// Cập nhật các TodoLists hiện có: Đặt AppId = null (tương thích ngược - backward compatible)
         /// </summary>
         private async Task<int> UpdateTodoListsAsync()
         {
@@ -110,7 +110,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Update existing TodoItems: Set AppId = null (backward compatible)
+        /// Cập nhật các TodoItems hiện có: Đặt AppId = null (tương thích ngược - backward compatible)
         /// </summary>
         private async Task<int> UpdateTodoItemsAsync()
         {
@@ -147,7 +147,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Update existing UserApps: Set TenantMode = "shared" and DatabaseName = null
+        /// Cập nhật các UserApps hiện có: Đặt TenantMode = "shared" và DatabaseName = null
         /// </summary>
         private async Task<int> UpdateUserAppsAsync()
         {
@@ -189,8 +189,8 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Create indexes cho multi-tenant collections
-        /// Idempotent - có thể chạy nhiều lần an toàn
+        /// Tạo các indexes (chỉ mục) cho các collections multi-tenant
+        /// Idempotent - có thể chạy nhiều lần một cách an toàn (safe to run multiple times)
         /// </summary>
         private async Task<int> CreateIndexesAsync()
         {
@@ -199,10 +199,10 @@ namespace TodoApi.Services
                 _logger.LogInformation("Creating indexes...");
                 int indexesCreated = 0;
 
-                // Indexes cho todoLists collection
+                // Các indexes (chỉ mục) cho todoLists collection
                 var todoListsCollection = _mongoContext.TodoLists;
                 
-                // Compound index: (appUserId, appId)
+                // Chỉ mục kết hợp (Compound index): (appUserId, appId)
                 var todoListIndex1 = Builders<TodoList>.IndexKeys
                     .Ascending(list => list.AppUserId)
                     .Ascending(list => list.AppId);
@@ -212,7 +212,7 @@ namespace TodoApi.Services
                 indexesCreated++;
                 _logger.LogInformation("Created index: todoLists.appUserId_appId");
 
-                // Index: appId
+                // Chỉ mục (Index): appId
                 var todoListIndex2 = Builders<TodoList>.IndexKeys.Ascending(list => list.AppId);
                 var todoListIndex2Options = new CreateIndexOptions { Name = "idx_appId" };
                 await todoListsCollection.Indexes.CreateOneAsync(
@@ -220,10 +220,10 @@ namespace TodoApi.Services
                 indexesCreated++;
                 _logger.LogInformation("Created index: todoLists.appId");
 
-                // Indexes cho todoItems collection
+                // Các indexes (chỉ mục) cho todoItems collection
                 var todoItemsCollection = _mongoContext.TodoItems;
 
-                // Compound index: (appId, todoListId)
+                // Chỉ mục kết hợp (Compound index): (appId, todoListId)
                 var todoItemIndex1 = Builders<TodoItem>.IndexKeys
                     .Ascending(item => item.AppId)
                     .Ascending(item => item.TodoListId);
@@ -233,7 +233,7 @@ namespace TodoApi.Services
                 indexesCreated++;
                 _logger.LogInformation("Created index: todoItems.appId_todoListId");
 
-                // Index: todoListId (có thể đã tồn tại, nhưng tạo lại để đảm bảo)
+                // Chỉ mục (Index): todoListId (có thể đã tồn tại, nhưng tạo lại để đảm bảo)
                 var todoItemIndex2 = Builders<TodoItem>.IndexKeys.Ascending(item => item.TodoListId);
                 var todoItemIndex2Options = new CreateIndexOptions { Name = "idx_todoListId" };
                 await todoItemsCollection.Indexes.CreateOneAsync(
@@ -241,10 +241,10 @@ namespace TodoApi.Services
                 indexesCreated++;
                 _logger.LogInformation("Created index: todoItems.todoListId");
 
-                // Indexes cho userApps collection
+                // Các indexes (chỉ mục) cho userApps collection
                 var userAppsCollection = _mongoContext.UserApps;
 
-                // Index: appUserId (có thể đã tồn tại)
+                // Chỉ mục (Index): appUserId (có thể đã tồn tại)
                 var userAppIndex1 = Builders<UserApp>.IndexKeys.Ascending(app => app.AppUserId);
                 var userAppIndex1Options = new CreateIndexOptions { Name = "idx_appUserId" };
                 await userAppsCollection.Indexes.CreateOneAsync(
@@ -252,7 +252,7 @@ namespace TodoApi.Services
                 indexesCreated++;
                 _logger.LogInformation("Created index: userApps.appUserId");
 
-                // Index: tenantMode
+                // Chỉ mục (Index): tenantMode
                 var userAppIndex2 = Builders<UserApp>.IndexKeys.Ascending(app => app.TenantMode);
                 var userAppIndex2Options = new CreateIndexOptions { Name = "idx_tenantMode" };
                 await userAppsCollection.Indexes.CreateOneAsync(
@@ -277,7 +277,7 @@ namespace TodoApi.Services
         }
 
         /// <summary>
-        /// Kiểm tra migration status
+        /// Kiểm tra trạng thái (status) của quá trình migration
         /// </summary>
         public async Task<MigrationStatus> GetMigrationStatusAsync()
         {
@@ -333,7 +333,7 @@ namespace TodoApi.Services
     }
 
     /// <summary>
-    /// Kết quả migration
+    /// Kết quả của quá trình migration (chuyển dữ liệu)
     /// </summary>
     public class MigrationResult
     {
@@ -349,7 +349,7 @@ namespace TodoApi.Services
     }
 
     /// <summary>
-    /// Trạng thái migration
+    /// Trạng thái (Status) của quá trình migration
     /// </summary>
     public class MigrationStatus
     {

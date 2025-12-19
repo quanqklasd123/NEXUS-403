@@ -29,20 +29,20 @@ namespace TodoApi.Controllers
         {
             try
             {
-                // Debug: Kiểm tra claims của user hiện tại
+                // Debug: Kiểm tra các claims (thông tin xác thực) của user hiện tại
                 var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
                     ?? User.FindFirst("sub")?.Value;
                 var currentUserRoles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
                 
-                // Log để debug (có thể xóa sau)
+                // Ghi log để debug (có thể xóa sau khi hoàn thành)
                 Console.WriteLine($"Current User ID: {currentUserId}");
                 Console.WriteLine($"Current User Roles from token: {string.Join(", ", currentUserRoles)}");
                 
-                // Lấy tất cả user từ MongoDB trực tiếp (vì UserManager.Users có thể không hoạt động với custom store)
+                // Lấy tất cả người dùng từ MongoDB trực tiếp (vì UserManager.Users có thể không hoạt động với custom store)
                 var usersList = await _mongoContext.Users.Find(_ => true).ToListAsync();
 
-                // "Map" thủ công sang một đối tượng an toàn
-                // (Tuyệt đối không trả về PasswordHash!)
+                // Chuyển đổi ("Map") thủ công sang đối tượng an toàn để trả về
+                // (TUYỆT ĐỐI KHÔNG trả về PasswordHash cho client vì lý do bảo mật!)
                 var usersDto = new List<object>();
                 foreach (var user in usersList)
                 {
@@ -63,15 +63,15 @@ namespace TodoApi.Controllers
             }
             catch (Exception ex)
             {
-                // Log lỗi chi tiết
+                // Ghi log lỗi chi tiết để phục vụ debug và khắc phục
                 Console.WriteLine($"Error in GetUsers: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return StatusCode(500, new { message = "Error loading users", error = ex.Message });
             }
         }
 
-        // --- API QUẢN LÝ MARKETPLACE APPS ---
-        // GET: api/admin/marketplace-apps
+        // --- API QUẢN LÝ CÁC ỨNG DỤNG TRÊN MARKETPLACE ---
+        // GET: api/admin/marketplace-apps - Lấy danh sách tất cả apps đã publish
         [HttpGet("marketplace-apps")]
         public async Task<IActionResult> GetMarketplaceApps()
         {
@@ -82,7 +82,7 @@ namespace TodoApi.Controllers
                 .Sort(sort)
                 .ToListAsync();
 
-            // Get user info from Identity (SQL Server)
+            // Lấy thông tin user (tác giả) từ hệ thống Identity
             var projectsDto = new List<object>();
             foreach (var p in publishedProjects)
             {
@@ -102,12 +102,12 @@ namespace TodoApi.Controllers
             return Ok(projectsDto);
         }
 
-        // DELETE: api/admin/marketplace-apps/{id}
+        // DELETE: api/admin/marketplace-apps/{id} - Gỡ app khỏi marketplace
         [HttpDelete("marketplace-apps/{id}")]
         public async Task<IActionResult> DeleteMarketplaceApp(string id)
         {
-            // Instead of deleting, unpublish the app to hide it from marketplace
-            // This preserves the original app and all user-installed copies
+            // Thay vì xóa hoàn toàn, chỉ unpublish app để ẩn khỏi marketplace
+            // Cách này bảo toàn app gốc và tất cả bản copy mà users đã cài đặt
             var filter = Builders<Project>.Filter.And(
                 Builders<Project>.Filter.Eq(p => p.Id, id),
                 Builders<Project>.Filter.Eq(p => p.IsPublished, true)
@@ -124,8 +124,8 @@ namespace TodoApi.Controllers
             return Ok(new { message = "Đã ẩn app khỏi marketplace thành công. App vẫn tồn tại trong My Apps của users đã cài." });
         }
 
-        // --- API QUẢN LÝ USERS ---
-        // PUT: api/admin/users/{id}/lock
+        // --- API QUẢN LÝ NGƯỜI DÙNG ---
+        // PUT: api/admin/users/{id}/lock - Khóa tài khoản user
         [HttpPut("users/{id}/lock")]
         public async Task<IActionResult> LockUser(string id)
         {
@@ -135,7 +135,7 @@ namespace TodoApi.Controllers
                 return NotFound("User không tồn tại.");
             }
 
-            // Khóa user vĩnh viễn (set LockoutEnd vào tương lai xa)
+            // Khóa tài khoản user vĩnh viễn (đặt LockoutEnd vào thời điểm rất xa trong tương lai)
             user.LockoutEnabled = true;
             user.LockoutEnd = DateTimeOffset.UtcNow.AddYears(100);
             
@@ -148,7 +148,7 @@ namespace TodoApi.Controllers
             return BadRequest(new { message = "Không thể khóa user.", errors = result.Errors });
         }
 
-        // PUT: api/admin/users/{id}/unlock
+        // PUT: api/admin/users/{id}/unlock - Mở khóa tài khoản user
         [HttpPut("users/{id}/unlock")]
         public async Task<IActionResult> UnlockUser(string id)
         {
@@ -158,7 +158,7 @@ namespace TodoApi.Controllers
                 return NotFound("User không tồn tại.");
             }
 
-            // Mở khóa user
+            // Mở khóa tài khoản user (cho phép đăng nhập lại)
             user.LockoutEnd = null;
             
             var result = await _userManager.UpdateAsync(user);
@@ -170,11 +170,11 @@ namespace TodoApi.Controllers
             return BadRequest(new { message = "Không thể mở khóa user.", errors = result.Errors });
         }
 
-        // POST: api/admin/fix-roles - Fix roles case cho tất cả users
+        // POST: api/admin/fix-roles - Sửa chữa định dạng roles cho tất cả users
         [HttpPost("fix-roles")]
         public async Task<IActionResult> FixRolesCase()
         {
-            // Lấy users trực tiếp từ MongoDB
+            // Lấy danh sách users trực tiếp từ MongoDB
             var usersList = await _mongoContext.Users.Find(_ => true).ToListAsync();
             int fixedCount = 0;
 
@@ -183,7 +183,7 @@ namespace TodoApi.Controllers
                 var roles = user.Roles.ToList();
                 bool needsUpdate = false;
 
-                // Fix roles case
+                // Chuẩn hóa định dạng chữ hoa/thường cho roles
                 for (int i = 0; i < roles.Count; i++)
                 {
                     var role = roles[i];
@@ -212,7 +212,7 @@ namespace TodoApi.Controllers
             return Ok(new { message = $"Đã sửa roles cho {fixedCount} users", fixedCount });
         }
 
-        // DELETE: api/admin/users/{id}
+        // DELETE: api/admin/users/{id} - Xóa tài khoản user
         [HttpDelete("users/{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
@@ -222,7 +222,7 @@ namespace TodoApi.Controllers
                 return NotFound("User không tồn tại.");
             }
 
-            // Kiểm tra xem user có phải Admin không (không cho xóa Admin)
+            // Kiểm tra xem user có phải là Admin không (không cho phép xóa Admin để bảo vệ hệ thống)
             var roles = await _userManager.GetRolesAsync(user);
             if (roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase) || r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)))
             {
@@ -238,7 +238,7 @@ namespace TodoApi.Controllers
             return BadRequest(new { message = "Không thể xóa user.", errors = result.Errors });
         }
 
-        // PUT: api/admin/users/{id}/roles
+        // PUT: api/admin/users/{id}/roles - Cập nhật vai trò của user
         [HttpPut("users/{id}/roles")]
         public async Task<IActionResult> UpdateUserRoles(string id, [FromBody] List<string> newRoles)
         {
@@ -248,17 +248,17 @@ namespace TodoApi.Controllers
                 return NotFound("User không tồn tại.");
             }
 
-            // Validate roles
+            // Kiểm tra tính hợp lệ của roles (chỉ cho phép 'User' và 'Admin')
             var validRoles = new[] { "User", "Admin" };
             if (newRoles.Any(r => !validRoles.Contains(r, StringComparer.OrdinalIgnoreCase)))
             {
                 return BadRequest(new { message = "Roles không hợp lệ. Chỉ chấp nhận 'User' và 'Admin'." });
             }
 
-            // Get current roles
+            // Lấy danh sách roles hiện tại của user
             var currentRoles = await _userManager.GetRolesAsync(user);
 
-            // Remove all current roles
+            // Xóa tất cả các roles hiện tại trước khi thêm roles mới
             if (currentRoles.Any())
             {
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
@@ -268,7 +268,7 @@ namespace TodoApi.Controllers
                 }
             }
 
-            // Add new roles
+            // Thêm các roles mới vào tài khoản user
             if (newRoles.Any())
             {
                 var addResult = await _userManager.AddToRolesAsync(user, newRoles);

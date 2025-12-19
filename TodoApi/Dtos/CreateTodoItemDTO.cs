@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TodoApi.Dtos
 {
-    // Chỉ chứa những gì ta CẦN để TẠO MỚI một Item
+    // Chỉ chứa những gì ta CẦN để TẠO MỚI một Item (Only contains what we NEED to CREATE)
     public class CreateTodoItemDTO
     {
         [Required]
@@ -22,11 +22,11 @@ namespace TodoApi.Dtos
         public string TodoListId { get; set; } = string.Empty;
 
         /// <summary>
-        /// ID của UserApp mà item này thuộc về (Multi-tenant support)
-        /// Nullable để backward compatible
+        /// ID của UserApp mà item này thuộc về (Hỗ trợ đa người thuê - Multi-tenant support)
+        /// Nullable để tương thích ngược (backward compatible)
         /// </summary>
         public string? AppId { get; set; }
 
-        // Lưu ý: KHÔNG có 'Id' và KHÔNG có 'TodoList' object
+        // Lưu ý (Note): KHÔNG có 'Id' và KHÔNG có 'TodoList' object
     }
 }

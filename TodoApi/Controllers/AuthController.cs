@@ -30,22 +30,22 @@ namespace TodoApi.Controllers
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDTO registerDto)
         {
-            // 1. Kiểm tra xem email đã tồn tại chưa
+            // Bước 1: Kiểm tra xem email đã tồn tại chưa
             var userExists = await _userManager.FindByEmailAsync(registerDto.Email);
             if (userExists != null)
             {
                 return BadRequest(new { message = "Email already in use" });
             }
 
-            // 2. Tạo đối tượng AppUser mới
+            // Bước 2: Tạo đối tượng AppUser mới
             var user = new AppUser
             {
                 Email = registerDto.Email,
-                SecurityStamp = Guid.NewGuid().ToString(), // Bắt buộc
+                SecurityStamp = Guid.NewGuid().ToString(), // Bắt buộc phải có
                 UserName = registerDto.Username
             };
 
-            // 3. Dùng UserManager để tạo user (đã bao gồm hash mật khẩu)
+            // Bước 3: Dùng UserManager để tạo user (đã bao gồm hash mật khẩu)
             var result = await _userManager.CreateAsync(user, registerDto.Password);
 
             if (!result.Succeeded)
@@ -54,28 +54,28 @@ namespace TodoApi.Controllers
                 return BadRequest(new { message = "User creation failed", errors = result.Errors });
             }
 
-            // 4. Tự động gán vai trò "User" cho người dùng mới
+            // Bước 4: Tự động gán vai trò "User" cho người dùng mới
             await _userManager.AddToRoleAsync(user, "User");
             // ---------------------
 
             return Ok(new { message = "User created successfully!" });
         }
 
-        // --- THÊM HÀM MỚI ĐỂ TẠO ADMIN ---
+        // --- THÊM HÀM MỚI ĐỂ TẠO TÀI KHOẢN ADMIN ---
         // POST: api/auth/create-admin
         [HttpPost]
         [Route("create-admin")]
-        // [Authorize] // Bạn có thể thêm [Authorize(Roles = "Admin")] sau này
+        // [Authorize] // Bạn có thể thêm [Authorize(Roles = "Admin")] sau này để bảo mật
         public async Task<IActionResult> CreateAdminAccount([FromBody] RegisterRequestDTO adminDto)
         {
-            // 1. Kiểm tra xem admin đã tồn tại chưa
+            // Bước 1: Kiểm tra xem tài khoản admin đã tồn tại chưa
             var userExists = await _userManager.FindByEmailAsync(adminDto.Email);
             if (userExists != null)
             {
                 return BadRequest(new { message = "Email already in use" });
             }
 
-            // 2. Tạo đối tượng Admin
+            // Bước 2: Tạo đối tượng tài khoản Admin
             var adminUser = new AppUser
             {
                 Email = adminDto.Email,
@@ -83,15 +83,15 @@ namespace TodoApi.Controllers
                 UserName = adminDto.Username
             };
 
-            // 3. Tạo user với mật khẩu
+            // Bước 3: Tạo user với mật khẩu
             var result = await _userManager.CreateAsync(adminUser, adminDto.Password);
             if (!result.Succeeded)
             {
                 return BadRequest(new { message = "Admin creation failed", errors = result.Errors });
             }
 
-            // 4. Gán cả hai vai trò "Admin" và "User"
-            // (Gán "User" để Admin cũng có thể làm các hành động của user)
+            // Bước 4: Gán cả hai vai trò "Admin" và "User"
+            // (Gán "User" để Admin cũng có thể thực hiện các hành động của user thông thường)
             await _userManager.AddToRoleAsync(adminUser, "User");
             await _userManager.AddToRoleAsync(adminUser, "Admin");
 
@@ -103,11 +103,11 @@ namespace TodoApi.Controllers
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO loginDto)
         {
-            // --- CHỈ TÌM BẰNG EMAIL ---
+            // --- CHỈ TÌM KIẾM NGƯỜI DÙNG BẰNG EMAIL ---
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
-            // -------------------------
+            // -----------------------------------------
 
-            // Kiểm tra user và mật khẩu
+            // Kiểm tra thông tin user và mật khẩu
             if (user != null && await _userManager.CheckPasswordAsync(user, loginDto.Password))
             {
                 // Kiểm tra xem user có bị khóa không
@@ -116,10 +116,10 @@ namespace TodoApi.Controllers
                     return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
                 }
 
-                // Nếu đúng, tạo Token
-                var tokenString = await GenerateJwtToken(user); // (Giữ nguyên hàm GenerateJwtToken)
+                // Nếu thông tin đăng nhập đúng, tạo JWT Token
+                var tokenString = await GenerateJwtToken(user); // (Sử dụng hàm GenerateJwtToken bên dưới)
 
-                // Trả về Token cho client
+                // Trả về Token cho phía client
                 return Ok(new AuthResponseDTO
                 {
                     UserId = user.Id,
@@ -128,7 +128,7 @@ namespace TodoApi.Controllers
                 });
             }
 
-            // Nếu sai, trả về lỗi "Unauthorized"
+            // Nếu thông tin đăng nhập sai, trả về lỗi "Unauthorized"
             return Unauthorized(new { message = "Invalid email or password" });
         }
 
@@ -139,7 +139,7 @@ namespace TodoApi.Controllers
         {
             try
             {
-                // 1. Verify Google token
+                // Bước 1: Xác thực Google token
                 var clientId = _configuration["GoogleAuth:ClientId"];
                 if (string.IsNullOrEmpty(clientId))
                 {
@@ -165,21 +165,21 @@ namespace TodoApi.Controllers
                     return BadRequest(new { message = "Error validating Google token", error = ex.Message });
                 }
 
-                // Kiểm tra email từ payload
+                // Kiểm tra xem có email trong payload Google hay không
                 if (string.IsNullOrEmpty(payload.Email))
                 {
                     return BadRequest(new { message = "Google token does not contain email" });
                 }
 
-                // 2. Tìm hoặc tạo user
+                // Bước 2: Tìm kiếm hoặc tạo mới user
                 var user = await _userManager.FindByEmailAsync(payload.Email);
                 
                 if (user == null)
                 {
-                    // Tạo user mới nếu chưa tồn tại
-                    // Tạo UserName từ email (phần trước @) hoặc từ name
+                    // Tạo tài khoản mới nếu user chưa tồn tại trong hệ thống
+                    // Tạo UserName từ phần trước @ của email hoặc từ tên Google
                     var baseUserName = payload.Email?.Split('@')[0] ?? payload.Name?.Replace(" ", "") ?? "user";
-                    // Loại bỏ các ký tự đặc biệt không hợp lệ cho username
+                    // Loại bỏ các ký tự đặc biệt không hợp lệ, chỉ giữ chữ, số và gạch dưới
                     baseUserName = System.Text.RegularExpressions.Regex.Replace(baseUserName ?? "", @"[^a-zA-Z0-9_]", "");
                     if (string.IsNullOrEmpty(baseUserName))
                     {
@@ -189,7 +189,7 @@ namespace TodoApi.Controllers
                     var userName = baseUserName;
                     var userNameCounter = 1;
                     
-                    // Đảm bảo UserName là unique - thử tìm user với normalized name
+                    // Đảm bảo UserName là duy nhất - kiểm tra với normalized name (chữ hoa)
                     var normalizedUserName = userName.ToUpperInvariant();
                     var existingUserByName = await _userManager.FindByNameAsync(normalizedUserName);
                     while (existingUserByName != null && userNameCounter < 100)
@@ -200,8 +200,8 @@ namespace TodoApi.Controllers
                         userNameCounter++;
                     }
                     
-                    // Tạo password ngẫu nhiên mạnh (sẽ không bao giờ dùng để login)
-                    // Password phải đáp ứng yêu cầu: ít nhất 6 ký tự, có chữ hoa, chữ thường, số, ký tự đặc biệt
+                    // Tạo mật khẩu ngẫu nhiên mạnh (sẽ không bao giờ được sử dụng để đăng nhập)
+                    // Password phải đáp ứng yêu cầu bảo mật: ít nhất 6 ký tự, có chữ hoa, chữ thường, số, ký tự đặc biệt
                     var randomPassword = Guid.NewGuid().ToString().Replace("-", "") + "!@#$%^&*()ABCDEFG123456789";
                     
                     user = new AppUser
@@ -211,14 +211,14 @@ namespace TodoApi.Controllers
                         NormalizedUserName = normalizedUserName,
                         NormalizedEmail = payload.Email.ToUpperInvariant(),
                         SecurityStamp = Guid.NewGuid().ToString(),
-                        EmailConfirmed = true, // Google đã verify email
+                        EmailConfirmed = true, // Email đã được Google xác thực rồi
                         ConcurrencyStamp = Guid.NewGuid().ToString()
                     };
 
                     var createResult = await _userManager.CreateAsync(user, randomPassword);
                     if (!createResult.Succeeded)
                     {
-                        // Trả về chi tiết lỗi để debug
+                        // Trả về chi tiết lỗi để debug và khắc phục
                         var errorMessages = createResult.Errors.Select(e => $"{e.Code}: {e.Description}").ToList();
                         Console.WriteLine($"Failed to create user: {string.Join(", ", errorMessages)}");
                         Console.WriteLine($"Email: {payload.Email}, UserName: {userName}");
@@ -229,7 +229,7 @@ namespace TodoApi.Controllers
                         });
                     }
 
-                    // Gán role "User" cho user mới
+                    // Gán vai trò mặc định "User" cho tài khoản vừa tạo
                     await _userManager.AddToRoleAsync(user, "User");
                 }
                 else
@@ -241,7 +241,7 @@ namespace TodoApi.Controllers
                     }
                 }
 
-                // 3. Tạo JWT token
+                // Bước 3: Tạo JWT token để trả về cho client
                 var tokenString = await GenerateJwtToken(user);
 
                 return Ok(new AuthResponseDTO
@@ -253,7 +253,7 @@ namespace TodoApi.Controllers
             }
             catch (Exception ex)
             {
-                // Log chi tiết lỗi để debug
+                // Ghi log chi tiết lỗi để debug và khắc phục sự cố
                 Console.WriteLine($"Google login error: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 if (ex.InnerException != null)
@@ -264,7 +264,7 @@ namespace TodoApi.Controllers
             }
         }
 
-        // GET: api/auth/me - Lấy thông tin user hiện tại và roles
+        // GET: api/auth/me - Lấy thông tin người dùng hiện tại và các vai trò
         [HttpGet("me")]
         [Microsoft.AspNetCore.Authorization.Authorize]
         public async Task<IActionResult> GetCurrentUser()
@@ -295,10 +295,10 @@ namespace TodoApi.Controllers
             });
         }
 
-        // --- Hàm Private để tạo Token ---
+        // --- Hàm riêng tư để tạo JWT Token ---
         private async Task<string> GenerateJwtToken(AppUser user)
         {
-            // Lấy "chìa khóa bí mật" và các cấu hình từ appsettings.json
+            // Lấy khóa bí mật (Secret Key) và các cấu hình từ file appsettings.json
             var jwtConfig = _configuration.GetSection("JwtConfig");
             var secretKey = jwtConfig["Secret"];
             var issuer = jwtConfig["Issuer"];
@@ -306,13 +306,13 @@ namespace TodoApi.Controllers
 
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
-            // --- BẮT ĐẦU THAY ĐỔI QUAN TRỌNG ---
+            // --- BẮT ĐẦU PHẦN QUAN TRỌNG: THÊM ROLES VÀO TOKEN ---
 
-            // 1. Lấy danh sách Vai trò (Roles) của user
+            // Bước 1: Lấy danh sách các vai trò (Roles) của user từ Identity
             var userRoles = await _userManager.GetRolesAsync(user);
 
-            // 2. Định nghĩa các "Claims" - thông tin chứa trong Token
-            // Bắt đầu với các claims cơ bản
+            // Bước 2: Định nghĩa các "Claims" - các thông tin sẽ được mã hóa trong Token
+            // Bắt đầu với các claims cơ bản (ID, Email, Username)
             var authClaims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
@@ -322,24 +322,24 @@ namespace TodoApi.Controllers
                 new Claim(ClaimTypes.Name, user.UserName ?? string.Empty)
             };
 
-            // 3. Thêm các Role vào claims
-            // Sử dụng ClaimTypes.Role để ASP.NET Core có thể đọc được
+            // Bước 3: Thêm tất cả các vai trò vào claims
+            // Sử dụng ClaimTypes.Role để ASP.NET Core tự động nhận diện và xử lý
             foreach (var userRole in userRoles)
             {
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));
             }
-            // --- KẾT THÚC THAY ĐỔI ---
+            // --- KẾT THÚC PHẦN THÊM ROLES ---
 
-            // Tạo Token
+            // Tạo JWT Token với các claims đã chuẩn bị
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
                 expires: DateTime.Now.AddHours(24),
-                claims: authClaims, // <-- Dùng danh sách claims đã cập nhật
+                claims: authClaims, // <-- Sử dụng danh sách claims đã cập nhật với roles
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
                 );
 
-            // Ghi token ra dạng chuỗi
+            // Chuyển đổi token object thành chuỗi string để trả về
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }

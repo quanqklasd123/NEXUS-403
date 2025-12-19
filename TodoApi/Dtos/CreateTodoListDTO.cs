@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TodoApi.Dtos
 {
-    // Chỉ chứa những gì ta CẦN để TẠO MỚI một List
+    // Chỉ chứa những gì ta CẦN để TẠO MỚI một List (Only contains what we NEED to CREATE)
     public class CreateTodoListDTO
     {
         [Required]
@@ -11,8 +11,8 @@ namespace TodoApi.Dtos
         public string Name { get; set; }
 
         /// <summary>
-        /// ID của UserApp mà list này thuộc về (Multi-tenant support)
-        /// Nullable để backward compatible
+        /// ID của UserApp mà list này thuộc về (Hỗ trợ đa người thuê - Multi-tenant support)
+        /// Nullable để tương thích ngược (backward compatible)
         /// </summary>
         public string? AppId { get; set; }
     }

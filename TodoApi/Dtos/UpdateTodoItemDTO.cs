@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace TodoApi.Dtos
 {
     /// <summary>
-    /// DTO cho việc cập nhật TodoItem
+    /// DTO (Data Transfer Object) cho việc cập nhật TodoItem
     /// </summary>
     public class UpdateTodoItemDTO
     {
@@ -22,8 +22,8 @@ namespace TodoApi.Dtos
         public string? TodoListId { get; set; }
 
         /// <summary>
-        /// ID của UserApp mà item này thuộc về (Multi-tenant support)
-        /// Nullable để backward compatible
+        /// ID của UserApp mà item này thuộc về (Hỗ trợ đa người thuê - Multi-tenant support)
+        /// Nullable để tương thích ngược (backward compatible)
         /// </summary>
         public string? AppId { get; set; }
     }

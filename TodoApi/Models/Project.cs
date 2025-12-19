@@ -32,18 +32,25 @@ namespace TodoApi.Models
 
         // --- Marketplace fields ---
         [BsonElement("category")]
-        public string? Category { get; set; } // Category name
+        public string? Category { get; set; } // Tên danh mục (Category name)
 
         [BsonElement("price")]
-        public string? Price { get; set; } // null = Free
+        public string? Price { get; set; } // null = Miễn phí (Free)
 
         [BsonElement("marketplaceAppId")]
-        public string? MarketplaceAppId { get; set; } // ID của app gốc từ marketplace (nếu được install)
+        public string? MarketplaceAppId { get; set; } // ID của ứng dụng gốc từ marketplace (nếu được install - cài đặt)
 
         [BsonElement("originalAuthor")]
-        public string? OriginalAuthor { get; set; } // UserId của author gốc (nếu được install từ marketplace)
+        public string? OriginalAuthor { get; set; } // UserId của tác giả gốc (nếu được install - cài đặt từ marketplace)
 
         [BsonElement("updatedAt")]
         public DateTime? UpdatedAt { get; set; }
+
+        // --- Multi-tenant fields ---
+        [BsonElement("tenantMode")]
+        public string TenantMode { get; set; } = "separate"; // "shared" hoặc "separate", mặc định là "separate" để mỗi app có DB riêng
+
+        [BsonElement("databaseName")]
+        public string? DatabaseName { get; set; } // Tên database riêng (nếu tenantMode = "separate")
     }
 }
