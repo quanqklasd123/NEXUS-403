@@ -400,8 +400,8 @@ export const TOOLS = [
             todoListId: null
         },
         defaultStyle: {
-            width: '100%',
-            height: 'auto',
+            width: '820px',
+            height: '480px',
             minHeight: '300px',
             backgroundColor: '#ffffff',
             border: '1px solid #e2e8f0',
@@ -425,8 +425,8 @@ export const TOOLS = [
             todoListId: null
         },
         defaultStyle: {
-            width: '100%',
-            height: 'auto',
+            width: '900px',
+            height: '500px',
             minHeight: '200px',
             backgroundColor: '#ffffff',
             border: '1px solid #e2e8f0',
@@ -449,9 +449,9 @@ export const TOOLS = [
             todoListId: null
         },
         defaultStyle: {
-            width: '100%',
-            height: 'auto',
-            minHeight: '400px',
+            width: '1060px',
+            height: '560px',
+            minHeight: '560px',
             backgroundColor: '#f8fafc',
             border: '1px solid #e2e8f0',
             borderRadius: '8px',
@@ -472,8 +472,9 @@ export const TOOLS = [
             todoListId: null
         },
         defaultStyle: {
-            width: '100%',
-            height: '500px',
+            width: '960px',
+            height: '620px',
+            minHeight: '540px',
             backgroundColor: '#ffffff',
             border: '1px solid #e2e8f0',
             borderRadius: '8px',

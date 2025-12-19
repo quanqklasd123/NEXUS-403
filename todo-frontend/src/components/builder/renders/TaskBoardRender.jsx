@@ -147,7 +147,7 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
                         return (
                             <div 
                                 key={column} 
-                                className={`flex-1 min-w-[280px] ${colors.bg} rounded-lg flex flex-col`}
+                                className={`flex-1 min-w-[320px] ${colors.bg} rounded-lg flex flex-col`}
                             >
                                 {/* Column Header */}
                                 <div className={`${colors.header} px-4 py-3 rounded-t-lg flex items-center gap-2`}>
@@ -164,7 +164,7 @@ export default function TaskBoardRender({ props = {}, style, isPreview = false }
                                         <div
                                             ref={provided.innerRef}
                                             {...provided.droppableProps}
-                                            className={`flex-1 p-2 space-y-2 overflow-y-auto min-h-[100px] transition-colors ${
+                                            className={`flex-1 p-3 space-y-3 overflow-y-auto min-h-[450px] transition-colors ${
                                                 snapshot.isDraggingOver ? 'bg-gray-200/50' : ''
                                             }`}
                                         >
