@@ -59,23 +59,12 @@ const CanvasArea = ({
                 position: 'relative'
             }}
         >
-            {rootItems.length === 0 && !isOver && !isPreview && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-center p-8 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-dashed border-neutral-300">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-neutral-100 flex items-center justify-center">
-                            <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                        </div>
-                        <p className="text-neutral-600 font-medium mb-1">Canvas trống</p>
-                        <p className="text-sm text-neutral-400">Kéo component từ thanh Toolbox vào đây để bắt đầu</p>
-                    </div>
-                </div>
-            )}
+            {/* Removed empty-canvas placeholder to avoid persistent background box behind components */}
             {/* Absolute positioned components with snap to grid */}
             <div 
-                className="w-full min-h-full p-4 relative" 
-                style={{ minHeight: '100vh', position: 'relative' }}
+                id="canvas-inner"
+                className="w-full min-h-full relative" 
+                style={{ minHeight: '100%' }}
                 onDragOver={(e) => {
                     // Allow drop from toolbox
                     e.preventDefault();

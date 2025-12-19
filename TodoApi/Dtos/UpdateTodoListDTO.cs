@@ -1,14 +1,15 @@
-// Dtos/CreateTodoListDTO.cs
+// Dtos/UpdateTodoListDTO.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace TodoApi.Dtos
 {
-    // Chỉ chứa những gì ta CẦN để TẠO MỚI một List
-    public class CreateTodoListDTO
+    /// <summary>
+    /// DTO cho việc cập nhật TodoList
+    /// </summary>
+    public class UpdateTodoListDTO
     {
-        [Required]
         [StringLength(100)]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// ID của UserApp mà list này thuộc về (Multi-tenant support)

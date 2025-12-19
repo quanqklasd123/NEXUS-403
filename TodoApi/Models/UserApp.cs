@@ -54,5 +54,19 @@ namespace TodoApi.Models
         // --- Relationship with User ---
         [BsonElement("appUserId")]
         public string AppUserId { get; set; } = null!;
+
+        /// <summary>
+        /// Tên database riêng cho app (nếu tenantMode = "separate")
+        /// Format: app_{appId} hoặc app_{hash}
+        /// </summary>
+        [BsonElement("databaseName")]
+        public string? DatabaseName { get; set; }
+
+        /// <summary>
+        /// Chế độ tenant: "shared" (dùng AppId trong cùng database) hoặc "separate" (database riêng)
+        /// Default: "shared" để backward compatible
+        /// </summary>
+        [BsonElement("tenantMode")]
+        public string TenantMode { get; set; } = "shared";
     }
 }

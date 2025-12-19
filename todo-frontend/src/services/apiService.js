@@ -257,6 +257,10 @@ const apiService = {
         return apiClient.delete(`/admin/users/${userId}`);
     },
     
+    updateUserRoles: (userId, roles) => {
+        return apiClient.put(`/admin/users/${userId}/roles`, roles);
+    },
+    
     // Marketplace apps management
     getAdminMarketplaceApps: () => {
         return apiClient.get('/admin/marketplace-apps');

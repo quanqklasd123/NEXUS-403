@@ -1,9 +1,10 @@
 // src/pages/AppRuntimePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FiArrowLeft, FiEdit3, FiMaximize2, FiMinimize2, FiHome } from 'react-icons/fi';
+import { FiArrowLeft, FiMaximize2, FiMinimize2, FiHome } from 'react-icons/fi';
 import apiService from '../services/apiService';
 import RenderComponent from '../components/builder/RenderComponent';
+import useTaskData from '../hooks/useTaskData';
 
 /**
  * AppRuntimePage - Full screen app runtime (like App Builder preview)
@@ -19,6 +20,64 @@ const AppRuntimePage = () => {
     const [error, setError] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showHeader, setShowHeader] = useState(true);
+    const [activeView, setActiveView] = useState('table'); // Track active view for view switching
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterTag, setFilterTag] = useState('all');
+
+    // Use task data hook for full functionality
+    const {
+        tasks,
+        allTasks,
+        loading: tasksLoading,
+        error: tasksError,
+        filters,
+        fetchTasks,
+        createTask,
+        updateTask,
+        updateTaskStatus,
+        deleteTask,
+        setFilters,
+        setSearchQuery: setTaskSearchQuery,
+        setSort
+    } = useTaskData({ isPreview: false });
+
+    // Listen for view-change events from ViewSwitcher
+    useEffect(() => {
+        const handleViewChange = (e) => {
+            setActiveView(e.detail?.view || 'table');
+        };
+        window.addEventListener('view-change', handleViewChange);
+        return () => window.removeEventListener('view-change', handleViewChange);
+    }, []);
+
+    // Listen for filter changes
+    useEffect(() => {
+        const handleFilterChange = (e) => {
+            setFilterTag(e.detail?.tag || 'all');
+        };
+        window.addEventListener('filter-change', handleFilterChange);
+        return () => window.removeEventListener('filter-change', handleFilterChange);
+    }, []);
+
+    // Listen for search changes
+    useEffect(() => {
+        const handleSearchChange = (e) => {
+            const query = e.detail?.query || '';
+            setSearchQuery(query);
+            setTaskSearchQuery(query);
+        };
+        window.addEventListener('search-change', handleSearchChange);
+        return () => window.removeEventListener('search-change', handleSearchChange);
+    }, [setTaskSearchQuery]);
+
+    // Listen for tasks-updated events to refresh data
+    useEffect(() => {
+        const handleTasksUpdated = () => {
+            fetchTasks();
+        };
+        window.addEventListener('tasks-updated', handleTasksUpdated);
+        return () => window.removeEventListener('tasks-updated', handleTasksUpdated);
+    }, [fetchTasks]);
 
     // App State for interactive components
     const [appState, setAppState] = useState({
@@ -67,6 +126,11 @@ const AppRuntimePage = () => {
 
         fetchProject();
     }, [projectId]);
+
+    // Fetch tasks when component mounts
+    useEffect(() => {
+        fetchTasks();
+    }, [fetchTasks]);
 
     // Toggle fullscreen
     const toggleFullscreen = () => {
@@ -154,12 +218,6 @@ const AppRuntimePage = () => {
                         >
                             Quay lại
                         </button>
-                        <button
-                            onClick={() => navigate(`/app-builder/${projectId}`)}
-                            className="px-4 py-2 bg-neutral-800 text-white rounded-lg hover:bg-black"
-                        >
-                            Edit App
-                        </button>
                     </div>
                 </div>
             </div>
@@ -170,7 +228,7 @@ const AppRuntimePage = () => {
         <div className="fixed inset-0 bg-neutral-50 z-50 flex flex-col">
             {/* Header Bar */}
             {showHeader && (
-                <div className="bg-white border-b border-neutral-200 px-4 py-3 flex items-center justify-between shrink-0">
+                <div className="bg-white border-b border-neutral-200 px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
                     <div className="flex items-center gap-4">
                         {/* Back Button */}
                         <button
@@ -178,12 +236,12 @@ const AppRuntimePage = () => {
                             className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                             title="Quay lại My Apps"
                         >
-                            <FiArrowLeft className="w-5 h-5 text-neutral-600" />
+                            <FiArrowLeft className="w-5 h-5 text-neutral-700" />
                         </button>
 
                         {/* App Info */}
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-sage-400 to-sage-600 rounded-xl flex items-center justify-center text-white font-medium">
+                            <div className="w-10 h-10 bg-gradient-to-br from-neutral-200 to-neutral-300 rounded-xl flex items-center justify-center text-neutral-800 font-medium border border-neutral-300">
                                 {project?.name?.charAt(0)?.toUpperCase() || 'A'}
                             </div>
                             <div>
@@ -205,17 +263,8 @@ const AppRuntimePage = () => {
                             className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
                             title="My Apps"
                         >
-                            <FiHome className="w-5 h-5 text-neutral-600" />
+                            <FiHome className="w-5 h-5 text-neutral-700" />
                         </Link>
-
-                        {/* Edit */}
-                        <button
-                            onClick={() => navigate(`/app-builder/${projectId}`)}
-                            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                            title="Edit in App Builder"
-                        >
-                            <FiEdit3 className="w-5 h-5 text-neutral-600" />
-                        </button>
 
                         {/* Fullscreen */}
                         <button
@@ -224,16 +273,16 @@ const AppRuntimePage = () => {
                             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
                         >
                             {isFullscreen ? (
-                                <FiMinimize2 className="w-5 h-5 text-neutral-600" />
+                                <FiMinimize2 className="w-5 h-5 text-neutral-700" />
                             ) : (
-                                <FiMaximize2 className="w-5 h-5 text-neutral-600" />
+                                <FiMaximize2 className="w-5 h-5 text-neutral-700" />
                             )}
                         </button>
 
                         {/* Hide Header Toggle */}
                         <button
                             onClick={() => setShowHeader(false)}
-                            className="px-3 py-1.5 text-xs bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors text-neutral-600"
+                            className="px-3 py-1.5 text-xs bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors text-neutral-700"
                         >
                             Hide Header
                         </button>
@@ -245,19 +294,63 @@ const AppRuntimePage = () => {
             {!showHeader && (
                 <button
                     onClick={() => setShowHeader(true)}
-                    className="fixed top-4 right-4 z-50 px-3 py-1.5 bg-white shadow-lg rounded-lg text-xs text-neutral-600 hover:bg-neutral-50 border border-neutral-200"
+                    className="fixed top-4 right-4 z-50 px-3 py-1.5 bg-white shadow-lg rounded-lg text-xs text-neutral-700 hover:bg-neutral-50 border border-neutral-200"
                 >
                     Show Header
                 </button>
             )}
 
-            {/* App Content Area */}
-            <div className="flex-1 overflow-auto">
-                <div className="min-h-full bg-white">
-                    {/* Render all components */}
-                    <div className="p-6">
-                        {renderItems(null)}
-                    </div>
+            {/* App Content Area - Full canvas like AppBuilder preview */}
+            <div className="flex-1 overflow-auto bg-neutral-50">
+                <div className="relative min-h-full w-full">
+                    {canvasItems
+                        .filter(item => !item.parentId)
+                        .filter(item => {
+                            // Only filter data components by view - control components always show
+                            const isDataComponent = ['taskBoard', 'taskList', 'taskTable', 'taskCalendar'].includes(item.type);
+                            if (!isDataComponent) {
+                                return true; // Always show control components (buttons, filters, etc)
+                            }
+                            // For data components, check visibleInViews
+                            const visibleInViews = item.props?.visibleInViews || ['table', 'list', 'board', 'calendar'];
+                            return visibleInViews.includes(activeView);
+                        })
+                        .map(item => {
+                            const position = item.position || { x: 20, y: 20 };
+                            const itemStyle = item.style || {};
+                            
+                            return (
+                                <div
+                                    key={item.id}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${position.x}px`,
+                                        top: `${position.y}px`,
+                                        width: itemStyle.width || 'auto',
+                                        height: itemStyle.height || 'auto',
+                                        zIndex: 1 // Ensure proper z-index stacking
+                                    }}
+                                >
+                                    <RenderComponent
+                                        item={item}
+                                        items={canvasItems}
+                                        isPreview={true}
+                                        navigate={navigate}
+                                        context={appState}
+                                        onUpdateProps={(newProps) => handleUpdateProps(item.id, newProps)}
+                                        tasks={tasks}
+                                        allTasks={allTasks}
+                                        searchQuery={searchQuery}
+                                        filterTag={filterTag}
+                                        filters={filters}
+                                        onTaskCreate={createTask}
+                                        onTaskUpdate={updateTask}
+                                        onTaskStatusUpdate={updateTaskStatus}
+                                        onTaskDelete={deleteTask}
+                                    />
+                                </div>
+                            );
+                        })}
                 </div>
             </div>
         </div>

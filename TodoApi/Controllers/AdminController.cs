@@ -106,19 +106,22 @@ namespace TodoApi.Controllers
         [HttpDelete("marketplace-apps/{id}")]
         public async Task<IActionResult> DeleteMarketplaceApp(string id)
         {
+            // Instead of deleting, unpublish the app to hide it from marketplace
+            // This preserves the original app and all user-installed copies
             var filter = Builders<Project>.Filter.And(
                 Builders<Project>.Filter.Eq(p => p.Id, id),
                 Builders<Project>.Filter.Eq(p => p.IsPublished, true)
             );
 
-            var result = await _mongoContext.Projects.DeleteOneAsync(filter);
+            var update = Builders<Project>.Update.Set(p => p.IsPublished, false);
+            var result = await _mongoContext.Projects.UpdateOneAsync(filter, update);
 
-            if (result.DeletedCount == 0)
+            if (result.MatchedCount == 0)
             {
                 return NotFound("App không tồn tại hoặc chưa được publish.");
             }
 
-            return Ok(new { message = "Đã xóa app khỏi marketplace thành công." });
+            return Ok(new { message = "Đã ẩn app khỏi marketplace thành công. App vẫn tồn tại trong My Apps của users đã cài." });
         }
 
         // --- API QUẢN LÝ USERS ---
@@ -233,6 +236,49 @@ namespace TodoApi.Controllers
             }
 
             return BadRequest(new { message = "Không thể xóa user.", errors = result.Errors });
+        }
+
+        // PUT: api/admin/users/{id}/roles
+        [HttpPut("users/{id}/roles")]
+        public async Task<IActionResult> UpdateUserRoles(string id, [FromBody] List<string> newRoles)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound("User không tồn tại.");
+            }
+
+            // Validate roles
+            var validRoles = new[] { "User", "Admin" };
+            if (newRoles.Any(r => !validRoles.Contains(r, StringComparer.OrdinalIgnoreCase)))
+            {
+                return BadRequest(new { message = "Roles không hợp lệ. Chỉ chấp nhận 'User' và 'Admin'." });
+            }
+
+            // Get current roles
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            // Remove all current roles
+            if (currentRoles.Any())
+            {
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                {
+                    return BadRequest(new { message = "Không thể xóa roles hiện tại.", errors = removeResult.Errors });
+                }
+            }
+
+            // Add new roles
+            if (newRoles.Any())
+            {
+                var addResult = await _userManager.AddToRolesAsync(user, newRoles);
+                if (!addResult.Succeeded)
+                {
+                    return BadRequest(new { message = "Không thể thêm roles mới.", errors = addResult.Errors });
+                }
+            }
+
+            return Ok(new { message = "Đã cập nhật roles thành công.", roles = newRoles });
         }
     }
 }

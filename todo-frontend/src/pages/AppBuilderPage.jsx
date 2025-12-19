@@ -18,8 +18,8 @@ function AppBuilderPage() {
     const [canvasItems, setCanvasItems] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filterTag, setFilterTag] = useState('all');
+    const [searchQuery] = useState('');
+    const [filterTag] = useState('all');
     
     // State Management for App Builder (global state for conditions)
     // eslint-disable-next-line no-unused-vars
@@ -52,11 +52,37 @@ function AppBuilderPage() {
     
     const navigate = useNavigate();
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
-    const [publishData, setPublishData] = useState({ name: '', description: '', category: 'Template', price: '' });
+    const [publishData, setPublishData] = useState({ name: '', description: '', category: '', price: '' });
+    const [categories, setCategories] = useState([]);
 
     // Get appId or projectId from params (for editing existing app)
     const { appId, projectId } = useParams();
     const id = appId || projectId; // Support both route patterns
+
+    // Load categories from API
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await apiService.getCategories();
+                const loadedCategories = response.data || [];
+                setCategories(loadedCategories);
+                
+                // Set default category to first available category
+                if (loadedCategories.length > 0) {
+                    setPublishData(prev => ({ 
+                        ...prev, 
+                        category: prev.category || loadedCategories[0].name 
+                    }));
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                // Fallback to default categories if API fails
+                setCategories([]);
+            }
+        };
+        fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Load project data
     useEffect(() => {
@@ -133,6 +159,13 @@ function AppBuilderPage() {
     // Handle position change (from DraggableResizable)
     const handlePositionChange = useCallback((itemId, x, y) => {
         setCanvasItems((prev) => {
+            const item = prev.find(i => i.id === itemId);
+            // Chỉ update position cho root components (không có parentId)
+            // Components trong layout không nên có position (dùng flow layout)
+            if (!item || item.parentId) {
+                return prev; // Không update nếu là component trong layout
+            }
+            
             const newItems = prev.map(item => {
                 if (item.id === itemId) {
                     return {
@@ -155,6 +188,30 @@ function AppBuilderPage() {
     // Handle size change (from DraggableResizable)
     const handleSizeChange = useCallback((itemId, width, height, x, y) => {
         setCanvasItems((prev) => {
+            const item = prev.find(i => i.id === itemId);
+            // Chỉ update position cho root components (không có parentId)
+            // Components trong layout không nên có position (dùng flow layout)
+            if (!item || item.parentId) {
+                // Nếu là component trong layout, chỉ update size, không update position
+                const newItems = prev.map(item => {
+                    if (item.id === itemId) {
+                        return {
+                            ...item,
+                            style: {
+                                ...item.style,
+                                width: `${width}px`,
+                                height: `${height}px`
+                                // Không set left/top cho layout children
+                            }
+                        };
+                    }
+                    return item;
+                });
+                saveToHistory(newItems);
+                return newItems;
+            }
+            
+            // Root component: update cả position và size
             const newItems = prev.map(item => {
                 if (item.id === itemId) {
                     return {
@@ -177,143 +234,209 @@ function AppBuilderPage() {
     }, [saveToHistory]);
 
     // Handle drag and drop
+    // Helper: Tính toán kích thước component từ defaultStyle
+    const calculateComponentSize = (type, defaultStyle) => {
+        // Control components có kích thước cố định
+        const controlSizes = {
+            'button': { width: 120, height: 40 },
+            'checkbox': { width: 150, height: 30 },
+            'addTaskButton': { width: 140, height: 40 },
+            'databaseTitle': { width: 300, height: 50 },
+            'input': { width: 250, height: 40 }
+        };
+
+        if (controlSizes[type]) {
+            return controlSizes[type];
+        }
+
+        const defaultWidth = defaultStyle?.width || 400;
+        const defaultHeight = defaultStyle?.height || 200;
+
+        let width = 400;
+        let height = 200;
+
+        // Parse width
+        if (typeof defaultWidth === 'string') {
+            if (defaultWidth.includes('px')) {
+                width = parseInt(defaultWidth) || 400;
+            } else if (defaultWidth === '100%') {
+                width = 400; // Default for 100% width
+            } else if (defaultWidth === 'auto') {
+                width = 150;
+            }
+        } else {
+            width = defaultWidth;
+        }
+
+        // Parse height
+        if (typeof defaultHeight === 'string') {
+            if (defaultHeight.includes('px')) {
+                height = parseInt(defaultHeight) || 200;
+            } else if (defaultHeight === 'auto') {
+                height = 40;
+            }
+        } else {
+            height = defaultHeight;
+        }
+
+        return { width, height };
+    };
+
+    // Helper: Tạo component mới từ toolbox
+    const createComponentFromTool = (toolData, parentId, order, position) => {
+        // Lấy toolType từ toolData.toolType (component type thực sự)
+        // toolData.type sẽ là 'tool' để identify từ toolbox
+        const toolType = toolData.toolType;
+        if (!toolType) {
+            console.error('Missing toolType in toolData:', toolData);
+            return null;
+        }
+        const size = calculateComponentSize(toolType, toolData.defaultStyle);
+
+        // Base style từ defaultStyle
+        const baseStyle = {
+            ...(toolData.defaultStyle || {}),
+            width: `${size.width}px`,
+            height: `${size.height}px`
+        };
+
+        // Nếu có position (root component), thêm left và top
+        // Nếu không có position (layout child), không thêm left/top (dùng flow layout)
+        if (position) {
+            baseStyle.left = `${position.x}px`;
+            baseStyle.top = `${position.y}px`;
+        } else {
+            // Layout child: đảm bảo không có left, top, position trong style
+            delete baseStyle.left;
+            delete baseStyle.top;
+            delete baseStyle.position;
+        }
+
+        // Auto-assign visibleInViews for data components based on their type
+        let defaultVisibleInViews = ['table', 'list', 'board', 'calendar']; // Default for non-data components
+        if (toolType === 'taskTable') {
+            defaultVisibleInViews = ['table'];
+        } else if (toolType === 'taskList') {
+            defaultVisibleInViews = ['list'];
+        } else if (toolType === 'taskBoard') {
+            defaultVisibleInViews = ['board'];
+        } else if (toolType === 'taskCalendar') {
+            defaultVisibleInViews = ['calendar'];
+        }
+
+        return {
+            id: `comp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: toolData.label || toolType,
+            type: toolType,
+            metadata: {
+                category: getCategoryByType(toolType),
+                tags: [],
+                notes: '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                version: 1
+            },
+            parentId: parentId,
+            children: [],
+            order: order,
+            position: position, // null nếu trong layout, object nếu root
+            props: {
+                ...(toolData.defaultProps || {}),
+                visibleInViews: defaultVisibleInViews, // Auto-assign based on component type
+                events: (toolData.defaultProps?.events || {})
+            },
+            style: baseStyle
+        };
+    };
+
     const handleDragEnd = (event) => {
         const { active, over } = event;
         if (!over) {
-            // Nếu thả ra ngoài, không làm gì cả
-            return;
+            return; // Thả ra ngoài, không làm gì
         }
         
         const toolData = active.data.current;
         const activeId = active.id;
         
-        // Nếu đang kéo component từ toolbox (có toolData và không phải là component ID)
-        if (toolData && !activeId.startsWith('comp-')) {
-            // Xác định parentId và order
+        // === CASE 1: Kéo component từ Toolbox ===
+        if (toolData && toolData.type === 'tool' && activeId.startsWith('tool-')) {
+            // Xác định parent và position
             let parentId = null;
             let order = 0;
-            let initialPosition = { x: 20, y: 20 }; // Default position with padding
+            let position = { x: 20, y: 20 };
 
             if (over.id === 'canvas-area') {
-                // Thêm vào root level với vị trí tự do
+                // Thêm vào root level (canvas)
                 parentId = null;
                 order = canvasItems.filter(item => !item.parentId).length;
-                // Calculate initial position based on drop location
-                if (event.over && event.over.rect) {
-                    const rect = event.over.rect;
-                    initialPosition = {
-                        x: Math.max(20, Math.round((event.activatorEvent?.clientX || 0) - rect.left) / 20) * 20,
-                        y: Math.max(20, Math.round((event.activatorEvent?.clientY || 0) - rect.top) / 20) * 20
-                    };
+                // Tính position dựa trên drop location với snap to grid
+                if (event.activatorEvent) {
+                    const GRID_SIZE = 20;
+                    // Get canvas inner element (actual container for components)
+                    const canvasElement = document.getElementById('canvas-area');
+                    if (canvasElement) {
+                        const canvasRect = canvasElement.getBoundingClientRect();
+                        const clientX = event.activatorEvent.clientX || 0;
+                        const clientY = event.activatorEvent.clientY || 0;
+                        
+                        // Calculate position relative to canvas top-left
+                        const relativeX = clientX - canvasRect.left;
+                        const relativeY = clientY - canvasRect.top;
+                        
+                        position = {
+                            x: Math.max(20, Math.round(relativeX / GRID_SIZE) * GRID_SIZE),
+                            y: Math.max(20, Math.round(relativeY / GRID_SIZE) * GRID_SIZE)
+                        };
+                    }
                 }
             } else if (over.id.startsWith('comp-')) {
-                // Thêm vào container/row/grid
+                // Kiểm tra xem có phải layout component không (container, row, grid, viewArea)
                 const parentItem = canvasItems.find(i => i.id === over.id);
-                if (parentItem && (parentItem.type === 'container' || parentItem.type === 'row' || parentItem.type === 'grid')) {
+                const isLayout = parentItem && ['container', 'row', 'grid', 'viewArea'].includes(parentItem.type);
+                
+                if (isLayout) {
+                    // Thêm vào layout component
                     parentId = parentItem.id;
                     order = (parentItem.children || []).length;
+                    // Không cần position khi ở trong layout (dùng flow layout)
+                    position = null;
                 } else {
-                    // Nếu không phải container/row/grid, thêm vào root
+                    // Không phải layout, thêm vào root
                     parentId = null;
                     order = canvasItems.filter(item => !item.parentId).length;
+                    // Tính position với snap to grid
+                    if (event.activatorEvent) {
+                        const GRID_SIZE = 20;
+                        // Get canvas element to calculate relative position
+                        const canvasElement = document.getElementById('canvas-area');
+                        if (canvasElement) {
+                            const canvasRect = canvasElement.getBoundingClientRect();
+                            const clientX = event.activatorEvent.clientX || 0;
+                            const clientY = event.activatorEvent.clientY || 0;
+                            
+                            // Calculate position relative to canvas top-left
+                            const relativeX = clientX - canvasRect.left;
+                            const relativeY = clientY - canvasRect.top;
+                            
+                            position = {
+                                x: Math.max(20, Math.round(relativeX / GRID_SIZE) * GRID_SIZE),
+                                y: Math.max(20, Math.round(relativeY / GRID_SIZE) * GRID_SIZE)
+                            };
+                        }
+                    }
                 }
             }
 
-            // Helper function to calculate appropriate size for control components
-            const getControlComponentSize = (type, defaultStyle) => {
-                const controlSizes = {
-                    'button': { width: 120, height: 40 },
-                    'checkbox': { width: 150, height: 30 },
-                    'switch': { width: 100, height: 30 },
-                    'addTaskButton': { width: 140, height: 40 },
-                    'viewSwitcher': { width: 200, height: 40 },
-                    'filterBar': { width: 250, height: 40 },
-                    'sortDropdown': { width: 150, height: 40 },
-                    'searchBox': { width: 250, height: 40 },
-                    'databaseTitle': { width: 300, height: 50 },
-                    'input': { width: 250, height: 40 },
-                    'select': { width: 250, height: 40 },
-                    'datePicker': { width: 250, height: 40 },
-                };
-                
-                if (controlSizes[type]) {
-                    return controlSizes[type];
-                }
-                
-                // For other components with 'auto' width/height
-                if (defaultStyle?.width === 'auto' || defaultStyle?.height === 'auto') {
-                    return { width: 150, height: 40 };
-                }
-                
-                return { width: 400, height: 200 };
-            };
+            // Tạo component mới từ tool data
+            const newItem = createComponentFromTool(toolData, parentId, order, position);
             
-            const defaultWidth = toolData.defaultStyle?.width || 400;
-            const defaultHeight = toolData.defaultStyle?.height || 200;
-            
-            let width, height;
-            
-            // Check if it's a control component with 'auto' size
-            if (defaultWidth === 'auto' || defaultHeight === 'auto') {
-                const controlSize = getControlComponentSize(toolData.type, toolData.defaultStyle);
-                width = controlSize.width;
-                height = controlSize.height;
-            } else if (typeof defaultWidth === 'string') {
-                // Parse string values like "250px" or "100%"
-                if (defaultWidth.includes('px')) {
-                    width = parseInt(defaultWidth) || 400;
-                } else if (defaultWidth === '100%') {
-                    width = 400; // Default width for 100% components
-                } else {
-                    width = 400;
-                }
-            } else {
-                width = defaultWidth;
+            // Kiểm tra nếu newItem null (có lỗi)
+            if (!newItem) {
+                console.error('Failed to create component from tool:', toolData);
+                return;
             }
-            
-            if (typeof defaultHeight === 'string') {
-                if (defaultHeight.includes('px')) {
-                    height = parseInt(defaultHeight) || 200;
-                } else if (defaultHeight === 'auto') {
-                    height = 40; // Default height for auto components
-                } else {
-                    height = 200;
-                }
-            } else {
-                height = defaultHeight;
-            }
-
-            const newItem = { 
-                id: `comp-${Date.now()}`, 
-                name: toolData.label || toolData.type,
-                type: toolData.type,
-                metadata: {
-                    category: getCategoryByType(toolData.type),
-                    tags: [],
-                    notes: '',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    version: 1
-                },
-                parentId: parentId,
-                children: [],
-                order: order,
-                position: initialPosition,
-                props: { 
-                    ...(toolData.defaultProps || {}),
-                    events: (toolData.defaultProps?.events || {})
-                },
-                style: { 
-                    ...(toolData.defaultStyle || {}),
-                    width: `${width}px`,
-                    height: `${height}px`,
-                    left: `${initialPosition.x}px`,
-                    top: `${initialPosition.y}px`
-                }
-            };
 
             setCanvasItems((prev) => {
-                // Đảm bảo không mất component nào
                 const newItems = [...prev, newItem];
                 
                 // Cập nhật children của parent nếu có
@@ -327,10 +450,6 @@ function AppBuilderPage() {
                     }
                 }
                 
-                // Debug: Kiểm tra số lượng items (có thể comment lại sau)
-                // console.log('Added new item:', { newItemId: newItem.id, totalItems: newItems.length, parentId });
-                
-                // Lưu history sau khi thêm component
                 saveToHistory(newItems);
                 return newItems;
             });
@@ -345,14 +464,32 @@ function AppBuilderPage() {
                 }
 
                 // Deep copy để đảm bảo không mất reference
-                const newItems = prev.map(item => ({
-                    ...item,
-                    metadata: item.metadata ? { ...item.metadata } : undefined,
-                    props: item.props ? { ...item.props } : undefined,
-                    style: item.style ? { ...item.style } : undefined,
-                    children: item.children ? [...item.children] : [],
-                    position: null // Không dùng position nữa, dùng flow layout
-                }));
+                // Chỉ xóa position cho layout children, giữ position cho root items
+                const newItems = prev.map(item => {
+                    const baseItem = {
+                        ...item,
+                        metadata: item.metadata ? { ...item.metadata } : undefined,
+                        props: item.props ? { ...item.props } : undefined,
+                        style: item.style ? { ...item.style } : undefined,
+                        children: item.children ? [...item.children] : []
+                    };
+                    
+                    // Layout children: đảm bảo position = null và xóa left/top từ style
+                    if (item.parentId) {
+                        const cleanStyle = { ...baseItem.style };
+                        delete cleanStyle.left;
+                        delete cleanStyle.top;
+                        delete cleanStyle.position;
+                        return {
+                            ...baseItem,
+                            position: null,
+                            style: cleanStyle
+                        };
+                    }
+                    
+                    // Root items: giữ nguyên position
+                    return baseItem;
+                });
 
                 // Validation: Đảm bảo số lượng items không thay đổi
                 if (newItems.length !== prev.length) {
@@ -380,13 +517,38 @@ function AppBuilderPage() {
                     const rootItems = newItems.filter(item => !item.parentId);
                     const newOrder = rootItems.length;
 
-                    // Cập nhật activeItem
+                    // Tính position mới dựa trên drop location
+                    let newPosition = { x: 20, y: 20 };
+                    if (event.over?.rect && event.activatorEvent) {
+                        const rect = event.over.rect;
+                        const clientX = event.activatorEvent.clientX || 0;
+                        const clientY = event.activatorEvent.clientY || 0;
+                        const GRID_SIZE = 20;
+                        newPosition = {
+                            x: Math.max(20, Math.round((clientX - rect.left) / GRID_SIZE) * GRID_SIZE),
+                            y: Math.max(20, Math.round((clientY - rect.top) / GRID_SIZE) * GRID_SIZE)
+                        };
+                    }
+
+                    // Cập nhật activeItem - thêm position cho root component
                     const activeIndex = newItems.findIndex(i => i.id === active.id);
                     if (activeIndex !== -1) {
+                        const cleanStyle = { ...newItems[activeIndex].style };
+                        // Xóa left/top cũ nếu có (từ layout)
+                        delete cleanStyle.left;
+                        delete cleanStyle.top;
+                        delete cleanStyle.position;
+                        
                         newItems[activeIndex] = {
                             ...newItems[activeIndex],
                             parentId: null,
-                            order: newOrder
+                            order: newOrder,
+                            position: newPosition,
+                            style: {
+                                ...cleanStyle,
+                                left: `${newPosition.x}px`,
+                                top: `${newPosition.y}px`
+                            }
                         };
                     }
 
@@ -416,6 +578,65 @@ function AppBuilderPage() {
                             return prev;
                         }
 
+                        // Nếu component đã ở trong row/container này rồi, thì reorder thay vì thêm lại
+                        if (activeItem.parentId === overItem.id) {
+                            // Reorder trong cùng parent
+                            const parentId = activeItem.parentId;
+                            const parent = newItems.find(i => i.id === parentId);
+                            if (!parent || !parent.children) {
+                                console.warn('Parent not found or has no children:', { parentId });
+                                return prev;
+                            }
+
+                            const children = parent.children.map(id => newItems.find(i => i.id === id)).filter(Boolean);
+                            const activeIndex = children.findIndex(c => c.id === active.id);
+                            const overIndex = children.findIndex(c => c.id === over.id);
+                            
+                            // Nếu drop vào component khác trong cùng layout, reorder theo vị trí của over component
+                            // Nếu drop vào chính layout (over.id === parentId), giữ nguyên vị trí
+                            let newOrder = activeIndex;
+                            if (overIndex !== -1 && overIndex !== activeIndex) {
+                                newOrder = overIndex;
+                            }
+
+                            // Reorder
+                            const newChildren = [...children];
+                            const [removed] = newChildren.splice(activeIndex, 1);
+                            newChildren.splice(newOrder, 0, removed);
+
+                            // Cập nhật order và đảm bảo position = null cho layout children
+                            newChildren.forEach((child, index) => {
+                                const childIndex = newItems.findIndex(i => i.id === child.id);
+                                if (childIndex !== -1) {
+                                    newItems[childIndex] = {
+                                        ...newItems[childIndex],
+                                        order: index,
+                                        position: null, // Layout children không có position
+                                        style: {
+                                            ...newItems[childIndex].style,
+                                            // Xóa left và top nếu có (layout children dùng flow layout)
+                                            left: undefined,
+                                            top: undefined,
+                                            position: undefined
+                                        }
+                                    };
+                                }
+                            });
+
+                            // Cập nhật parent's children array
+                            const parentIndex = newItems.findIndex(i => i.id === parentId);
+                            if (parentIndex !== -1) {
+                                newItems[parentIndex] = {
+                                    ...newItems[parentIndex],
+                                    children: newChildren.map(c => c.id)
+                                };
+                            }
+
+                            saveToHistory(newItems);
+                            return newItems;
+                        }
+
+                        // Nếu component chưa ở trong row/container này, thêm vào
                         const newParentId = overItem.id;
                         const newOrder = (overItem.children || []).length;
 
@@ -439,13 +660,21 @@ function AppBuilderPage() {
                             };
                         }
 
-                        // Cập nhật activeItem
+                        // Cập nhật activeItem - đảm bảo position = null cho layout children
                         const activeIndex = newItems.findIndex(i => i.id === active.id);
                         if (activeIndex !== -1) {
                             newItems[activeIndex] = {
                                 ...newItems[activeIndex],
                                 parentId: newParentId,
-                                order: newOrder
+                                order: newOrder,
+                                position: null, // Layout children không có position
+                                style: {
+                                    ...newItems[activeIndex].style,
+                                    // Xóa left và top nếu có (layout children dùng flow layout)
+                                    left: undefined,
+                                    top: undefined,
+                                    position: undefined
+                                }
                             };
                         }
 
@@ -507,13 +736,21 @@ function AppBuilderPage() {
                             const [removed] = newChildren.splice(activeIndex, 1);
                             newChildren.splice(overIndex, 0, removed);
 
-                            // Cập nhật order của tất cả children
+                            // Cập nhật order và đảm bảo position = null cho layout children
                             newChildren.forEach((child, index) => {
                                 const childIndex = newItems.findIndex(i => i.id === child.id);
                                 if (childIndex !== -1) {
                                     newItems[childIndex] = {
                                         ...newItems[childIndex],
-                                        order: index
+                                        order: index,
+                                        position: null, // Layout children không có position
+                                        style: {
+                                            ...newItems[childIndex].style,
+                                            // Xóa left và top nếu có (layout children dùng flow layout)
+                                            left: undefined,
+                                            top: undefined,
+                                            position: undefined
+                                        }
                                     };
                                 }
                             });
@@ -560,13 +797,21 @@ function AppBuilderPage() {
                                 };
                             }
 
-                            // Cập nhật activeItem
+                            // Cập nhật activeItem - đảm bảo position = null cho layout children
                             const activeIndex = newItems.findIndex(i => i.id === active.id);
                             if (activeIndex !== -1) {
                                 newItems[activeIndex] = {
                                     ...newItems[activeIndex],
                                     parentId: newParentId,
-                                    order: newOrder
+                                    order: newOrder,
+                                    position: null, // Layout children không có position
+                                    style: {
+                                        ...newItems[activeIndex].style,
+                                        // Xóa left và top nếu có (layout children dùng flow layout)
+                                        left: undefined,
+                                        top: undefined,
+                                        position: undefined
+                                    }
                                 };
                             }
 
@@ -672,6 +917,8 @@ function AppBuilderPage() {
             return;
         }
 
+        console.log('📤 Publishing with data:', publishData);
+        
         setPublishing(true);
         try {
             await apiService.publishProject(id, { ...publishData });
@@ -741,6 +988,9 @@ function AppBuilderPage() {
     }, [canUndo, canRedo, onUndo, onRedo, isPreviewMode]);
 
     const selectedItem = canvasItems.find(i => i.id === selectedId);
+    // Drag preview state used to show temporary reorder while dragging
+    const [draggingInfo, setDraggingInfo] = useState(null);
+    const [previewItems, setPreviewItems] = useState(null);
 
     if (loading) return <div className="p-10 text-center">Đang tải dự án...</div>;
 
@@ -760,7 +1010,76 @@ function AppBuilderPage() {
         >
             <DndContext 
                 sensors={sensors}
-                onDragEnd={isPreviewMode ? undefined : handleDragEnd}
+                onDragStart={(event) => {
+                    if (isPreviewMode) return;
+                    const active = event.active;
+                    setDraggingInfo({ id: active.id, data: active.data?.current || null });
+                    setPreviewItems(null);
+                }}
+                onDragOver={(event) => {
+                    if (isPreviewMode) return;
+                    const active = event.active;
+                    const over = event.over;
+                    if (!active || !over) return;
+
+                    // Only preview reorder for components (comp-*) or root level
+                    const activeId = active.id;
+                    const overId = over.id;
+
+                    // Work on a copy of canvasItems
+                    const itemsCopy = JSON.parse(JSON.stringify(canvasItems));
+
+                    const findIndexInSiblings = (arr, id) => arr.findIndex(i => i.id === id);
+
+                    // Helper: move active to position of over among siblings
+                    const moveWithinSiblings = (allItems, activeIdLocal, overIdLocal) => {
+                        const activeItem = allItems.find(i => i.id === activeIdLocal);
+                        const overItem = allItems.find(i => i.id === overIdLocal);
+                        if (!activeItem || !overItem) return null;
+
+                        const activeParent = activeItem.parentId || null;
+                        const overParent = overItem.parentId || null;
+
+                        // Only reorder if parents are same
+                        if (activeParent !== overParent) return null;
+
+                        const siblings = allItems.filter(i => (i.parentId || null) === activeParent).sort((a,b)=> (a.order||0)-(b.order||0));
+                        const activeIndex = siblings.findIndex(s => s.id === activeIdLocal);
+                        const overIndex = siblings.findIndex(s => s.id === overIdLocal);
+                        if (activeIndex === -1 || overIndex === -1) return null;
+
+                        const newSiblings = [...siblings];
+                        const [moved] = newSiblings.splice(activeIndex,1);
+                        newSiblings.splice(overIndex,0,moved);
+
+                        // Apply new order to a copy of allItems
+                        const newAll = allItems.map(item => ({ ...item }));
+                        newSiblings.forEach((s, idx) => {
+                            const idxAll = newAll.findIndex(i => i.id === s.id);
+                            if (idxAll !== -1) newAll[idxAll].order = idx;
+                        });
+                        return newAll;
+                    };
+
+                    // If dragging a component and over another component, try to preview reorder
+                    if (String(activeId).startsWith('comp-') && String(overId).startsWith('comp-')) {
+                        const preview = moveWithinSiblings(itemsCopy, activeId, overId);
+                        if (preview) {
+                            setPreviewItems(preview);
+                            return;
+                        }
+                    }
+
+                    // If dragging a root component over canvas-area, do nothing special
+                    // Clear preview if nothing to do
+                    setPreviewItems(null);
+                }}
+                onDragEnd={isPreviewMode ? undefined : (event) => {
+                    // Clear preview state and then call existing handler to commit
+                    setPreviewItems(null);
+                    setDraggingInfo(null);
+                    handleDragEnd(event);
+                }}
             >
                 <div className="flex flex-col h-screen w-full bg-white overflow-hidden" style={{ margin: 0, padding: 0 }}>
                 
@@ -786,7 +1105,7 @@ function AppBuilderPage() {
                         {/* Canvas Area */}
                         <div className="flex-1 overflow-auto w-full h-full">
                             <CanvasArea 
-                                items={canvasItems} 
+                                items={previewItems || canvasItems} 
                                 selectedId={selectedId} 
                                 onSelectItem={setSelectedId} 
                                 isPreview={isPreviewMode} 
@@ -825,13 +1144,7 @@ function AppBuilderPage() {
 
                 {/* BOTTOM: Toolbox - Ẩn trong preview mode */}
                 {!isPreviewMode && (
-                    <Toolbox 
-                        canvasItems={canvasItems}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                        filterTag={filterTag}
-                        setFilterTag={setFilterTag}
-                    />
+                    <Toolbox />
                 )}
             </div>
 
@@ -872,12 +1185,23 @@ function AppBuilderPage() {
                                     <select 
                                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none" 
                                         value={publishData.category} 
-                                        onChange={e => setPublishData({...publishData, category: e.target.value})}
+                                        onChange={e => {
+                                            console.log('📁 Category changed to:', e.target.value);
+                                            setPublishData({...publishData, category: e.target.value});
+                                        }}
                                     >
-                                        <option>Template</option>
-                                        <option>Module</option>
-                                        <option>Component</option>
-                                        <option>Automation</option>
+                                        {categories.length > 0 ? (
+                                            categories.map(cat => (
+                                                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option>Template</option>
+                                                <option>Module</option>
+                                                <option>Component</option>
+                                                <option>Automation</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div>

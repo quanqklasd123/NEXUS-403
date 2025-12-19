@@ -36,5 +36,14 @@ namespace TodoApi.Models
 
         [BsonElement("price")]
         public string? Price { get; set; } // null = Free
+
+        [BsonElement("marketplaceAppId")]
+        public string? MarketplaceAppId { get; set; } // ID của app gốc từ marketplace (nếu được install)
+
+        [BsonElement("originalAuthor")]
+        public string? OriginalAuthor { get; set; } // UserId của author gốc (nếu được install từ marketplace)
+
+        [BsonElement("updatedAt")]
+        public DateTime? UpdatedAt { get; set; }
     }
 }

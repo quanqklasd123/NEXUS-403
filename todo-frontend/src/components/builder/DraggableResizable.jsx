@@ -8,7 +8,9 @@ import { GRID_SIZE, snapToGrid } from './gridConstants';
 // Helper function to get initial position and size from item
 const getInitialBounds = (item) => {
     const style = item.style || {};
-    const position = item.position || { x: 20, y: 20 };
+    // Chỉ dùng position cho root components (không có parentId)
+    // Layout children không có position (dùng flow layout)
+    const position = item.parentId ? null : (item.position || { x: 20, y: 20 });
     
     // Control component sizes (components that should be small and fit content)
     const controlSizes = {
@@ -65,8 +67,8 @@ const getInitialBounds = (item) => {
     }
     
     return {
-        x: position.x || 20,
-        y: position.y || 20,
+        x: position ? (position.x || 20) : 0, // 0 nếu là layout child
+        y: position ? (position.y || 20) : 0, // 0 nếu là layout child
         width: width,
         height: height
     };
@@ -86,13 +88,34 @@ const DraggableResizable = ({
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [actualSize, setActualSize] = useState(null);
+    const [activeView, setActiveView] = useState('table');
     const contentRef = useRef(null);
+    
+    // Listen for view-change events to show/hide components
+    useEffect(() => {
+        const handleViewChange = (e) => {
+            setActiveView(e.detail?.view || 'table');
+        };
+        window.addEventListener('view-change', handleViewChange);
+        return () => window.removeEventListener('view-change', handleViewChange);
+    }, []);
     
     const bounds = getInitialBounds(item);
     
     // Check if it's a control component that should fit content
     const controlComponents = ['viewSwitcher', 'filterBar', 'searchBox', 'sortDropdown', 'addTaskButton', 'databaseTitle', 'button', 'checkbox', 'switch', 'input', 'select', 'datePicker'];
+    const dataComponents = ['taskBoard', 'taskList', 'taskTable'];
     const isControlComponent = controlComponents.includes(item.type);
+    const isDataComponent = dataComponents.includes(item.type);
+    const shouldAutoSize = isControlComponent || isDataComponent;
+    
+    // Check if it's a layout component (container, row, grid)
+    const isLayoutComponent = item.type === 'container' || item.type === 'row' || item.type === 'grid';
+    
+    // Check if layout has children - if it does, disable dragging for the layout itself
+    // Only allow dragging empty layouts
+    const layoutHasChildren = isLayoutComponent && items.some(child => child.parentId === item.id);
+    const shouldDisableLayoutDrag = isLayoutComponent && layoutHasChildren;
     
     // Measure actual content size for control components
     useEffect(() => {
@@ -128,7 +151,9 @@ const DraggableResizable = ({
         const snappedX = snapToGrid(d.x);
         const snappedY = snapToGrid(d.y);
         
-        if (onPositionChange) {
+        // Chỉ update position cho root components (không có parentId)
+        // Components trong layout không nên có position (dùng flow layout)
+        if (onPositionChange && !item.parentId) {
             onPositionChange(item.id, snappedX, snappedY);
         }
     };
@@ -144,10 +169,30 @@ const DraggableResizable = ({
         const snappedX = snapToGrid(position.x);
         const snappedY = snapToGrid(position.y);
         
+        // Chỉ update position cho root components (không có parentId)
+        // Components trong layout không nên có position (dùng flow layout)
         if (onSizeChange) {
-            onSizeChange(item.id, snappedWidth, snappedHeight, snappedX, snappedY);
+            if (item.parentId) {
+                // Component trong layout: chỉ update size, không update position
+                onSizeChange(item.id, snappedWidth, snappedHeight, null, null);
+            } else {
+                // Root component: update cả size và position
+                onSizeChange(item.id, snappedWidth, snappedHeight, snappedX, snappedY);
+            }
         }
     };
+    
+    // Check if component should be visible in current view (AFTER all hooks)
+    const visibleInViews = item.props?.visibleInViews || ['table', 'list', 'board', 'calendar'];
+    const isVisibleInCurrentView = visibleInViews.includes(activeView);
+    
+    // Only apply view-based visibility to data components
+    const isDataComponentType = ['taskBoard', 'taskList', 'taskTable', 'taskCalendar'].includes(item.type);
+    
+    // Hide data components not visible in current view
+    if (isDataComponentType && !isVisibleInCurrentView) {
+        return null; // Hide data components completely
+    }
     
     // Disable drag/resize in preview mode
     if (isPreview) {
@@ -180,6 +225,54 @@ const DraggableResizable = ({
         ? { width: actualSize.width, height: actualSize.height }
         : { width: bounds.width, height: bounds.height };
     
+    // If layout has children, use Rnd but disable dragging completely
+    // Still allow resizing
+    
+    // Nếu component có parentId (trong layout), không dùng Rnd - render trực tiếp
+    // Layout children không nên có absolute positioning
+    if (item.parentId) {
+        return (
+            <div
+                style={{
+                    width: `${bounds.width}px`,
+                    height: `${bounds.height}px`,
+                    position: 'relative', // Relative, không absolute
+                    zIndex: isSelected ? 100 : 1
+                }}
+                className={`
+                    ${isSelected ? 'ring-2 ring-neutral-900 ring-offset-1' : ''}
+                `}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('ParentId onClick', { itemId: item.id });
+                    onClick(item.id);
+                }}
+            >
+                {/* Selection indicator */}
+                {isSelected && (
+                    <div className="absolute -top-6 left-0 flex items-center gap-2 px-2 py-1 bg-neutral-900 text-white text-xs rounded z-50">
+                        <FiMove className="w-3 h-3" />
+                        <span>{item.name || item.type}</span>
+                    </div>
+                )}
+                
+                {/* Component content */}
+                <div className="w-full h-full relative">
+                    <RenderComponent 
+                        item={item} 
+                        items={items}
+                        isSelected={isSelected} 
+                        onClick={onClick} 
+                        isPreview={isPreview} 
+                        navigate={navigate}
+                        context={context}
+                    />
+                </div>
+            </div>
+        );
+    }
+    
+    // Root components: dùng Rnd với absolute positioning
     return (
         <Rnd
             size={rndSize}
@@ -193,23 +286,23 @@ const DraggableResizable = ({
             bounds="parent"
             enableResizing={!isPreview}
             disableDragging={isPreview}
+            dragHandleClassName="drag-handle"
             minWidth={isControlComponent ? 50 : undefined}
             minHeight={isControlComponent ? 30 : undefined}
             style={{
                 zIndex: isDragging || isResizing ? 1000 : (isSelected ? 100 : 1),
                 opacity: isDragging || isResizing ? 0.8 : 1,
-                ...(isControlComponent ? {
-                    display: 'inline-block'
-                } : {})
+                border: 'none',
+                outline: 'none',
+                background: 'transparent'
             }}
             className={`
-                ${isSelected ? 'ring-2 ring-sage-500 ring-offset-2' : ''}
-                ${isDragging || isResizing ? 'shadow-2xl' : 'shadow-sm'}
-                transition-shadow duration-200
+                ${isSelected ? 'ring-2 ring-neutral-900 ring-offset-1' : ''}
                 ${isControlComponent ? 'control-component-rnd' : ''}
             `}
             onClick={(e) => {
                 e.stopPropagation();
+                console.log('Rnd onClick', { isDragging, isResizing, itemId: item.id });
                 if (!isDragging && !isResizing) {
                     onClick(item.id);
                 }
@@ -246,19 +339,18 @@ const DraggableResizable = ({
                 </div>
             )}
             
-            {/* Drag handle - only this area allows dragging */}
-            {!isPreview && (
+            {/* Drag handle - only this area allows dragging (hide if layout has children) */}
+            {!isPreview && !shouldDisableLayoutDrag && (
                 <div className="drag-handle absolute top-0 left-0 right-0 h-6 bg-sage-500/10 hover:bg-sage-500/20 cursor-move flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10">
                     <FiMove className="w-3 h-3 text-sage-600" />
                 </div>
             )}
             
-            {/* Component content - control components use inline-block wrapper */}
-            {isControlComponent ? (
+            {/* Component content - control and data components use wrapper for auto-sizing */}
+            {shouldAutoSize ? (
                 <div 
                     ref={contentRef}
-                    className="relative" 
-                    style={{ display: 'inline-block', width: 'fit-content', height: 'fit-content' }}
+                    className="w-full h-full"
                 >
                     <RenderComponent 
                         item={item} 
@@ -271,7 +363,27 @@ const DraggableResizable = ({
                     />
                 </div>
             ) : (
-                <div className="w-full h-full relative">
+                <div 
+                    className="w-full h-full relative"
+                    style={{
+                        // Re-enable pointer events for children when layout has children
+                        // This allows children to receive mouse events while preventing Rnd from dragging
+                        pointerEvents: shouldDisableLayoutDrag ? 'auto' : 'auto'
+                    }}
+                    onMouseDown={(e) => {
+                        // Prevent dragging parent layout when clicking/dragging children
+                        if (shouldDisableLayoutDrag) {
+                            e.stopPropagation();
+                            // Don't prevent default to allow @dnd-kit to work
+                        }
+                    }}
+                    onClick={(e) => {
+                        // Prevent selecting parent layout when clicking children
+                        if (shouldDisableLayoutDrag && e.target !== e.currentTarget) {
+                            e.stopPropagation();
+                        }
+                    }}
+                >
                     <RenderComponent 
                         item={item} 
                         items={items}

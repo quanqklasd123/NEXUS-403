@@ -1,6 +1,6 @@
 // src/components/builder/PropertiesPanel.jsx
 import React, { useState } from 'react';
-import { FiTrash2, FiType, FiLayout, FiMaximize, FiMonitor, FiZap, FiPlus, FiX, FiInfo, FiTag, FiFolder, FiSettings } from 'react-icons/fi';
+import { FiTrash2, FiType, FiLayout, FiMaximize, FiMonitor, FiZap, FiPlus, FiX, FiInfo, FiTag, FiFolder, FiSettings, FiEye } from 'react-icons/fi';
 
 const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = [], onClose }) => {
     const [activeTab, setActiveTab] = useState('properties');
@@ -269,7 +269,37 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                             </div>
                         </div>
 
-                        {/* 3. NOTES */}
+                        {/* 3. VIEW VISIBILITY */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiEye /> View Visibility
+                            </h4>
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Component hiển thị ở views nào</label>
+                                <div className="space-y-2">
+                                    {['table', 'list', 'board', 'calendar'].map(view => (
+                                        <label key={view} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={(selectedItem.props?.visibleInViews || ['table', 'list', 'board', 'calendar']).includes(view)}
+                                                onChange={(e) => {
+                                                    const current = selectedItem.props?.visibleInViews || ['table', 'list', 'board', 'calendar'];
+                                                    const newViews = e.target.checked 
+                                                        ? [...current, view]
+                                                        : current.filter(v => v !== view);
+                                                    handleChange('props', 'visibleInViews', newViews);
+                                                }}
+                                                className="w-4 h-4 text-neutral-900"
+                                            />
+                                            <span className="text-sm capitalize">{view}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-neutral-400 mt-2">Dùng ViewSwitcher để chuyển giữa các views</p>
+                            </div>
+                        </div>
+
+                        {/* 4. NOTES */}
                         <div className="space-y-3">
                             <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
                                 <FiType /> Ghi chú
@@ -1132,6 +1162,44 @@ const PropertiesPanel = ({ selectedItem, onUpdateItem, onDeleteItem, allItems = 
                                         ))}
                                 </select>
                                 <p className="text-xs text-neutral-400 mt-1">Component sẽ thay đổi view khi click</p>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* View Area Properties */}
+                {selectedItem.type === 'viewArea' && (
+                    <>
+                        <hr className="border-neutral-100" />
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-neutral-800 flex items-center gap-2 uppercase tracking-wide">
+                                <FiLayout /> View Area Settings
+                            </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">View Type</label>
+                                <select
+                                    value={selectedItem.props?.viewType || 'board'}
+                                    onChange={(e) => handleChange('props', 'viewType', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                >
+                                    <option value="table">Table</option>
+                                    <option value="list">List</option>
+                                    <option value="board">Board</option>
+                                    <option value="calendar">Calendar</option>
+                                </select>
+                                <p className="text-xs text-neutral-400 mt-1">View này sẽ hiển thị khi ViewSwitcher chọn {selectedItem.props?.viewType || 'board'}</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-neutral-500 mb-1.5">Label</label>
+                                <input
+                                    type="text"
+                                    value={selectedItem.props?.label || 'Board View'}
+                                    onChange={(e) => handleChange('props', 'label', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg bg-white focus:border-sage-400 outline-none"
+                                    placeholder="Tên hiển thị..."
+                                />
                             </div>
                         </div>
                     </>

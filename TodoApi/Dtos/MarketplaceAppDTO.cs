@@ -13,5 +13,8 @@ namespace TodoApi.Dtos
         public string Color { get; set; } // sage, peach, butter...
         public bool IsInstalled { get; set; }
         public string? Price { get; set; } // null = Free
+        // JSON data of the app (component tree) when source is a published Project
+        public string? JsonData { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 }

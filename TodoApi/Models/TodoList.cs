@@ -21,5 +21,12 @@ namespace TodoApi.Models
         // 1. Khóa ngoại: Lưu ID của User sở hữu List này
         [BsonElement("appUserId")]
         public string AppUserId { get; set; }
+
+        /// <summary>
+        /// ID của UserApp mà list này thuộc về (Multi-tenant support)
+        /// Nullable để backward compatible với existing data
+        /// </summary>
+        [BsonElement("appId")]
+        public string? AppId { get; set; }
     }
 }

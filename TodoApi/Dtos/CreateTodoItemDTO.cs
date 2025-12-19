@@ -21,6 +21,12 @@ namespace TodoApi.Dtos
         [Required] 
         public string TodoListId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// ID của UserApp mà item này thuộc về (Multi-tenant support)
+        /// Nullable để backward compatible
+        /// </summary>
+        public string? AppId { get; set; }
+
         // Lưu ý: KHÔNG có 'Id' và KHÔNG có 'TodoList' object
     }
 }

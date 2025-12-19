@@ -184,7 +184,7 @@ const AppBuilderListPage = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-semibold text-neutral-800">App Builder</h1>
+                    <h1 className="text-2xl font-semibold text-neutral-800">App Builder List</h1>
                     <p className="text-neutral-500 text-sm mt-1">
                         Tạo và quản lý các app của bạn
                     </p>

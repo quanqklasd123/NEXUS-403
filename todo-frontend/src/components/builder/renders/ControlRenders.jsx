@@ -100,7 +100,7 @@ export function ViewSidebarRender({ props = {}, style }) {
                             className={`
                                 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
                                 ${isActive 
-                                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm' 
+                                    ? 'bg-sage-50 text-sage-600 border border-sage-100 shadow-sm' 
                                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
                                 }
                             `}
@@ -165,8 +165,15 @@ export function ViewSwitcherRender({ props = {}, style, isPreview = false }) {
         window.dispatchEvent(new CustomEvent('view-change', { detail: { view } }));
     };
 
+    const viewSwitcherStyle = {
+        ...style,
+        overflow: 'hidden',
+        width: style.width || 'auto', // ViewSwitcher không nên có width: 100%
+        minWidth: style.minWidth || 'fit-content',
+    };
+
     return (
-        <div style={style} className="flex items-center">
+        <div style={viewSwitcherStyle} className="flex items-center overflow-hidden">
             {views.map(view => {
                 const Icon = VIEW_ICONS[view] || FiTable;
                 const isActive = activeView === view;
@@ -174,9 +181,9 @@ export function ViewSwitcherRender({ props = {}, style, isPreview = false }) {
                     <button
                         key={view}
                         onClick={() => handleViewChange(view)}
-                        className={`p-2 rounded-md transition-colors ${
+                        className={`p-2 rounded-md transition-colors flex-shrink-0 ${
                             isActive 
-                                ? 'bg-indigo-100 text-indigo-700' 
+                                ? 'bg-sage-100 text-sage-600' 
                                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                         }`}
                         title={view.charAt(0).toUpperCase() + view.slice(1)}
@@ -259,48 +266,57 @@ export function FilterBarRender({ props = {}, style, isPreview = false }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const filterBarStyle = {
+        ...style,
+        overflow: 'visible',
+        position: 'relative',
+        width: 'auto',
+        display: 'inline-block',
+    };
+
     return (
-        <div style={style} className="relative">
-            <div className="flex items-center gap-2 flex-wrap">
-                {/* Filter Button */}
-                <button
-                    ref={buttonRef}
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
-                        activeFilters.length > 0 
-                            ? 'border-indigo-300 bg-indigo-50 text-indigo-700' 
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                >
-                    <FiFilter size={14} />
-                    Filter
-                    {activeFilters.length > 0 && (
-                        <span className="bg-indigo-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                            {activeFilters.length}
-                        </span>
-                    )}
-                    <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Active Filter Tags */}
-                {activeFilters.map(({ field, value }) => (
-                    <span 
-                        key={field}
-                        className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700"
-                    >
-                        {field}: {value}
-                        <button onClick={() => clearFilter(field)} className="hover:text-red-500">
-                            <FiX size={12} />
-                        </button>
-                    </span>
-                ))}
-
+        <div style={filterBarStyle} className="relative inline-block">
+            {/* Filter Button */}
+            <button
+                ref={buttonRef}
+                onClick={() => setIsOpen(!isOpen)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                    activeFilters.length > 0 
+                        ? 'border-sage-200 bg-sage-50 text-sage-600' 
+                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+            >
+                <FiFilter size={14} />
+                <span className="whitespace-nowrap">Filter</span>
                 {activeFilters.length > 0 && (
-                    <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500">
-                        Clear all
-                    </button>
+                    <span className="bg-sage-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {activeFilters.length}
+                    </span>
                 )}
-            </div>
+                <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Active Filter Tags - Positioned absolutely */}
+            {activeFilters.length > 0 && (
+                <div className="absolute left-0 top-full mt-1 flex items-center gap-2 flex-wrap z-10">
+                    {activeFilters.map(({ field, value }) => (
+                        <span 
+                            key={field}
+                            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs font-medium text-gray-700 shadow-sm"
+                        >
+                            <span className="whitespace-nowrap">{field}: {value}</span>
+                            <button onClick={() => clearFilter(field)} className="hover:text-red-500">
+                                <FiX size={12} />
+                            </button>
+                        </span>
+                    ))}
+                    {activeFilters.length > 0 && (
+                        <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500 whitespace-nowrap">
+                            Clear all
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Dropdown */}
             {isOpen && createPortal(
@@ -327,7 +343,7 @@ export function FilterBarRender({ props = {}, style, isPreview = false }) {
                                             onClick={() => handleFilterChange(field, filters[field] === option ? null : option)}
                                             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                                                 filters[field] === option
-                                                    ? 'bg-indigo-600 text-white'
+                                                    ? 'bg-sage-600 text-white'
                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                         >
@@ -358,19 +374,19 @@ export function SearchBoxRender({ props = {}, style, isPreview = false }) {
     };
 
     return (
-        <div style={style} className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+        <div style={style} className="relative w-full h-full flex items-center">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={16} />
             <input
                 type="text"
                 value={query}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder={placeholder}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full h-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
             />
             {query && (
                 <button
                     onClick={() => handleSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
                 >
                     <FiX size={14} />
                 </button>
@@ -452,30 +468,35 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const sortDropdownStyle = {
+        ...style,
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        width: style.width || 'fit-content', // Đảm bảo width là fit-content
+        height: style.height || 'fit-content',
+        overflow: 'hidden',
+    };
+
     return (
         <>
             <div 
-                style={{
-                    ...style,
-                    position: 'relative',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    width: 'fit-content',
-                    height: 'fit-content'
-                }} 
+                style={sortDropdownStyle} 
                 className="sort-dropdown-container"
             >
                 <button
                     ref={buttonRef}
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors overflow-hidden"
                 >
-                    <FiArrowDown size={14} />
-                    {label}: {SORT_FIELD_LABELS[currentSort.field] || currentSort.field}
-                    <span className="text-xs text-gray-500">
+                    <FiArrowDown size={14} className="flex-shrink-0" />
+                    <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                        {label}: {SORT_FIELD_LABELS[currentSort.field] || currentSort.field}
+                    </span>
+                    <span className="text-xs text-gray-500 flex-shrink-0">
                         ({currentSort.order === 'asc' ? '↑' : '↓'})
                     </span>
-                    <FiChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <FiChevronDown size={14} className={`transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Quick toggle order button */}
@@ -511,7 +532,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
                                     onClick={() => handleSortChange(field, 'asc')}
                                     className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
                                         currentSort.field === field && currentSort.order === 'asc'
-                                            ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                            ? 'bg-sage-100 text-sage-600 font-medium'
                                             : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 >
@@ -524,7 +545,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
                                     onClick={() => handleSortChange(field, 'desc')}
                                     className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
                                         currentSort.field === field && currentSort.order === 'desc'
-                                            ? 'bg-indigo-100 text-indigo-700 font-medium'
+                                            ? 'bg-sage-100 text-sage-600 font-medium'
                                             : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 >
@@ -545,7 +566,7 @@ export function SortDropdownRender({ props = {}, style, isPreview = false }) {
 
 // ========== ADD TASK BUTTON ==========
 export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
-    const { label = '+ New Task', defaultStatus = 'Todo', defaultPriority = 'Medium' } = props || {};
+    const { label = 'New Task', defaultStatus = 'Todo', defaultPriority = 'Medium' } = props || {};
     const [isAdding, setIsAdding] = useState(false);
     const [newTask, setNewTask] = useState({ 
         title: '', 
@@ -770,32 +791,34 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
-    if (isAdding) {
-        return (
-            <div className="flex flex-col gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm min-w-[450px]">
+    
+    // Render add-task modal when isAdding is true (use portal) instead of replacing the button inline
+    const addTaskModal = isAdding ? createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-lg bg-white border border-gray-200 rounded-lg shadow-xl p-6" onMouseDown={(e) => e.stopPropagation()}>
                 {/* Title Input */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-4">
                     <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Tiêu đề:</label>
                     <input
                         type="text"
                         value={newTask.title}
                         onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                         placeholder="Tiêu đề task..."
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         autoFocus
                         onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                     />
                 </div>
 
                 {/* Status, Priority, DueDate Selection */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3 mb-4">
                     {/* Status */}
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-medium text-gray-600">Status</label>
                         <select
                             value={newTask.status}
                             onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         >
                             <option value="Todo">Todo</option>
                             <option value="InProgress">In Progress</option>
@@ -809,7 +832,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                         <select
                             value={newTask.priority}
                             onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         >
                             <option value="Low">Low</option>
                             <option value="Medium">Medium</option>
@@ -830,13 +853,13 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                     dueDate: value ? new Date(value).toISOString() : null 
                                 });
                             }}
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                         />
                     </div>
                 </div>
 
                 {/* Category Selection */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-4">
                     <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Danh mục:</label>
                     {loadingCategories ? (
                         <span className="text-sm text-gray-500">Đang tải...</span>
@@ -852,7 +875,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                         }
                                         setShowCategoryDropdown(!showCategoryDropdown);
                                     }}
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-left flex items-center justify-between cursor-pointer"
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500 bg-white text-left flex items-center justify-between cursor-pointer"
                                 >
                                     <span className="truncate">
                                         {newTask.categoryId 
@@ -888,7 +911,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                                             type="text"
                                                             value={editCategoryName}
                                                             onChange={(e) => setEditCategoryName(e.target.value)}
-                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-sage-500"
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter') {
                                                                     handleSaveEditCategory();
@@ -922,7 +945,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                                 <div 
                                                     key={cat.id}
                                                     className={`px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer flex items-center justify-between ${
-                                                        newTask.categoryId === cat.id ? 'bg-indigo-50 text-indigo-700' : ''
+                                                        newTask.categoryId === cat.id ? 'bg-sage-50 text-sage-600' : ''
                                                     }`}
                                                     onClick={() => {
                                                         setNewTask(prev => ({ ...prev, categoryId: cat.id }));
@@ -962,7 +985,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                                     }
                                     setShowCategoryDropdown(false);
                                 }}
-                                className="px-3 py-2 text-sm text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition-colors"
+                                className="px-3 py-2 text-sm text-sage-600 border border-sage-200 rounded-md hover:bg-sage-50 transition-colors"
                                 title="Tạo danh mục mới"
                             >
                                 <FiPlus size={14} />
@@ -973,13 +996,13 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
 
                 {/* New Category Input */}
                 {showNewCategoryInput && (
-                    <div className="flex items-center gap-2 p-2 bg-indigo-50 rounded-md">
+                    <div className="flex items-center gap-2 p-2 bg-sage-50 rounded-md mb-4">
                         <input
                             type="text"
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             placeholder="Tên danh mục mới..."
-                            className="flex-1 px-3 py-1.5 text-sm border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="flex-1 px-3 py-1.5 text-sm border border-sage-200 rounded-md focus:outline-none focus:ring-2 focus:ring-sage-500"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     handleCreateCategory();
@@ -992,7 +1015,7 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                         />
                         <button
                             onClick={handleCreateCategory}
-                            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700"
+                            className="px-3 py-1.5 bg-sage-600 text-white text-xs font-medium rounded-md hover:bg-sage-700"
                         >
                             Tạo
                         </button>
@@ -1022,24 +1045,63 @@ export function AddTaskButtonRender({ props = {}, style, isPreview = false }) {
                     </button>
                     <button
                         onClick={handleAdd}
-                        className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+                        className="px-4 py-1.5 bg-sage-600 text-white text-sm font-medium rounded-md hover:bg-sage-700"
                     >
                         Thêm Task
                     </button>
                 </div>
             </div>
-        );
-    }
+        </div>,
+        document.body
+    ) : null;
+
+    const buttonStyle = {
+        ...style,
+        overflow: 'hidden',
+        width: style.width || 'auto', // Đảm bảo width là auto nếu không được set
+        minWidth: style.minWidth || 'fit-content', // Đảm bảo có min width phù hợp
+    };
+
+    const pointerStartRef = useRef({ x: 0, y: 0, moved: false });
+
+    const handlePointerDown = (e) => {
+        pointerStartRef.current = { x: e.clientX, y: e.clientY, moved: false };
+    };
+
+    const handlePointerMove = (e) => {
+        const s = pointerStartRef.current;
+        if (!s) return;
+        const dx = Math.abs(e.clientX - s.x);
+        const dy = Math.abs(e.clientY - s.y);
+        if (dx > 5 || dy > 5) {
+            s.moved = true;
+        }
+    };
+
+    const handlePointerUp = (e) => {
+        const s = pointerStartRef.current;
+        if (!s) return;
+        // If pointer didn't move significantly, treat as click
+        if (!s.moved) {
+            setIsAdding(true);
+        }
+        pointerStartRef.current = { x: 0, y: 0, moved: false };
+    };
 
     return (
-        <button
-            style={style}
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 hover:opacity-90 transition-opacity"
-        >
-            <FiPlus size={16} />
-            {label}
-        </button>
+        <>
+            <button
+                style={buttonStyle}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                className="drag-handle flex items-center gap-2 hover:opacity-90 transition-opacity overflow-hidden whitespace-nowrap"
+            >
+                <FiPlus size={16} className="flex-shrink-0" />
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
+            </button>
+            {addTaskModal}
+        </>
     );
 }
 
@@ -1056,17 +1118,23 @@ export function DatabaseTitleRender({ props = {}, style, isPreview = false }) {
         }
     };
 
+    const titleStyle = {
+        ...style,
+        overflow: 'hidden',
+    };
+
     if (isEditing && editable) {
         return (
-            <div style={style} className="flex items-center gap-2">
-                <span className="text-2xl">{icon}</span>
+            <div style={titleStyle} className="flex items-center gap-2 overflow-hidden">
+                <span className="text-2xl flex-shrink-0">{icon}</span>
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     onBlur={handleSave}
                     onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                    className="flex-1 bg-transparent border-b-2 border-indigo-500 focus:outline-none text-2xl font-bold text-gray-800"
+                    style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    className="flex-1 bg-transparent border-b-2 border-indigo-500 focus:outline-none text-2xl font-bold text-gray-800 min-w-0"
                     autoFocus
                 />
             </div>
@@ -1074,13 +1142,66 @@ export function DatabaseTitleRender({ props = {}, style, isPreview = false }) {
     }
 
     return (
-        <div 
-            style={style} 
+        <div
+            style={titleStyle} 
             onClick={() => editable && setIsEditing(true)}
-            className={editable ? 'cursor-pointer hover:opacity-80' : ''}
+            className={`flex items-center gap-2 overflow-hidden ${editable ? 'cursor-pointer hover:opacity-80' : ''}`}
         >
-            <span className="text-2xl mr-2">{icon}</span>
-            {title}
+            <span className="text-2xl flex-shrink-0">{icon}</span>
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">{title}</span>
+        </div>
+    );
+}
+// ========== VIEW AREA (Container for specific view type) ==========
+export function ViewAreaRender({ props = {}, style, isPreview = false, children }) {
+    const { viewType = 'board', label = '' } = props || {};
+    const [activeView, setActiveView] = useState('table'); // Default to table
+    const [shouldShow, setShouldShow] = useState(false);
+
+    // Listen for view-change events from ViewSwitcher
+    useEffect(() => {
+        const handleViewChange = (e) => {
+            const newView = e.detail?.view || 'table';
+            setActiveView(newView);
+            setShouldShow(newView === viewType);
+        };
+        
+        window.addEventListener('view-change', handleViewChange);
+        
+        // Initial check
+        setShouldShow(activeView === viewType);
+        
+        return () => {
+            window.removeEventListener('view-change', handleViewChange);
+        };
+    }, [viewType, activeView]);
+
+    // In builder mode (not preview), always show with semi-transparency when not active
+    if (!isPreview) {
+        const opacity = shouldShow ? 1 : 0.3;
+        return (
+            <div
+                style={{ ...style, opacity }}
+                className="w-full h-full border-2 border-dashed border-neutral-300 rounded-lg p-4 relative"
+            >
+                <div className="absolute top-2 left-2 px-2 py-1 bg-neutral-900 text-white text-xs rounded">
+                    {label || `${viewType} View`}
+                </div>
+                <div className="w-full h-full">
+                    {children}
+                </div>
+            </div>
+        );
+    }
+
+    // In preview mode, only show when active view matches
+    if (!shouldShow) {
+        return null;
+    }
+
+    return (
+        <div style={style} className="w-full h-full">
+            {children}
         </div>
     );
 }

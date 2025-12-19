@@ -4,6 +4,7 @@ using TodoApi.Data;
 using TodoApi.Models;
 using AutoMapper;
 using TodoApi.Dtos;
+using TodoApi.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using MongoDB.Driver;
@@ -16,15 +17,21 @@ namespace TodoApi.Controllers
     public class TodoItemsController : ControllerBase
     {
         private readonly MongoDbContext _mongoContext;
+        private readonly AppDbContext _appContext;
+        private readonly TenantSecurityHelper _securityHelper;
         private readonly IMapper _mapper;
         private readonly ILogger<TodoItemsController> _logger;
 
         public TodoItemsController(
-            MongoDbContext mongoContext, 
+            MongoDbContext mongoContext,
+            AppDbContext appContext,
+            TenantSecurityHelper securityHelper,
             IMapper mapper,
             ILogger<TodoItemsController> logger)
         {
             _mongoContext = mongoContext;
+            _appContext = appContext;
+            _securityHelper = securityHelper;
             _mapper = mapper;
             _logger = logger;
         }
@@ -34,56 +41,254 @@ namespace TodoApi.Controllers
             return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
+
         // GET: api/TodoItems (Trả về DTO)
+        // Query parameters: ?appId={appId}&todoListId={todoListId} (both optional)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetTodoItems()
+        public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetTodoItems([FromQuery] string? appId = null, [FromQuery] string? todoListId = null)
         {
-            var todoItems = await _mongoContext.TodoItems.Find(_ => true).ToListAsync();
-            var itemDtos = new List<TodoItemDTO>();
-            
-            foreach (var item in todoItems)
+            try
             {
-                var list = await _mongoContext.TodoLists.Find(l => l.Id == item.TodoListId).FirstOrDefaultAsync();
-                itemDtos.Add(new TodoItemDTO
+                var userId = GetCurrentUserId();
+
+                if (string.IsNullOrEmpty(userId))
                 {
-                    Id = item.Id,
-                    Title = item.Title,
-                    Status = item.Status,
-                    Priority = item.Priority,
-                    DueDate = item.DueDate,
-                    TodoListId = item.TodoListId,
-                    TodoListName = list?.Name
+                    _logger.LogWarning("User ID not found in token");
+                    return Unauthorized(new { message = "User ID not found in token" });
+                }
+
+                // Validate và verify AppId ownership nếu có
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    if (!_securityHelper.IsValidObjectId(appId))
+                    {
+                        _logger.LogWarning("Invalid AppId format: {AppId}", appId);
+                        return BadRequest(new { message = "Invalid AppId format" });
+                    }
+
+                    if (!await _securityHelper.VerifyAppOwnershipAsync(appId, userId))
+                    {
+                        _logger.LogWarning("User {UserId} attempted to access app {AppId} without ownership", userId, appId);
+                        return Forbid("You don't have access to this app");
+                    }
+                }
+
+                _logger.LogInformation("GetTodoItems called for userId: {UserId}, appId: {AppId}, todoListId: {TodoListId}", 
+                    userId, appId ?? "null", todoListId ?? "null");
+
+                // Build filter: filter theo AppId và TodoListId
+                var filterBuilder = Builders<TodoItem>.Filter;
+                FilterDefinition<TodoItem>? filter = null;
+
+                // Nếu có appId, filter theo AppId
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    filter = filterBuilder.Eq(item => item.AppId, appId);
+                }
+
+                // Nếu có todoListId, filter thêm theo TodoListId
+                if (!string.IsNullOrWhiteSpace(todoListId))
+                {
+                    if (filter == null)
+                    {
+                        filter = filterBuilder.Eq(item => item.TodoListId, todoListId);
+                    }
+                    else
+                    {
+                        filter = filterBuilder.And(
+                            filter,
+                            filterBuilder.Eq(item => item.TodoListId, todoListId)
+                        );
+                    }
+                }
+
+                // Lấy collections từ đúng database (dùng cho cả filter và load names)
+                var listCollection = _appContext.GetAppCollection<TodoList>(appId, "todoLists");
+
+                // Nếu không có filter nào, filter theo tất cả items của user (thông qua TodoLists)
+                if (filter == null)
+                {
+                    // Lấy tất cả TodoLists của user để filter items
+                    var listFilter = Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId);
+                    var userLists = await listCollection.Find(listFilter).ToListAsync();
+                    var listIds = userLists.Select(l => l.Id).ToList();
+
+                    if (listIds.Any())
+                    {
+                        filter = filterBuilder.In(item => item.TodoListId, listIds);
+                    }
+                    else
+                    {
+                        // Không có lists nào, return empty
+                        return Ok(new List<TodoItemDTO>());
+                    }
+                }
+                else
+                {
+                    // Verify items thuộc về user thông qua TodoList
+                    // (sẽ verify sau khi load items)
+                }
+
+                // Lấy collection từ đúng database (app database hoặc main database)
+                var collection = _appContext.GetAppCollection<TodoItem>(appId, "todoItems");
+                var todoItems = await collection.Find(filter).ToListAsync();
+
+                _logger.LogInformation("Found {Count} items for user {UserId}, appId: {AppId}, todoListId: {TodoListId}", 
+                    todoItems.Count, userId, appId ?? "null", todoListId ?? "null");
+
+                // Load TodoList names từ cùng database (listCollection đã được khai báo ở trên)
+                var itemDtos = new List<TodoItemDTO>();
+                
+                foreach (var item in todoItems)
+                {
+                    try
+                    {
+                        var listFilter = Builders<TodoList>.Filter.Eq(list => list.Id, item.TodoListId);
+                        var list = await listCollection.Find(listFilter).FirstOrDefaultAsync();
+                        
+                        itemDtos.Add(new TodoItemDTO
+                        {
+                            Id = item.Id,
+                            Title = item.Title,
+                            Status = item.Status,
+                            Priority = item.Priority,
+                            DueDate = item.DueDate,
+                            TodoListId = item.TodoListId,
+                            TodoListName = list?.Name
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error loading list for item {ItemId}", item.Id);
+                        itemDtos.Add(new TodoItemDTO
+                        {
+                            Id = item.Id,
+                            Title = item.Title,
+                            Status = item.Status,
+                            Priority = item.Priority,
+                            DueDate = item.DueDate,
+                            TodoListId = item.TodoListId,
+                            TodoListName = null
+                        });
+                    }
+                }
+            
+                return Ok(itemDtos);
+            }
+            catch (MongoException mongoEx)
+            {
+                _logger.LogError(mongoEx, "MongoDB error retrieving todo items");
+                return StatusCode(500, new { 
+                    message = "Database error", 
+                    error = mongoEx.Message
                 });
             }
-            
-            return Ok(itemDtos);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving todo items");
+                return StatusCode(500, new { 
+                    message = "Error retrieving todo items", 
+                    error = ex.Message
+                });
+            }
         }
 
         // GET: api/TodoItems/5 (Trả về DTO)
         [HttpGet("{id}")]
         public async Task<ActionResult<TodoItemDTO>> GetTodoItem(string id)
         {
-            var filter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
-            var todoItem = await _mongoContext.TodoItems.Find(filter).FirstOrDefaultAsync();
-            
-            if (todoItem == null)
+            try
             {
-                return NotFound();
+                var userId = GetCurrentUserId();
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User ID not found in token" });
+                }
+
+                // Tìm item từ main database trước để lấy AppId
+                var mainFilter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
+                var todoItem = await _mongoContext.TodoItems.Find(mainFilter).FirstOrDefaultAsync();
+
+                if (todoItem == null)
+                {
+                    return NotFound(new { message = "TodoItem not found" });
+                }
+
+                var appId = todoItem.AppId;
+
+                // Validate và verify AppId ownership nếu có
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    if (!_securityHelper.IsValidObjectId(appId))
+                    {
+                        return BadRequest(new { message = "Invalid AppId format" });
+                    }
+
+                    if (!await _securityHelper.VerifyAppOwnershipAsync(appId, userId))
+                    {
+                        _logger.LogWarning("User {UserId} attempted to access item {ItemId} with unauthorized app {AppId}", userId, id, appId);
+                        return Forbid("You don't have access to this app");
+                    }
+                }
+
+                // Lấy item từ đúng database
+                var collection = _appContext.GetAppCollection<TodoItem>(appId, "todoItems");
+                var filter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
+
+                // Nếu có AppId, filter thêm theo AppId
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    filter = Builders<TodoItem>.Filter.And(
+                        filter,
+                        Builders<TodoItem>.Filter.Eq(item => item.AppId, appId)
+                    );
+                }
+
+                todoItem = await collection.Find(filter).FirstOrDefaultAsync();
+
+                if (todoItem == null)
+                {
+                    return NotFound(new { message = "TodoItem not found" });
+                }
+
+                // Verify ownership thông qua TodoList
+                var listCollection = _appContext.GetAppCollection<TodoList>(appId, "todoLists");
+                var listFilter = Builders<TodoList>.Filter.And(
+                    Builders<TodoList>.Filter.Eq(list => list.Id, todoItem.TodoListId),
+                    Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
+                );
+                var list = await listCollection.Find(listFilter).FirstOrDefaultAsync();
+
+                if (list == null)
+                {
+                    _logger.LogWarning("User {UserId} attempted to access item {ItemId} without ownership", userId, id);
+                    return Forbid("You don't have access to this item");
+                }
+
+                // list đã được load ở trên
+
+                var itemDto = new TodoItemDTO
+                {
+                    Id = todoItem.Id,
+                    Title = todoItem.Title,
+                    Status = todoItem.Status,
+                    Priority = todoItem.Priority,
+                    DueDate = todoItem.DueDate,
+                    TodoListId = todoItem.TodoListId,
+                    TodoListName = list?.Name
+                };
+            
+                return Ok(itemDto);
             }
-            
-            var list = await _mongoContext.TodoLists.Find(l => l.Id == todoItem.TodoListId).FirstOrDefaultAsync();
-            var itemDto = new TodoItemDTO
+            catch (Exception ex)
             {
-                Id = todoItem.Id,
-                Title = todoItem.Title,
-                Status = todoItem.Status,
-                Priority = todoItem.Priority,
-                DueDate = todoItem.DueDate,
-                TodoListId = todoItem.TodoListId,
-                TodoListName = list?.Name
-            };
-            
-            return Ok(itemDto);
+                _logger.LogError(ex, "Error retrieving todo item {ItemId}", id);
+                return StatusCode(500, new { 
+                    message = "Error retrieving todo item", 
+                    error = ex.Message
+                });
+            }
         }
 
         // POST: api/TodoItems (KIỂM TRA QUYỀN TRÊN LIST)
@@ -110,22 +315,59 @@ namespace TodoApi.Controllers
                     return BadRequest(new { message = "TodoListId is required" });
                 }
 
-                _logger.LogInformation("Creating todo item: Title={Title}, TodoListId={TodoListId}, UserId={UserId}", 
-                    createDto.Title, createDto.TodoListId, userId);
+                var appId = createDto.AppId;
 
-                // Kiểm tra xem List có thuộc về user này không
-                var listFilter = Builders<TodoList>.Filter.And(
-                    Builders<TodoList>.Filter.Eq(list => list.Id, createDto.TodoListId),
-                    Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
+                // Validate và verify AppId ownership nếu có
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    if (!_securityHelper.IsValidObjectId(appId))
+                    {
+                        return BadRequest(new { message = "Invalid AppId format" });
+                    }
+
+                    if (!await _securityHelper.VerifyAppOwnershipAsync(appId, userId))
+                    {
+                        _logger.LogWarning("User {UserId} attempted to create item with unauthorized app {AppId}", userId, appId);
+                        return Forbid("You don't have access to this app");
+                    }
+                }
+
+                _logger.LogInformation("Creating todo item: Title={Title}, TodoListId={TodoListId}, UserId={UserId}, AppId={AppId}", 
+                    createDto.Title, createDto.TodoListId, userId, appId ?? "null");
+
+                // Lấy collections từ đúng database
+                var listCollection = _appContext.GetAppCollection<TodoList>(appId, "todoLists");
+
+                // Kiểm tra xem List có thuộc về user này không và cùng AppId
+                var listFilterBuilder = Builders<TodoList>.Filter;
+                var listFilter = listFilterBuilder.And(
+                    listFilterBuilder.Eq(list => list.Id, createDto.TodoListId),
+                    listFilterBuilder.Eq(list => list.AppUserId, userId)
                 );
+
+                // Nếu có AppId, verify TodoListId thuộc về cùng AppId
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    listFilter = listFilterBuilder.And(
+                        listFilter,
+                        listFilterBuilder.Eq(list => list.AppId, appId)
+                    );
+                }
                 
-                var todoList = await _mongoContext.TodoLists.Find(listFilter).FirstOrDefaultAsync();
+                var todoList = await listCollection.Find(listFilter).FirstOrDefaultAsync();
                 
                 if (todoList == null)
                 {
-                    _logger.LogWarning("TodoList not found or access denied: TodoListId={TodoListId}, UserId={UserId}", 
-                        createDto.TodoListId, userId);
-                    return StatusCode(403, new { message = "TodoList not found or access denied" });
+                    _logger.LogWarning("TodoList not found or access denied: TodoListId={TodoListId}, UserId={UserId}, AppId={AppId}", 
+                        createDto.TodoListId, userId, appId ?? "null");
+                    return StatusCode(403, new { message = "TodoList not found or access denied. Make sure TodoList belongs to the same AppId." });
+                }
+
+                // Verify TodoListId thuộc về cùng AppId (nếu có)
+                if (!string.IsNullOrWhiteSpace(appId) && todoList.AppId != appId)
+                {
+                    _logger.LogWarning("TodoList {TodoListId} does not belong to AppId {AppId}", createDto.TodoListId, appId);
+                    return BadRequest(new { message = "TodoList does not belong to the specified AppId" });
                 }
 
                 // Tạo item mới
@@ -135,16 +377,17 @@ namespace TodoApi.Controllers
                     Status = createDto.Status,
                     Priority = createDto.Priority,
                     DueDate = createDto.DueDate,
-                    TodoListId = createDto.TodoListId
+                    TodoListId = createDto.TodoListId,
+                    AppId = appId ?? todoList.AppId // Dùng AppId từ DTO hoặc từ TodoList
                 };
 
-                await _mongoContext.TodoItems.InsertOneAsync(todoItem);
+                // Insert vào đúng database
+                var itemsCollection = _appContext.GetAppCollection<TodoItem>(appId ?? todoList.AppId, "todoItems");
+                await itemsCollection.InsertOneAsync(todoItem);
 
                 // Cập nhật ItemIds trong TodoList
                 var updateList = Builders<TodoList>.Update.Push(list => list.ItemIds, todoItem.Id);
-                await _mongoContext.TodoLists.UpdateOneAsync(listFilter, updateList);
-
-                // Google Calendar integration đã được xóa
+                await listCollection.UpdateOneAsync(listFilter, updateList);
 
                 var todoItemDto = new TodoItemDTO
                 {
@@ -157,7 +400,7 @@ namespace TodoApi.Controllers
                     TodoListName = todoList.Name
                 };
 
-                _logger.LogInformation("Todo item created successfully: ItemId={ItemId}", todoItem.Id);
+                _logger.LogInformation("Todo item created successfully: ItemId={ItemId}, AppId={AppId}", todoItem.Id, appId ?? "null");
                 return CreatedAtAction(nameof(GetTodoItem), new { id = todoItemDto.Id }, todoItemDto);
             }
             catch (MongoException mongoEx)
@@ -182,83 +425,207 @@ namespace TodoApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTodoItem(string id, CreateTodoItemDTO updateDto)
         {
-            var userId = GetCurrentUserId();
-
-            var itemFilter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
-            var todoItemFromDb = await _mongoContext.TodoItems.Find(itemFilter).FirstOrDefaultAsync();
-
-            if (todoItemFromDb == null)
+            try
             {
-                return NotFound();
+                var userId = GetCurrentUserId();
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User ID not found in token" });
+                }
+
+                // Tìm item từ main database trước để lấy AppId
+                var mainFilter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
+                var todoItemFromDb = await _mongoContext.TodoItems.Find(mainFilter).FirstOrDefaultAsync();
+
+                if (todoItemFromDb == null)
+                {
+                    return NotFound(new { message = "TodoItem not found" });
+                }
+
+                var currentAppId = todoItemFromDb.AppId;
+                var newAppId = updateDto.AppId;
+
+                // Validate và verify AppId ownership cho AppId mới nếu có
+                if (!string.IsNullOrWhiteSpace(newAppId))
+                {
+                    if (!_securityHelper.IsValidObjectId(newAppId))
+                    {
+                        return BadRequest(new { message = "Invalid AppId format" });
+                    }
+
+                    if (!await _securityHelper.VerifyAppOwnershipAsync(newAppId, userId))
+                    {
+                        _logger.LogWarning("User {UserId} attempted to update item {ItemId} with unauthorized app {AppId}", userId, id, newAppId);
+                        return Forbid("You don't have access to this app");
+                    }
+                }
+
+                // Lấy collections từ đúng database
+                var itemsCollection = _appContext.GetAppCollection<TodoItem>(currentAppId ?? newAppId, "todoItems");
+                var listCollection = _appContext.GetAppCollection<TodoList>(currentAppId ?? newAppId, "todoLists");
+
+                // Kiểm tra quyền sở hữu qua TodoList
+                var listFilter = Builders<TodoList>.Filter.And(
+                    Builders<TodoList>.Filter.Eq(list => list.Id, todoItemFromDb.TodoListId),
+                    Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
+                );
+                var todoList = await listCollection.Find(listFilter).FirstOrDefaultAsync();
+
+                if (todoList == null)
+                {
+                    return Forbid("You don't have access to this item");
+                }
+
+                // Nếu update TodoListId, verify TodoListId mới thuộc về cùng AppId
+                if (!string.IsNullOrWhiteSpace(updateDto.TodoListId) && updateDto.TodoListId != todoItemFromDb.TodoListId)
+                {
+                    var newListFilter = Builders<TodoList>.Filter.And(
+                        Builders<TodoList>.Filter.Eq(list => list.Id, updateDto.TodoListId),
+                        Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
+                    );
+
+                    if (!string.IsNullOrWhiteSpace(newAppId ?? currentAppId))
+                    {
+                        newListFilter = Builders<TodoList>.Filter.And(
+                            newListFilter,
+                            Builders<TodoList>.Filter.Eq(list => list.AppId, newAppId ?? currentAppId)
+                        );
+                    }
+
+                    var newList = await listCollection.Find(newListFilter).FirstOrDefaultAsync();
+                    if (newList == null)
+                    {
+                        return BadRequest(new { message = "New TodoList not found or does not belong to the same AppId" });
+                    }
+                }
+
+                // Build filter và update
+                var itemFilter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
+                if (!string.IsNullOrWhiteSpace(currentAppId))
+                {
+                    itemFilter = Builders<TodoItem>.Filter.And(
+                        itemFilter,
+                        Builders<TodoItem>.Filter.Eq(item => item.AppId, currentAppId)
+                    );
+                }
+
+                var update = Builders<TodoItem>.Update
+                    .Set(item => item.Title, updateDto.Title)
+                    .Set(item => item.Status, updateDto.Status)
+                    .Set(item => item.Priority, updateDto.Priority)
+                    .Set(item => item.DueDate, updateDto.DueDate)
+                    .Set(item => item.TodoListId, updateDto.TodoListId);
+
+                // Update AppId nếu có trong DTO và khác với hiện tại
+                if (newAppId != currentAppId && !string.IsNullOrWhiteSpace(newAppId))
+                {
+                    update = update.Set(item => item.AppId, newAppId);
+                }
+
+                await itemsCollection.UpdateOneAsync(itemFilter, update);
+
+                _logger.LogInformation("Updated TodoItem {ItemId} for user {UserId}", id, userId);
+                return NoContent();
             }
-
-            // Kiểm tra quyền sở hữu qua TodoList
-            var listFilter = Builders<TodoList>.Filter.And(
-                Builders<TodoList>.Filter.Eq(list => list.Id, todoItemFromDb.TodoListId),
-                Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
-            );
-            var todoList = await _mongoContext.TodoLists.Find(listFilter).FirstOrDefaultAsync();
-
-            if (todoList == null)
+            catch (Exception ex)
             {
-                return Forbid();
+                _logger.LogError(ex, "Error updating todo item {ItemId}", id);
+                return StatusCode(500, new { 
+                    message = "Error updating todo item", 
+                    error = ex.Message
+                });
             }
-
-            // Lưu dueDate cũ để so sánh
-            var oldDueDate = todoItemFromDb.DueDate;
-            var categoryName = todoList.Name;
-
-            // Cập nhật item
-            var update = Builders<TodoItem>.Update
-                .Set(item => item.Title, updateDto.Title)
-                .Set(item => item.Status, updateDto.Status)
-                .Set(item => item.Priority, updateDto.Priority)
-                .Set(item => item.DueDate, updateDto.DueDate)
-                .Set(item => item.TodoListId, updateDto.TodoListId);
-
-            await _mongoContext.TodoItems.UpdateOneAsync(itemFilter, update);
-
-            // Google Calendar integration đã được xóa
-
-            return NoContent();
         }
 
         // DELETE: api/TodoItems/5 (XÓA)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTodoItem(string id)
         {
-            var userId = GetCurrentUserId();
+            try
+            {
+                var userId = GetCurrentUserId();
 
-            var itemFilter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
-            var todoItem = await _mongoContext.TodoItems.Find(itemFilter).FirstOrDefaultAsync();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User ID not found in token" });
+                }
+
+                // Tìm item từ main database trước để lấy AppId
+                var mainFilter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
+                var todoItem = await _mongoContext.TodoItems.Find(mainFilter).FirstOrDefaultAsync();
             
-            if (todoItem == null)
-            {
-                return NotFound();
+                if (todoItem == null)
+                {
+                    return NotFound(new { message = "TodoItem not found" });
+                }
+
+                var appId = todoItem.AppId;
+
+                // Validate và verify AppId ownership nếu có
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    if (!_securityHelper.IsValidObjectId(appId))
+                    {
+                        return BadRequest(new { message = "Invalid AppId format" });
+                    }
+
+                    if (!await _securityHelper.VerifyAppOwnershipAsync(appId, userId))
+                    {
+                        _logger.LogWarning("User {UserId} attempted to delete item {ItemId} with unauthorized app {AppId}", userId, id, appId);
+                        return Forbid("You don't have access to this app");
+                    }
+                }
+
+                // Lấy collections từ đúng database
+                var itemsCollection = _appContext.GetAppCollection<TodoItem>(appId, "todoItems");
+                var listCollection = _appContext.GetAppCollection<TodoList>(appId, "todoLists");
+
+                // Kiểm tra quyền sở hữu qua TodoList
+                var listFilter = Builders<TodoList>.Filter.And(
+                    Builders<TodoList>.Filter.Eq(list => list.Id, todoItem.TodoListId),
+                    Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
+                );
+                var todoList = await listCollection.Find(listFilter).FirstOrDefaultAsync();
+
+                if (todoList == null)
+                {
+                    return Forbid("You don't have access to this item");
+                }
+
+                // Build filter
+                var itemFilter = Builders<TodoItem>.Filter.Eq(item => item.Id, id);
+                if (!string.IsNullOrWhiteSpace(appId))
+                {
+                    itemFilter = Builders<TodoItem>.Filter.And(
+                        itemFilter,
+                        Builders<TodoItem>.Filter.Eq(item => item.AppId, appId)
+                    );
+                }
+
+                // Xóa item
+                var deleteResult = await itemsCollection.DeleteOneAsync(itemFilter);
+
+                if (deleteResult.DeletedCount == 0)
+                {
+                    return NotFound(new { message = "TodoItem not found" });
+                }
+
+                // Xóa itemId khỏi TodoList.ItemIds
+                var updateList = Builders<TodoList>.Update.Pull(list => list.ItemIds, id);
+                await listCollection.UpdateOneAsync(listFilter, updateList);
+
+                _logger.LogInformation("Deleted TodoItem {ItemId} for user {UserId}", id, userId);
+                return NoContent();
             }
-
-            // Kiểm tra quyền sở hữu qua TodoList
-            var listFilter = Builders<TodoList>.Filter.And(
-                Builders<TodoList>.Filter.Eq(list => list.Id, todoItem.TodoListId),
-                Builders<TodoList>.Filter.Eq(list => list.AppUserId, userId)
-            );
-            var todoList = await _mongoContext.TodoLists.Find(listFilter).FirstOrDefaultAsync();
-
-            if (todoList == null)
+            catch (Exception ex)
             {
-                return Forbid();
+                _logger.LogError(ex, "Error deleting todo item {ItemId}", id);
+                return StatusCode(500, new { 
+                    message = "Error deleting todo item", 
+                    error = ex.Message
+                });
             }
-
-            // Google Calendar integration đã được xóa
-
-            // Xóa item
-            await _mongoContext.TodoItems.DeleteOneAsync(itemFilter);
-
-            // Xóa itemId khỏi TodoList.ItemIds
-            var updateList = Builders<TodoList>.Update.Pull(list => list.ItemIds, id);
-            await _mongoContext.TodoLists.UpdateOneAsync(listFilter, updateList);
-
-            return NoContent();
         }
 
         // GET: api/todoitems/my-all

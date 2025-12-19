@@ -19,6 +19,12 @@ namespace TodoApi.Dtos
 
         [StringLength(20)]
         public string Source { get; set; } = "created";
+
+        /// <summary>
+        /// Tenant mode: "shared" (default) or "separate"
+        /// </summary>
+        [StringLength(20)]
+        public string TenantMode { get; set; } = "shared";
     }
 
     // DTO for updating a UserApp
@@ -47,6 +53,8 @@ namespace TodoApi.Dtos
         public string Source { get; set; } = "created";
         public string? MarketplaceAppId { get; set; }
         public string? OriginalAuthor { get; set; }
+        public string TenantMode { get; set; } = "shared";
+        public string? DatabaseName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

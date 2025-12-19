@@ -1,6 +1,6 @@
 // src/pages/MyAppPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiPlus, FiLayers, FiShoppingBag, FiSearch, FiGrid, FiList, FiPlay, FiEdit3, FiTrash2, FiClock } from 'react-icons/fi';
 import apiService from '../services/apiService';
 
@@ -127,6 +127,7 @@ const AppCard = ({ project, onDelete, onOpen, onEdit }) => {
  */
 const MyAppPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -135,10 +136,10 @@ const MyAppPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('grid');
 
-    // Fetch projects
+    // Fetch projects - refresh khi location thay đổi (ví dụ quay lại từ Marketplace sau khi install)
     useEffect(() => {
         fetchProjects();
-    }, []);
+    }, [location.pathname, location.key]);
 
     const fetchProjects = async () => {
         try {
