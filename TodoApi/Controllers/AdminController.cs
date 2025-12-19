@@ -106,19 +106,22 @@ namespace TodoApi.Controllers
         [HttpDelete("marketplace-apps/{id}")]
         public async Task<IActionResult> DeleteMarketplaceApp(string id)
         {
+            // Instead of deleting, unpublish the app to hide it from marketplace
+            // This preserves the original app and all user-installed copies
             var filter = Builders<Project>.Filter.And(
                 Builders<Project>.Filter.Eq(p => p.Id, id),
                 Builders<Project>.Filter.Eq(p => p.IsPublished, true)
             );
 
-            var result = await _mongoContext.Projects.DeleteOneAsync(filter);
+            var update = Builders<Project>.Update.Set(p => p.IsPublished, false);
+            var result = await _mongoContext.Projects.UpdateOneAsync(filter, update);
 
-            if (result.DeletedCount == 0)
+            if (result.MatchedCount == 0)
             {
                 return NotFound("App không tồn tại hoặc chưa được publish.");
             }
 
-            return Ok(new { message = "Đã xóa app khỏi marketplace thành công." });
+            return Ok(new { message = "Đã ẩn app khỏi marketplace thành công. App vẫn tồn tại trong My Apps của users đã cài." });
         }
 
         // --- API QUẢN LÝ USERS ---

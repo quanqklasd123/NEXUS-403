@@ -219,7 +219,13 @@ namespace TodoApi.Controllers
                 return NotFound(new { message = "App not found in marketplace" });
             }
 
-            // 2. Kiểm tra xem user đã install chưa (tìm Project với cùng MarketplaceAppId)
+            // 2. Kiểm tra xem user có đang cố install app của chính họ không
+            if (marketplaceProject.AppUserId == userId)
+            {
+                return BadRequest(new { message = "Bạn không thể cài đặt app của chính mình" });
+            }
+
+            // 3. Kiểm tra xem user đã install chưa (tìm Project với cùng MarketplaceAppId)
             var existingFilter = Builders<Project>.Filter.And(
                 Builders<Project>.Filter.Eq(p => p.AppUserId, userId),
                 Builders<Project>.Filter.Eq(p => p.MarketplaceAppId, id)

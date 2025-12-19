@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FiArrowLeft, FiMaximize2, FiMinimize2, FiHome } from 'react-icons/fi';
 import apiService from '../services/apiService';
 import RenderComponent from '../components/builder/RenderComponent';
+import useTaskData from '../hooks/useTaskData';
 
 /**
  * AppRuntimePage - Full screen app runtime (like App Builder preview)
@@ -20,6 +21,25 @@ const AppRuntimePage = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showHeader, setShowHeader] = useState(true);
     const [activeView, setActiveView] = useState('table'); // Track active view for view switching
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterTag, setFilterTag] = useState('all');
+
+    // Use task data hook for full functionality
+    const {
+        tasks,
+        allTasks,
+        loading: tasksLoading,
+        error: tasksError,
+        filters,
+        fetchTasks,
+        createTask,
+        updateTask,
+        updateTaskStatus,
+        deleteTask,
+        setFilters,
+        setSearchQuery: setTaskSearchQuery,
+        setSort
+    } = useTaskData({ isPreview: false });
 
     // Listen for view-change events from ViewSwitcher
     useEffect(() => {
@@ -29,6 +49,35 @@ const AppRuntimePage = () => {
         window.addEventListener('view-change', handleViewChange);
         return () => window.removeEventListener('view-change', handleViewChange);
     }, []);
+
+    // Listen for filter changes
+    useEffect(() => {
+        const handleFilterChange = (e) => {
+            setFilterTag(e.detail?.tag || 'all');
+        };
+        window.addEventListener('filter-change', handleFilterChange);
+        return () => window.removeEventListener('filter-change', handleFilterChange);
+    }, []);
+
+    // Listen for search changes
+    useEffect(() => {
+        const handleSearchChange = (e) => {
+            const query = e.detail?.query || '';
+            setSearchQuery(query);
+            setTaskSearchQuery(query);
+        };
+        window.addEventListener('search-change', handleSearchChange);
+        return () => window.removeEventListener('search-change', handleSearchChange);
+    }, [setTaskSearchQuery]);
+
+    // Listen for tasks-updated events to refresh data
+    useEffect(() => {
+        const handleTasksUpdated = () => {
+            fetchTasks();
+        };
+        window.addEventListener('tasks-updated', handleTasksUpdated);
+        return () => window.removeEventListener('tasks-updated', handleTasksUpdated);
+    }, [fetchTasks]);
 
     // App State for interactive components
     const [appState, setAppState] = useState({
@@ -77,6 +126,11 @@ const AppRuntimePage = () => {
 
         fetchProject();
     }, [projectId]);
+
+    // Fetch tasks when component mounts
+    useEffect(() => {
+        fetchTasks();
+    }, [fetchTasks]);
 
     // Toggle fullscreen
     const toggleFullscreen = () => {
@@ -284,6 +338,15 @@ const AppRuntimePage = () => {
                                         navigate={navigate}
                                         context={appState}
                                         onUpdateProps={(newProps) => handleUpdateProps(item.id, newProps)}
+                                        tasks={tasks}
+                                        allTasks={allTasks}
+                                        searchQuery={searchQuery}
+                                        filterTag={filterTag}
+                                        filters={filters}
+                                        onTaskCreate={createTask}
+                                        onTaskUpdate={updateTask}
+                                        onTaskStatusUpdate={updateTaskStatus}
+                                        onTaskDelete={deleteTask}
                                     />
                                 </div>
                             );
